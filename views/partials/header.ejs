@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - PresensiKu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#FAF9F7',
+                        fg: '#1C1917',
+                        muted: '#78716C',
+                        accent: '#B3171D',
+                        accentHover: '#8B1116',
+                        accentLight: '#FEE2E2',
+                        accentLighter: '#FEF2F2',
+                        card: '#FFFFFF',
+                        border: '#E7E5E4',
+                        inputBg: '#F5F5F4',
+                        success: '#16A34A',
+                    },
+                    fontFamily: {
+                        display: ['Space Grotesk', 'sans-serif'],
+                        body: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        h1, h2, h3, .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-16px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-fadeInUp { animation: fadeInUp 0.5s ease-out forwards; }
+        .animate-slideIn { animation: slideIn 0.4s ease-out forwards; }
+        .stagger-1 { animation-delay: 0.1s; opacity: 0; }
+        .stagger-2 { animation-delay: 0.2s; opacity: 0; }
+        .stagger-3 { animation-delay: 0.3s; opacity: 0; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .animate-fadeInUp, .animate-slideIn { animation: none; opacity: 1; }
+        }
+
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2378716C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(179, 23, 29, 0.15);
+            border-color: #B3171D;
+        }
+
+        /* Optimisasi Safari & iOS */
+        input, select, textarea {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Fix untuk input tanggal dan jam di iOS Safari / Chrome */
+        input[type="date"],
+        input[type="time"] {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            min-height: 46px;
+        }
+
+        /* Mereset tampilan nilai teks tanggal/jam di iOS */
+        input[type="date"]::-webkit-date-and-time-value,
+        input[type="time"]::-webkit-date-and-time-value {
+            display: block;
+            text-align: left !important;
+            min-height: 1.5em;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Mencegah auto-zoom di iOS Safari saat input mendapatkan fokus */
+        @media (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        .toast {
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .toast.show { transform: translateX(0); }
+        .btn-press:active { transform: scale(0.98); }
+        .card-hover { transition: box-shadow 0.3s ease, transform 0.3s ease; }
+        .card-hover:hover { box-shadow: 0 20px 40px -12px rgba(179, 23, 29, 0.08); transform: translateY(-2px); }
+
+        .nav-item { position: relative; }
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #B3171D;
+            border-radius: 2px;
+        }
+        
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(179, 23, 29, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(179, 23, 29, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(179, 23, 29, 0); }
+        }
+        .logo-pulse { animation: pulse-ring 2s infinite; }
+
+        .table-container::-webkit-scrollbar { height: 6px; }
+        .table-container::-webkit-scrollbar-track { background: #F5F5F4; border-radius: 3px; }
+        .table-container::-webkit-scrollbar-thumb { background: #D6D3D1; border-radius: 3px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #A8A29E; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-bg min-h-screen font-body text-fg">

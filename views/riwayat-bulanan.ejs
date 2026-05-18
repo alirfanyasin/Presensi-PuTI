@@ -1,0 +1,55 @@
+<%- include('partials/header', { title: 'Riwayat Bulanan' }) %>
+<%- include('partials/nav', { path: '/riwayat-bulanan' }) %>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+        <!-- Page Header -->
+        <div class="mb-6 sm:mb-8 animate-fadeInUp stagger-1 text-center sm:text-left">
+            <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-2">Riwayat Bulanan</h2>
+            <p class="text-sm sm:text-base text-muted">Rekapitulasi presensi karyawan berdasarkan bulan</p>
+        </div>
+
+        <% if (groupedData.length === 0) { %>
+            <div class="py-16 text-center animate-fadeInUp stagger-2 bg-card rounded-2xl border border-border shadow-sm">
+                <svg class="w-16 h-16 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <h3 class="font-display text-lg font-bold text-fg mb-1">Belum Ada Riwayat</h3>
+                <p class="text-muted text-sm">Data absensi belum tersedia.</p>
+            </div>
+        <% } else { %>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeInUp stagger-2">
+                <% groupedData.forEach(data => { %>
+                    <div class="bg-card rounded-2xl border border-border p-6 card-hover shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="w-12 h-12 bg-accentLight rounded-xl flex items-center justify-center mb-4 text-accent">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="font-display text-xl font-bold text-fg mb-1"><%= data.monthName %></h3>
+                            <p class="text-sm text-muted mb-6">Rekap absensi bulanan</p>
+                            
+                            <div class="space-y-3 mb-6">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-muted">Total Kehadiran</span>
+                                    <span class="font-bold text-fg bg-inputBg px-2 py-1 rounded-md"><%= data.totalKehadiran %></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-muted">Karyawan Aktif</span>
+                                    <span class="font-bold text-fg bg-inputBg px-2 py-1 rounded-md"><%= data.karyawanUnik %> Orang</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <a href="/detail-bulanan?month=<%= data.monthStr %>" class="w-full py-3 bg-inputBg text-fg font-semibold rounded-xl hover:bg-accentLight hover:text-accent transition-colors btn-press text-center text-sm flex items-center justify-center gap-2">
+                            Lihat Detail
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                    </div>
+                <% }) %>
+            </div>
+        <% } %>
+    </main>
+
+</body>
+</html>

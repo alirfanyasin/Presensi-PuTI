@@ -1,0 +1,268 @@
+<%- include('partials/header', { title: 'Detail Presensi Bulanan' }) %>
+<%- include('partials/nav', { path: '/riwayat-bulanan' }) %>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+        <div class="mb-4 animate-fadeInUp">
+            <a href="/riwayat-bulanan" class="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-accentHover transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Kembali ke Riwayat Bulanan
+            </a>
+        </div>
+
+        <!-- Page Header -->
+        <div class="mb-6 sm:mb-8 animate-fadeInUp stagger-1 text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-1">Presensi <%= monthName %></h2>
+                <p class="text-sm sm:text-base text-muted">Detail dan rekap absensi kehadiran selama bulan <%= monthName %></p>
+            </div>
+        </div>
+
+        <!-- Filter & Export Section -->
+        <div class="bg-card rounded-2xl border border-border p-4 sm:p-6 mb-6 animate-fadeInUp stagger-2 shadow-sm">
+            <form action="/detail-bulanan" method="GET" class="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                <input type="hidden" name="month" value="<%= monthStr %>">
+                
+                <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
+                    <label for="filterNama" class="block text-sm font-semibold text-fg mb-2">Filter Nama</label>
+                    <select id="filterNama" name="filterNama" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="all" <%= filterNama === 'all' ? 'selected' : '' %>>Semua Karyawan</option>
+                        <% karyawanList.forEach(k => { %>
+                            <option value="<%= k.id %>" <%= filterNama == k.id ? 'selected' : '' %>><%= k.nama %></option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                    <button type="submit" class="flex-1 sm:flex-none px-4 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm">
+                        Filter
+                    </button>
+                    <a href="/detail-bulanan?month=<%= monthStr %>" class="flex-1 sm:flex-none px-4 py-2.5 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press text-sm text-center">
+                        Reset
+                    </a>
+                    <a href="/export?month=<%= monthStr %>&filterNama=<%= filterNama %>" class="flex-1 sm:flex-none px-4 py-2.5 bg-success text-white font-medium rounded-xl hover:bg-green-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Export CSV
+                    </a>
+                    <% if (filterNama !== 'all') { %>
+                        <a href="/export-pdf?month=<%= monthStr %>&filterNama=<%= filterNama %>" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                            Export PDF (A4)
+                        </a>
+                    <% } %>
+                </div>
+            </form>
+        </div>
+
+        <!-- Desktop Table Section (Visible on desktop, hidden on mobile) -->
+        <div class="hidden md:block bg-card rounded-2xl border border-border overflow-hidden animate-fadeInUp stagger-2 shadow-sm mb-6">
+            <div class="table-container overflow-x-auto">
+                <table class="w-full min-w-[700px]">
+                    <thead class="bg-accentLighter border-b border-border">
+                        <tr>
+                            <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">No</th>
+                            <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Nama</th>
+                            <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Hari</th>
+                            <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tanggal</th>
+                            <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Waktu</th>
+                            <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Total Jam</th>
+                            <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Pekerjaan</th>
+                            <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Gambar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        <% if (presensi.length === 0) { %>
+                            <tr>
+                                <td colspan="8" class="py-10 text-center">
+                                    <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                    <h3 class="font-display text-base font-bold text-fg mb-1">Tidak Ada Data</h3>
+                                    <p class="text-muted text-xs sm:text-sm">Data tidak ditemukan untuk bulan/filter ini.</p>
+                                </td>
+                            </tr>
+                        <% } else { %>
+                            <% presensi.forEach((p, i) => { %>
+                                <tr class="hover:bg-accentLighter/30 transition-colors">
+                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted font-medium"><%= i + 1 %></td>
+                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 bg-accentLight rounded-full flex items-center justify-center flex-shrink-0">
+                                                <span class="text-xs font-bold text-accent"><%= p.nama.charAt(0) %></span>
+                                            </div>
+                                            <span class="font-medium text-fg"><%= p.nama %></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg font-medium text-accent"><%= p.formattedHari %></td>
+                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg"><%= p.formattedDate %></td>
+                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted"><%= p.jamMulai %> - <%= p.jamAkhir %></td>
+                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-success"><%= p.totalJamStr %></td>
+                                    <td class="px-4 sm:px-6 py-4 text-sm text-muted max-w-[200px] sm:max-w-xs">
+                                        <p class="truncate" title="<%= p.pekerjaan %>"><%= p.pekerjaan %></p>
+                                    </td>
+                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-center">
+                                        <% if (p.foto) { %>
+                                            <div class="inline-block relative cursor-pointer group" onclick="showProofPhoto('<%= p.foto %>', '<%= p.nama %>')">
+                                                <img src="<%= p.foto %>" class="w-10 h-10 object-cover rounded-lg border border-border shadow-sm group-hover:border-accent transition-colors" alt="Bukti">
+                                                <div class="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center transition-opacity">
+                                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                </div>
+                                            </div>
+                                        <% } else { %>
+                                            <span class="text-xs text-muted/60 font-medium">-</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mobile Card Section (Visible on mobile, hidden on desktop) -->
+        <div class="md:hidden space-y-4 animate-fadeInUp stagger-2">
+            <% if (presensi.length === 0) { %>
+                <div class="bg-card rounded-2xl border border-border p-8 text-center shadow-sm">
+                    <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <h3 class="font-display text-base font-bold text-fg mb-1">Tidak Ada Data</h3>
+                    <p class="text-muted text-xs">Data tidak ditemukan untuk bulan/filter ini.</p>
+                </div>
+            <% } else { %>
+                <% presensi.forEach(p => { %>
+                    <div class="bg-card rounded-2xl border border-border p-5 shadow-sm space-y-4 card-hover">
+                        <!-- Profile & Date Row -->
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-accentLight rounded-full flex items-center justify-center">
+                                    <span class="text-sm font-bold text-accent"><%= p.nama.charAt(0) %></span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-fg text-sm"><%= p.nama %></h4>
+                                    <span class="inline-flex items-center text-[11px] font-semibold text-accent"><%= p.formattedHari %></span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="block text-xs font-semibold text-muted"><%= p.formattedDate %></span>
+                            </div>
+                        </div>
+
+                        <!-- Time & Duration -->
+                        <div class="grid grid-cols-2 gap-4 bg-inputBg p-3 rounded-xl border border-border/40 text-center">
+                            <div>
+                                <span class="block text-muted mb-0.5 text-[9px] uppercase font-bold tracking-wider">Jam Kerja</span>
+                                <span class="font-semibold text-fg text-xs"><%= p.jamMulai %> - <%= p.jamAkhir %></span>
+                            </div>
+                            <div>
+                                <span class="block text-muted mb-0.5 text-[9px] uppercase font-bold tracking-wider">Durasi</span>
+                                <span class="font-semibold text-success text-xs"><%= p.totalJamStr %></span>
+                            </div>
+                        </div>
+
+                        <!-- Pekerjaan -->
+                        <div>
+                            <span class="block text-muted mb-1 text-[9px] uppercase font-bold tracking-wider">Deskripsi Pekerjaan</span>
+                            <div class="bg-inputBg/20 border border-border/60 p-3 rounded-xl flex flex-col gap-3">
+                                <% if (p.foto) { %>
+                                    <div class="relative w-full aspect-video rounded-lg overflow-hidden border border-border cursor-pointer group" onclick="showProofPhoto('<%= p.foto %>', '<%= p.nama %>', '<%= p.createdAt %>')">
+                                        <img src="<%= p.foto %>" class="w-full h-full object-cover" alt="Bukti Kehadiran">
+                                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span class="px-3 py-1.5 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-lg border border-white/35">Lihat Fullscreen</span>
+                                        </div>
+                                    </div>
+                                <% } %>
+                                <p class="text-xs text-fg whitespace-pre-line leading-relaxed"><%= p.pekerjaan %></p>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } %>
+        </div>
+    </main>
+
+    <script>
+        // --- FULLSCREEN PHOTO MODAL CODE ---
+        function showProofPhoto(fotoUrl, namaKaryawan, createdAt) {
+            if (!fotoUrl) return;
+            const photoModal = document.getElementById('photoModal');
+            const modalPhotoImg = document.getElementById('modalPhotoImg');
+            const modalPhotoCaption = document.getElementById('modalPhotoCaption');
+            const modalPhotoTimestamp = document.getElementById('modalPhotoTimestamp');
+            
+            modalPhotoImg.src = fotoUrl;
+            modalPhotoCaption.textContent = `Bukti Kehadiran: ${namaKaryawan}`;
+
+            if (createdAt) {
+                try {
+                    const d = new Date(createdAt);
+                    if (!isNaN(d.getTime())) {
+                        const optionsDate = { day: 'numeric', month: 'long', year: 'numeric' };
+                        const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: false };
+                        const formattedDate = d.toLocaleDateString('id-ID', optionsDate);
+                        const formattedTime = d.toLocaleTimeString('id-ID', optionsTime);
+                        modalPhotoTimestamp.textContent = `Dikirim: ${formattedDate} pukul ${formattedTime} WIB`;
+                        modalPhotoTimestamp.classList.remove('hidden');
+                    } else {
+                        modalPhotoTimestamp.textContent = '';
+                        modalPhotoTimestamp.classList.add('hidden');
+                    }
+                } catch (e) {
+                    modalPhotoTimestamp.textContent = '';
+                    modalPhotoTimestamp.classList.add('hidden');
+                }
+            } else {
+                modalPhotoTimestamp.textContent = '';
+                modalPhotoTimestamp.classList.add('hidden');
+            }
+
+            photoModal.classList.remove('hidden');
+            setTimeout(() => {
+                photoModal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function closePhotoModal() {
+            const photoModal = document.getElementById('photoModal');
+            const modalPhotoImg = document.getElementById('modalPhotoImg');
+            const modalPhotoTimestamp = document.getElementById('modalPhotoTimestamp');
+            
+            photoModal.classList.add('opacity-0');
+            setTimeout(() => {
+                photoModal.classList.add('hidden');
+                modalPhotoImg.src = '';
+                if (modalPhotoTimestamp) modalPhotoTimestamp.textContent = '';
+            }, 300);
+        }
+    </script>
+
+    <!-- Fullscreen Photo Modal -->
+    <style>
+        .animate-scaleUp {
+            animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes scaleUp {
+            from {
+                transform: scale(0.92) translateY(10px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+    <div id="photoModal" class="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300" onclick="closePhotoModal()">
+        <div class="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center animate-scaleUp" onclick="event.stopPropagation()">
+            <button type="button" onclick="closePhotoModal()" class="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors bg-white/10 p-2 rounded-full backdrop-blur-sm focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <img id="modalPhotoImg" class="max-w-full max-h-[75vh] object-contain rounded-2xl border border-white/10 shadow-2xl" src="" alt="Bukti Foto">
+            <div class="mt-4 flex flex-col items-center gap-1 px-5 py-3 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl text-center">
+                <p id="modalPhotoCaption" class="text-white/90 text-sm font-bold"></p>
+                <p id="modalPhotoTimestamp" class="text-white/60 text-xs font-semibold mt-0.5"></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

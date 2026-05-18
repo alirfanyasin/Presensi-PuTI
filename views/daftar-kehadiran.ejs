@@ -1,0 +1,516 @@
+<%- include('partials/header', { title: 'Daftar Kehadiran' }) %>
+<%- include('partials/nav', { path: '/daftar-kehadiran' }) %>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+        <div id="pageTable">
+            <!-- Page Header -->
+            <div class="mb-6 sm:mb-8 animate-fadeInUp stagger-1 text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center justify-center sm:justify-start gap-3 mb-2">
+                        <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg">Daftar Kehadiran</h2>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Live Monitoring
+                        </span>
+                    </div>
+                    <p class="text-sm sm:text-base text-muted">Riwayat presensi seluruh karyawan secara real-time</p>
+                </div>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="bg-card rounded-2xl border border-border p-4 sm:p-6 mb-6 animate-fadeInUp stagger-2 shadow-sm">
+                <form action="/daftar-kehadiran" method="GET" class="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                    <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
+                        <label for="filterNama" class="block text-sm font-semibold text-fg mb-2">Filter Nama</label>
+                        <select id="filterNama" name="filterNama" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                            <option value="all" <%= filterNama === 'all' ? 'selected' : '' %>>Semua Karyawan</option>
+                            <% karyawanList.forEach(k => { %>
+                                <option value="<%= k.id %>" <%= filterNama == k.id ? 'selected' : '' %>><%= k.nama %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
+                        <label for="filterTanggal" class="block text-sm font-semibold text-fg mb-2">Filter Tanggal</label>
+                        <input type="date" id="filterTanggal" name="filterTanggal" value="<%= filterTanggal %>" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        <button type="submit" class="flex-1 sm:flex-none px-4 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                            Filter
+                        </button>
+                        <a href="/daftar-kehadiran" class="flex-1 sm:flex-none px-4 py-2.5 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                            Reset
+                        </a>
+                        <a href="/export?filterNama=<%= filterNama %>&filterTanggal=<%= filterTanggal %>" class="flex-1 sm:flex-none px-4 py-2.5 bg-success text-white font-medium rounded-xl hover:bg-green-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Export CSV
+                        </a>
+                        <% if (filterNama !== 'all') { 
+                            let targetMonth = '';
+                            if (filterTanggal) {
+                                targetMonth = filterTanggal.substring(0, 7);
+                            } else {
+                                targetMonth = new Date().toISOString().substring(0, 7);
+                            }
+                        %>
+                            <a href="/export-pdf?month=<%= targetMonth %>&filterNama=<%= filterNama %>" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                Export PDF (A4)
+                            </a>
+                        <% } %>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Desktop Table Section (Visible on desktop, hidden on mobile) -->
+            <div class="hidden md:block bg-card rounded-2xl border border-border overflow-hidden animate-fadeInUp stagger-2 shadow-sm mb-6">
+                <div class="table-container overflow-x-auto">
+                    <table class="w-full min-w-[750px]">
+                        <thead class="bg-accentLighter border-b border-border">
+                            <tr>
+                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">No</th>
+                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Nama</th>
+                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Hari</th>
+                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tanggal</th>
+                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Waktu</th>
+                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Total Jam</th>
+                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Pekerjaan</th>
+                                <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Gambar</th>
+                                <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            <% if (presensi.length === 0) { %>
+                                <tr>
+                                    <td colspan="9" class="py-10 text-center">
+                                        <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                        </svg>
+                                        <h3 class="font-display text-base font-bold text-fg mb-1">Tidak Ada Data</h3>
+                                    </td>
+                                </tr>
+                            <% } else { %>
+                                <% presensi.forEach((p, i) => { %>
+                                    <tr class="hover:bg-accentLighter/30 transition-colors">
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted font-medium"><%= i + 1 %></td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 bg-accentLight rounded-full flex items-center justify-center flex-shrink-0">
+                                                    <span class="text-xs font-bold text-accent"><%= p.nama.charAt(0) %></span>
+                                                </div>
+                                                <span class="font-medium text-fg"><%= p.nama %></span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg font-medium text-accent"><%= p.formattedHari %></td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg"><%= p.formattedDate %></td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted"><%= p.jamMulai %> - <%= p.jamAkhir %></td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-success"><%= p.totalJamStr %></td>
+                                        <td class="px-4 sm:px-6 py-4 text-sm text-muted max-w-[200px] sm:max-w-xs">
+                                            <p class="truncate" title="<%= p.pekerjaan %>"><%= p.pekerjaan %></p>
+                                        </td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-center">
+                                            <% if (p.foto) { %>
+                                                <div class="inline-block relative cursor-pointer group" onclick="showProofPhoto('<%= p.foto %>', '<%= p.nama %>', '<%= p.createdAt %>')">
+                                                    <img src="<%= p.foto %>" class="w-10 h-10 object-cover rounded-lg border border-border shadow-sm group-hover:border-accent transition-colors" alt="Bukti">
+                                                    <div class="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center transition-opacity">
+                                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                <span class="text-xs text-muted/60 font-medium">-</span>
+                                            <% } %>
+                                        </td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-center">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <button onclick='openEditModal(<%- JSON.stringify(p) %>)' class="text-muted hover:text-blue-600 transition-colors p-1 rounded hover:bg-blue-50" title="Edit">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                </button>
+                                                <button onclick="openDeleteModal(<%= p.id %>)" class="text-muted hover:text-accent transition-colors p-1 rounded hover:bg-accentLight/50" title="Hapus">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile Card Section (Visible on mobile, hidden on desktop) -->
+            <div class="md:hidden space-y-4 animate-fadeInUp stagger-2 mb-6">
+                <% if (presensi.length === 0) { %>
+                    <div class="bg-card rounded-2xl border border-border p-8 text-center shadow-sm">
+                        <svg class="w-12 h-12 mx-auto text-border mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <h3 class="font-display text-base font-bold text-fg mb-1">Tidak Ada Data</h3>
+                        <p class="text-muted text-xs">Silakan lakukan presensi terlebih dahulu.</p>
+                    </div>
+                <% } else { %>
+                    <% presensi.forEach((p, i) => { %>
+                        <div class="bg-card rounded-2xl border border-border p-5 shadow-sm card-hover flex flex-col gap-4">
+                            <!-- Header: Avatar, Nama, dan Aksi -->
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-accentLight rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="text-sm font-bold text-accent"><%= p.nama.charAt(0) %></span>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-fg text-base"><%= p.nama %></h4>
+                                        <p class="text-xs text-muted"><%= p.formattedHari %>, <%= p.formattedDate %></p>
+                                    </div>
+                                </div>
+                                <!-- Actions -->
+                                <div class="flex items-center gap-1 bg-inputBg p-1 rounded-xl">
+                                    <button onclick='openEditModal(<%- JSON.stringify(p) %>)' class="text-muted hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-white active:scale-95" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    </button>
+                                    <button onclick="openDeleteModal(<%= p.id %>)" class="text-muted hover:text-accent transition-colors p-2 rounded-lg hover:bg-white active:scale-95" title="Hapus">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Details Grid -->
+                            <div class="grid grid-cols-2 gap-3 bg-inputBg/50 p-3 rounded-xl text-xs">
+                                <div>
+                                    <span class="block text-muted mb-0.5 text-[9px] uppercase font-bold tracking-wider">Waktu Kerja</span>
+                                    <span class="font-medium text-fg"><%= p.jamMulai %> - <%= p.jamAkhir %></span>
+                                </div>
+                                <div>
+                                    <span class="block text-muted mb-0.5 text-[9px] uppercase font-bold tracking-wider">Durasi</span>
+                                    <span class="font-semibold text-success"><%= p.totalJamStr %></span>
+                                </div>
+                            </div>
+
+                            <!-- Pekerjaan -->
+                            <div>
+                                <span class="block text-muted mb-1 text-[9px] uppercase font-bold tracking-wider">Deskripsi Pekerjaan</span>
+                                <div class="bg-inputBg/20 border border-border/60 p-3 rounded-xl flex flex-col gap-3">
+                                    <% if (p.foto) { %>
+                                        <div class="relative w-full aspect-video rounded-lg overflow-hidden border border-border cursor-pointer group" onclick="showProofPhoto('<%= p.foto %>', '<%= p.nama %>')">
+                                            <img src="<%= p.foto %>" class="w-full h-full object-cover" alt="Bukti Kehadiran">
+                                            <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span class="px-3 py-1.5 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-lg border border-white/35">Lihat Fullscreen</span>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                    <p class="text-xs text-fg whitespace-pre-line leading-relaxed"><%= p.pekerjaan %></p>
+                                </div>
+                            </div>
+                        </div>
+                    <% }) %>
+                <% } %>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
+        <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto" id="editModalContent">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-display text-xl font-bold text-fg">Edit Presensi</h3>
+                <button type="button" onclick="closeEditModal()" class="text-muted hover:text-fg transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form action="/edit" method="POST" class="space-y-4">
+                <input type="hidden" id="editId" name="id">
+                <input type="hidden" name="returnUrl" value="/daftar-kehadiran">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-1">Nama</label>
+                    <input type="text" id="editNama" disabled class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
+                </div>
+                <div>
+                    <label for="editTanggal" class="block text-sm font-semibold text-fg mb-1">Tanggal</label>
+                    <input type="date" id="editTanggal" name="tanggal" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                </div>
+                <div class="form-group hidden" id="editHariContainer">
+                    <label class="block text-sm font-semibold text-fg mb-1">Hari</label>
+                    <input type="text" id="editHari" readonly disabled class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="editJamMulai" class="block text-sm font-semibold text-fg mb-1">Jam Mulai</label>
+                        <input type="time" id="editJamMulai" name="jamMulai" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                    </div>
+                    <div>
+                        <label for="editJamAkhir" class="block text-sm font-semibold text-fg mb-1">Jam Akhir</label>
+                        <input type="time" id="editJamAkhir" name="jamAkhir" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                    </div>
+                </div>
+                <div class="form-group hidden" id="editTotalJamContainer">
+                    <label class="block text-sm font-semibold text-fg mb-1">Total Jam</label>
+                    <input type="text" id="editTotalJam" readonly disabled class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
+                </div>
+                <div>
+                    <label for="editPekerjaan" class="block text-sm font-semibold text-fg mb-1">Pekerjaan</label>
+                    <textarea id="editPekerjaan" name="pekerjaan" rows="3" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm resize-none"></textarea>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 px-4 py-2.5 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press">Batal</button>
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl transform scale-95 transition-transform duration-300" id="deleteModalContent">
+            <div class="text-center">
+                <div class="w-12 h-12 bg-accentLight rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <h3 class="font-display text-xl font-bold text-fg mb-2">Hapus Data?</h3>
+                <p class="text-muted text-sm mb-6">Data presensi yang dihapus tidak dapat dikembalikan.</p>
+                <form action="/delete" method="POST" class="flex gap-3">
+                    <input type="hidden" id="deleteId" name="id">
+                    <input type="hidden" name="returnUrl" value="/daftar-kehadiran">
+                    <button type="button" onclick="closeDeleteModal()" class="flex-1 px-4 py-2.5 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press">Batal</button>
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press">Hapus</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <% if (typeof success !== 'undefined') { %>
+        <div id="toast" class="toast fixed top-20 right-4 left-4 sm:left-auto sm:right-4 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 z-50 bg-success text-white show">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span class="text-sm sm:text-base"><%= success %></span>
+        </div>
+        <script>
+            setTimeout(() => document.getElementById('toast').classList.remove('show'), 3000);
+        </script>
+    <% } %>
+
+    <script>
+        const editModal = document.getElementById('editModal');
+        const editModalContent = document.getElementById('editModalContent');
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteModalContent = document.getElementById('deleteModalContent');
+
+        function openEditModal(data) {
+            document.getElementById('editId').value = data.id;
+            document.getElementById('editNama').value = data.nama;
+            document.getElementById('editTanggal').value = data.tanggal;
+            document.getElementById('editJamMulai').value = data.jamMulai;
+            document.getElementById('editJamAkhir').value = data.jamAkhir;
+            document.getElementById('editPekerjaan').value = data.pekerjaan;
+            
+            editModal.classList.remove('hidden');
+            setTimeout(() => {
+                editModal.classList.remove('opacity-0');
+                editModalContent.classList.remove('scale-95');
+                calculateHari();
+                validateEditTime();
+            }, 10);
+        }
+
+        function closeEditModal() {
+            editModal.classList.add('opacity-0');
+            editModalContent.classList.add('scale-95');
+            setTimeout(() => editModal.classList.add('hidden'), 200);
+        }
+
+        function openDeleteModal(id) {
+            document.getElementById('deleteId').value = id;
+            deleteModal.classList.remove('hidden');
+            setTimeout(() => {
+                deleteModal.classList.remove('opacity-0');
+                deleteModalContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeDeleteModal() {
+            deleteModal.classList.add('opacity-0');
+            deleteModalContent.classList.add('scale-95');
+            setTimeout(() => deleteModal.classList.add('hidden'), 200);
+        }
+
+        const jamMulai = document.getElementById('editJamMulai');
+        const jamAkhir = document.getElementById('editJamAkhir');
+        const editTanggal = document.getElementById('editTanggal');
+        const editHariContainer = document.getElementById('editHariContainer');
+        const editHari = document.getElementById('editHari');
+        const totalJamContainer = document.getElementById('editTotalJamContainer');
+        const editTotalJam = document.getElementById('editTotalJam');
+
+        const hariNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+        function calculateHari() {
+            if (editTanggal.value) {
+                const d = new Date(editTanggal.value);
+                if (!isNaN(d.getTime())) {
+                    editHari.value = hariNames[d.getDay()];
+                    editHariContainer.classList.remove('hidden');
+                } else {
+                    editHariContainer.classList.add('hidden');
+                }
+            } else {
+                editHariContainer.classList.add('hidden');
+            }
+        }
+
+        function validateEditTime() {
+            if (jamMulai.value && jamAkhir.value) {
+                if (jamAkhir.value <= jamMulai.value) {
+                    jamAkhir.setCustomValidity('Jam akhir harus lebih besar dari jam mulai');
+                    jamAkhir.reportValidity();
+                    totalJamContainer.classList.add('hidden');
+                } else {
+                    jamAkhir.setCustomValidity('');
+                    const [hM, mM] = jamMulai.value.split(':').map(Number);
+                    const [hA, mA] = jamAkhir.value.split(':').map(Number);
+                    const totalMins = (hA * 60 + mA) - (hM * 60 + mM);
+                    const hours = Math.floor(totalMins / 60);
+                    const mins = totalMins % 60;
+                    let text = '';
+                    if (hours > 0) text += hours + ' Jam ';
+                    if (mins > 0) text += mins + ' Menit';
+                    editTotalJam.value = text.trim();
+                    totalJamContainer.classList.remove('hidden');
+                }
+            } else {
+                jamAkhir.setCustomValidity('');
+                totalJamContainer.classList.add('hidden');
+            }
+        }
+        jamAkhir.addEventListener('change', validateEditTime);
+        jamMulai.addEventListener('change', validateEditTime);
+        editTanggal.addEventListener('change', calculateHari);
+
+        // --- LIVE MONITORING AUTO REFRESH (SWAP DOM SILENTLY) ---
+        function checkNewData() {
+            // Berhenti refresh jika modal edit atau delete sedang terbuka agar tidak mengganggu input user
+            const editModal = document.getElementById('editModal');
+            const deleteModal = document.getElementById('deleteModal');
+            const isModalOpen = (editModal && !editModal.classList.contains('hidden')) || 
+                                (deleteModal && !deleteModal.classList.contains('hidden'));
+            
+            if (isModalOpen) return;
+
+            const currentUrl = window.location.href;
+
+            fetch(currentUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error("Network response was not ok");
+                    return response.text();
+                })
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // 1. Update data Tabel Desktop
+                    const newTableBody = doc.querySelector('.table-container tbody');
+                    const oldTableBody = document.querySelector('.table-container tbody');
+                    if (newTableBody && oldTableBody && newTableBody.innerHTML !== oldTableBody.innerHTML) {
+                        oldTableBody.innerHTML = newTableBody.innerHTML;
+                        // Berikan efek highlight halus ke baris tabel baru
+                        oldTableBody.classList.add('bg-success/5');
+                        setTimeout(() => oldTableBody.classList.remove('bg-success/5'), 2000);
+                    }
+
+                    // 2. Update data Kartu Mobile
+                    const newMobileContainer = doc.querySelector('.md\\:hidden.space-y-4');
+                    const oldMobileContainer = document.querySelector('.md\\:hidden.space-y-4');
+                    if (newMobileContainer && oldMobileContainer && newMobileContainer.innerHTML !== oldMobileContainer.innerHTML) {
+                        oldMobileContainer.innerHTML = newMobileContainer.innerHTML;
+                        // Berikan efek highlight halus ke kartu mobile
+                        oldMobileContainer.classList.add('bg-success/5');
+                        setTimeout(() => oldMobileContainer.classList.remove('bg-success/5'), 2000);
+                    }
+                })
+                .catch(err => console.error("Error auto-refreshing dashboard:", err));
+        }
+
+        // Jalankan pengecekan otomatis setiap 5 detik
+        setInterval(checkNewData, 5000);
+
+        // --- FULLSCREEN PHOTO MODAL CODE ---
+        function showProofPhoto(fotoUrl, namaKaryawan, createdAt) {
+            if (!fotoUrl) return;
+            const photoModal = document.getElementById('photoModal');
+            const modalPhotoImg = document.getElementById('modalPhotoImg');
+            const modalPhotoCaption = document.getElementById('modalPhotoCaption');
+            const modalPhotoTimestamp = document.getElementById('modalPhotoTimestamp');
+            
+            modalPhotoImg.src = fotoUrl;
+            modalPhotoCaption.textContent = `Bukti Kehadiran: ${namaKaryawan}`;
+
+            if (createdAt) {
+                try {
+                    const d = new Date(createdAt);
+                    if (!isNaN(d.getTime())) {
+                        const optionsDate = { day: 'numeric', month: 'long', year: 'numeric' };
+                        const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: false };
+                        const formattedDate = d.toLocaleDateString('id-ID', optionsDate);
+                        const formattedTime = d.toLocaleTimeString('id-ID', optionsTime);
+                        modalPhotoTimestamp.textContent = `Dikirim: ${formattedDate} pukul ${formattedTime} WIB`;
+                        modalPhotoTimestamp.classList.remove('hidden');
+                    } else {
+                        modalPhotoTimestamp.textContent = '';
+                        modalPhotoTimestamp.classList.add('hidden');
+                    }
+                } catch (e) {
+                    modalPhotoTimestamp.textContent = '';
+                    modalPhotoTimestamp.classList.add('hidden');
+                }
+            } else {
+                modalPhotoTimestamp.textContent = '';
+                modalPhotoTimestamp.classList.add('hidden');
+            }
+
+            photoModal.classList.remove('hidden');
+            setTimeout(() => {
+                photoModal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function closePhotoModal() {
+            const photoModal = document.getElementById('photoModal');
+            const modalPhotoImg = document.getElementById('modalPhotoImg');
+            const modalPhotoTimestamp = document.getElementById('modalPhotoTimestamp');
+            
+            photoModal.classList.add('opacity-0');
+            setTimeout(() => {
+                photoModal.classList.add('hidden');
+                modalPhotoImg.src = '';
+                if (modalPhotoTimestamp) modalPhotoTimestamp.textContent = '';
+            }, 300);
+        }
+    </script>
+
+    <!-- Fullscreen Photo Modal -->
+    <style>
+        .animate-scaleUp {
+            animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes scaleUp {
+            from {
+                transform: scale(0.92) translateY(10px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+    <div id="photoModal" class="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300" onclick="closePhotoModal()">
+        <div class="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center animate-scaleUp" onclick="event.stopPropagation()">
+            <button type="button" onclick="closePhotoModal()" class="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors bg-white/10 p-2 rounded-full backdrop-blur-sm focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <img id="modalPhotoImg" class="max-w-full max-h-[75vh] object-contain rounded-2xl border border-white/10 shadow-2xl" src="" alt="Bukti Foto">
+            <div class="mt-4 flex flex-col items-center gap-1 px-5 py-3 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl text-center">
+                <p id="modalPhotoCaption" class="text-white/90 text-sm font-bold"></p>
+                <p id="modalPhotoTimestamp" class="text-white/60 text-xs font-semibold mt-0.5"></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
