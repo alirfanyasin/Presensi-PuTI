@@ -13,7 +13,7 @@
                 <!-- Form Card -->
                 <div class="lg:col-span-2 animate-fadeInUp stagger-2">
                     <div class="bg-card rounded-2xl border border-border p-5 sm:p-8 card-hover shadow-sm">
-                        <form action="/presensi" method="POST" class="space-y-5 sm:space-y-6">
+                        <form action="/presensi-masuk" method="POST" class="space-y-5 sm:space-y-6" id="presensiForm">
                             <!-- Nama Field -->
                             <div class="form-group">
                                 <label for="karyawanId" class="block text-sm font-semibold text-fg mb-2">Nama Karyawan</label>
@@ -35,82 +35,86 @@
                                 <input type="text" id="displayHari" readonly disabled class="w-full px-4 py-3 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
                             </div>
 
-                            <!-- Time Fields -->
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="form-group">
-                                    <label for="jamMulai" class="block text-sm font-semibold text-fg mb-2">Jam Mulai</label>
-                                    <input type="time" id="jamMulai" name="jamMulai" required class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors">
+                            <!-- Status Presensi Info (muncul setelah pilih nama) -->
+                            <div id="statusInfo" class="hidden">
+                                <!-- Loading -->
+                                <div id="statusLoading" class="hidden flex items-center gap-2 text-muted text-sm py-2">
+                                    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/></svg>
+                                    Memeriksa status presensi...
                                 </div>
-                                <div class="form-group">
-                                    <label for="jamAkhir" class="block text-sm font-semibold text-fg mb-2">Jam Akhir</label>
-                                    <input type="time" id="jamAkhir" name="jamAkhir" required class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors">
-                                </div>
-                            </div>
-                            <div class="form-group hidden" id="totalJamContainer">
-                                <label class="block text-sm font-semibold text-fg mb-2">Total Jam</label>
-                                <input type="text" id="displayTotalJam" readonly disabled class="w-full px-4 py-3 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
+                                <!-- Badge Status -->
+                                <div id="statusBadge" class="hidden"></div>
                             </div>
 
-                            <!-- Pekerjaan Field -->
-                            <div class="form-group">
-                                <label for="pekerjaan" class="block text-sm font-semibold text-fg mb-2">Deskripsi Pekerjaan</label>
-                                <textarea id="pekerjaan" name="pekerjaan" rows="4" required placeholder="Tuliskan pekerjaan yang telah dilakukan..." class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg placeholder-muted resize-none focus:border-accent transition-colors"></textarea>
+                            <!-- Info Jam Masuk Otomatis -->
+                            <div id="waktuMasukInfo" class="hidden">
+                                <label class="block text-sm font-semibold text-fg mb-2">Jam Masuk</label>
+                                <div class="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-xl">
+                                    <svg class="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <div>
+                                        <p class="text-sm font-semibold text-green-700">Waktu otomatis dicatat saat Simpan</p>
+                                        <p class="text-xs text-green-600 font-mono" id="clockDisplay">--:--:--</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Info Jam Pulang Otomatis -->
+                            <div id="waktuPulangInfo" class="hidden">
+                                <label class="block text-sm font-semibold text-fg mb-2">Jam Pulang</label>
+                                <div class="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+                                    <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <div>
+                                        <p class="text-sm font-semibold text-red-600">Waktu otomatis dicatat saat Simpan</p>
+                                        <p class="text-xs text-red-500 font-mono" id="clockDisplayPulang">--:--:--</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Deskripsi Pekerjaan (hanya Pulang) -->
+                            <div id="pekerjaanSection" class="hidden">
+                                <label for="pekerjaan" class="block text-sm font-semibold text-fg mb-2">Deskripsi Pekerjaan <span class="text-accent text-xs">(wajib)</span></label>
+                                <textarea id="pekerjaan" name="pekerjaan" rows="4" placeholder="Tuliskan pekerjaan yang telah dilakukan..." class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg placeholder-muted resize-none focus:border-accent transition-colors"></textarea>
                                 <p class="mt-1 text-xs text-muted"><span id="charCount">0</span>/500 karakter</p>
                             </div>
 
-                            <!-- Camera / Photo Proof Field -->
-                            <div class="form-group border border-border/60 bg-accentLighter/10 rounded-2xl p-4 sm:p-5">
-                                <label class="block text-sm font-semibold text-fg mb-2 flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                    Foto Bukti Kehadiran
-                                </label>
-                                <p class="text-xs text-muted mb-4">Ambil foto selfie/kehadiran Anda untuk melengkapi bukti pekerjaan.</p>
-
-                                <div class="relative overflow-hidden rounded-xl border border-border bg-inputBg aspect-video max-w-md mx-auto flex flex-col items-center justify-center transition-all duration-300" id="cameraContainer">
-                                    <!-- Camera Placeholder / Start Button -->
-                                    <div id="cameraPlaceholder" class="flex flex-col items-center justify-center p-6 text-center z-10 w-full h-full">
-                                        <div class="w-14 h-14 bg-accentLight/60 rounded-full flex items-center justify-center mb-3">
-                                            <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <!-- Foto Bukti Kehadiran (hanya Pulang) -->
+                            <div id="fotoSection" class="hidden">
+                                <div class="form-group border border-border/60 bg-accentLighter/10 rounded-2xl p-4 sm:p-5">
+                                    <label class="block text-sm font-semibold text-fg mb-2 flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                        Foto Bukti Kehadiran <span class="text-accent text-xs">(wajib)</span>
+                                    </label>
+                                    <p class="text-xs text-muted mb-4">Ambil foto selfie sebagai bukti kehadiran pulang Anda.</p>
+                                    <div class="relative overflow-hidden rounded-xl border border-border bg-inputBg aspect-video max-w-md mx-auto flex flex-col items-center justify-center transition-all duration-300" id="cameraContainer">
+                                        <div id="cameraPlaceholder" class="flex flex-col items-center justify-center p-6 text-center z-10 w-full h-full">
+                                            <div class="w-14 h-14 bg-accentLight/60 rounded-full flex items-center justify-center mb-3">
+                                                <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                            </div>
+                                            <button type="button" id="startCameraBtn" class="px-5 py-2.5 bg-accent text-white text-xs font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press">Aktifkan Kamera</button>
                                         </div>
-                                        <button type="button" id="startCameraBtn" class="px-5 py-2.5 bg-accent text-white text-xs font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press">
-                                            Aktifkan Kamera
+                                        <video id="video" autoplay playsinline class="hidden w-full h-full object-cover" style="transform: scaleX(-1);"></video>
+                                        <img id="photoPreview" class="hidden w-full h-full object-cover" alt="Pratinjau foto bukti">
+                                        <canvas id="canvas" class="hidden"></canvas>
+                                        <div id="cameraControls" class="absolute bottom-4 left-0 right-0 flex justify-center gap-3 hidden z-20">
+                                            <button type="button" id="captureBtn" class="w-12 h-12 bg-white text-accent rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-4 border-accent focus:outline-none" title="Ambil Foto">
+                                                <div class="w-6 h-6 bg-accent rounded-full"></div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="postCaptureControls" class="flex justify-center gap-3 mt-4 hidden">
+                                        <button type="button" id="retakeBtn" class="inline-flex items-center gap-1.5 px-4 py-2 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/></svg>
+                                            Foto Ulang
                                         </button>
                                     </div>
-
-                                    <!-- Video Element -->
-                                    <video id="video" autoplay playsinline class="hidden w-full h-full object-cover" style="transform: scaleX(-1);"></video>
-
-                                    <!-- Captured Image Preview -->
-                                    <img id="photoPreview" class="hidden w-full h-full object-cover" alt="Pratinjau foto bukti">
-
-                                    <!-- Canvas (Hidden) -->
-                                    <canvas id="canvas" class="hidden"></canvas>
-
-                                    <!-- Camera Overlay / Controls (on camera active) -->
-                                    <div id="cameraControls" class="absolute bottom-4 left-0 right-0 flex justify-center gap-3 hidden z-20">
-                                        <button type="button" id="captureBtn" class="w-12 h-12 bg-white text-accent rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-4 border-accent focus:outline-none" title="Ambil Foto">
-                                            <div class="w-6 h-6 bg-accent rounded-full"></div>
-                                        </button>
-                                    </div>
+                                    <input type="hidden" name="foto" id="fotoInput">
+                                    <input type="file" accept="image/*" capture="user" id="cameraFallbackInput" class="hidden">
                                 </div>
-
-                                <!-- Post-capture Controls -->
-                                <div id="postCaptureControls" class="flex justify-center gap-3 mt-4 hidden">
-                                    <button type="button" id="retakeBtn" class="inline-flex items-center gap-1.5 px-4 py-2 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/></svg>
-                                        Foto Ulang
-                                    </button>
-                                </div>
-
-                                <!-- Hidden Input to Store base64 data -->
-                                <input type="hidden" name="foto" id="fotoInput">
-                                <!-- Fallback Input for mobile camera / non-secure contexts -->
-                                <input type="file" accept="image/*" capture="user" id="cameraFallbackInput" class="hidden">
                             </div>
 
                             <!-- Submit Button -->
                             <div class="flex flex-col sm:flex-row gap-3 pt-2">
-                                <button type="submit" class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-all btn-press focus:ring-2 focus:ring-accent focus:ring-offset-2">
+                                <button type="submit" id="submitBtn" class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-all btn-press focus:ring-2 focus:ring-accent focus:ring-offset-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                     Simpan Presensi
                                 </button>
@@ -158,7 +162,13 @@
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-fg truncate"><%= p.nama %></p>
-                                            <p class="text-xs text-muted"><%= p.jamMulai %> - <%= p.jamAkhir %></p>
+                                            <p class="text-xs text-muted">
+                                                <% if (p.jamPulang) { %>
+                                                    <span class="text-green-600 font-semibold">✓ Masuk</span> <%= p.jamMasuk %> → <span class="text-accent font-semibold">Pulang</span> <%= p.jamPulang %>
+                                                <% } else { %>
+                                                    <span class="text-green-600 font-semibold">✓ Masuk</span> <%= p.jamMasuk %> · <span class="text-orange-500">Belum Pulang</span>
+                                                <% } %>
+                                            </p>
                                         </div>
                                     </div>
                                 <% }) %>
@@ -175,29 +185,56 @@
         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
         <span class="text-sm sm:text-base"><%= success %></span>
     </div>
-    <script>
-        setTimeout(() => document.getElementById('toast').classList.remove('show'), 3000);
-    </script>
+    <script>setTimeout(() => document.getElementById('toast').classList.remove('show'), 3500);</script>
+    <% } %>
+    <% if (typeof error !== 'undefined') { %>
+    <div id="toastError" class="toast fixed top-20 right-4 left-4 sm:left-auto sm:right-4 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 z-50 bg-accent text-white show">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="text-sm sm:text-base"><%= error %></span>
+    </div>
+    <script>setTimeout(() => document.getElementById('toastError').classList.remove('show'), 5000);</script>
     <% } %>
 
     <script>
-        const pekerjaanTextarea = document.getElementById('pekerjaan');
-        const charCount = document.getElementById('charCount');
-        const jamMulaiInput = document.getElementById('jamMulai');
-        const jamAkhirInput = document.getElementById('jamAkhir');
+        // --- AUTO STATUS DETECTION ---
+        const presensiForm = document.getElementById('presensiForm');
+        const karyawanSelect = document.getElementById('karyawanId');
         const tanggalInput = document.getElementById('tanggal');
         const hariContainer = document.getElementById('hariContainer');
         const displayHari = document.getElementById('displayHari');
-        const totalJamContainer = document.getElementById('totalJamContainer');
-        const displayTotalJam = document.getElementById('displayTotalJam');
-
+        const waktuMasukInfo = document.getElementById('waktuMasukInfo');
+        const waktuPulangInfo = document.getElementById('waktuPulangInfo');
+        const pekerjaanSection = document.getElementById('pekerjaanSection');
+        const fotoSection = document.getElementById('fotoSection');
+        const pekerjaanTextarea = document.getElementById('pekerjaan');
+        const charCount = document.getElementById('charCount');
+        const statusInfo = document.getElementById('statusInfo');
+        const statusLoading = document.getElementById('statusLoading');
+        const statusBadge = document.getElementById('statusBadge');
+        const submitBtn = document.getElementById('submitBtn');
         const hariNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+        let currentStatus = 'none'; // 'none' | 'sudah_masuk' | 'sudah_pulang'
 
-        pekerjaanTextarea.addEventListener('input', function() {
-            const length = this.value.length;
-            charCount.textContent = length;
-            charCount.classList.toggle('text-red-500', length > 500);
-        });
+        // Live clock
+        function updateClock() {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const t = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            const el1 = document.getElementById('clockDisplay');
+            const el2 = document.getElementById('clockDisplayPulang');
+            if (el1) el1.textContent = t;
+            if (el2) el2.textContent = t;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        if (pekerjaanTextarea) {
+            pekerjaanTextarea.addEventListener('input', function() {
+                const length = this.value.length;
+                if (charCount) charCount.textContent = length;
+                if (charCount) charCount.classList.toggle('text-red-500', length > 500);
+            });
+        }
 
         function calculateHari() {
             if (tanggalInput.value) {
@@ -205,47 +242,121 @@
                 if (!isNaN(d.getTime())) {
                     displayHari.value = hariNames[d.getDay()];
                     hariContainer.classList.remove('hidden');
-                } else {
-                    hariContainer.classList.add('hidden');
-                }
-            } else {
-                hariContainer.classList.add('hidden');
+                } else { hariContainer.classList.add('hidden'); }
+            } else { hariContainer.classList.add('hidden'); }
+        }
+
+        function showMasukMode() {
+            currentStatus = 'none';
+            presensiForm.action = '/presensi-masuk';
+            waktuMasukInfo.classList.remove('hidden');
+            waktuPulangInfo.classList.add('hidden');
+            pekerjaanSection.classList.add('hidden');
+            fotoSection.classList.add('hidden');
+            statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl">
+                <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                <span class="text-sm font-semibold text-green-700">Belum Presensi Masuk hari ini — silakan lanjutkan</span>
+            </div>`;
+            statusBadge.classList.remove('hidden');
+            if (submitBtn) submitBtn.textContent = '✓ Simpan Presensi Masuk';
+        }
+
+        function showPulangMode(jamMasuk) {
+            currentStatus = 'sudah_masuk';
+            presensiForm.action = '/presensi-pulang';
+            waktuMasukInfo.classList.add('hidden');
+            waktuPulangInfo.classList.remove('hidden');
+            pekerjaanSection.classList.remove('hidden');
+            fotoSection.classList.remove('hidden');
+            statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
+                <span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span>
+                <span class="text-sm font-semibold text-orange-700">Sudah Masuk pukul <strong>${jamMasuk}</strong> — silakan Presensi Pulang</span>
+            </div>`;
+            statusBadge.classList.remove('hidden');
+            if (submitBtn) submitBtn.textContent = '✓ Simpan Presensi Pulang';
+        }
+
+        function showSudahPulangMode(jamMasuk, jamPulang) {
+            currentStatus = 'sudah_pulang';
+            waktuMasukInfo.classList.add('hidden');
+            waktuPulangInfo.classList.add('hidden');
+            pekerjaanSection.classList.add('hidden');
+            fotoSection.classList.add('hidden');
+            statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+                <span class="text-sm font-semibold text-blue-700">Presensi hari ini selesai — Masuk ${jamMasuk} · Pulang ${jamPulang}</span>
+            </div>`;
+            statusBadge.classList.remove('hidden');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
+        }
+
+        function resetFormSections() {
+            waktuMasukInfo.classList.add('hidden');
+            waktuPulangInfo.classList.add('hidden');
+            pekerjaanSection.classList.add('hidden');
+            fotoSection.classList.add('hidden');
+            statusBadge.classList.add('hidden');
+            statusInfo.classList.add('hidden');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
+        }
+
+        async function checkStatus() {
+            const karyawanId = karyawanSelect.value;
+            const tanggal = tanggalInput.value;
+            if (!karyawanId || !tanggal) { resetFormSections(); return; }
+
+            statusInfo.classList.remove('hidden');
+            statusLoading.classList.remove('hidden');
+            statusBadge.classList.add('hidden');
+
+            try {
+                const res = await fetch(`/api/check-presensi?karyawanId=${karyawanId}&tanggal=${tanggal}`);
+                const data = await res.json();
+                statusLoading.classList.add('hidden');
+                if (data.status === 'none') showMasukMode();
+                else if (data.status === 'sudah_masuk') showPulangMode(data.jamMasuk);
+                else if (data.status === 'sudah_pulang') showSudahPulangMode(data.jamMasuk, data.jamPulang);
+            } catch (e) {
+                statusLoading.classList.add('hidden');
+                showMasukMode();
             }
         }
 
-        function validateTime() {
-            const jamMulai = jamMulaiInput.value;
-            const jamAkhir = jamAkhirInput.value;
-            if (jamMulai && jamAkhir) {
-                if (jamAkhir <= jamMulai) {
-                    jamAkhirInput.setCustomValidity('Jam akhir harus lebih besar dari jam mulai');
-                    jamAkhirInput.reportValidity();
-                    totalJamContainer.classList.add('hidden');
-                } else {
-                    jamAkhirInput.setCustomValidity('');
-                    const [hM, mM] = jamMulai.split(':').map(Number);
-                    const [hA, mA] = jamAkhir.split(':').map(Number);
-                    const totalMins = (hA * 60 + mA) - (hM * 60 + mM);
-                    const hours = Math.floor(totalMins / 60);
-                    const mins = totalMins % 60;
-                    let text = '';
-                    if (hours > 0) text += hours + ' Jam ';
-                    if (mins > 0) text += mins + ' Menit';
-                    displayTotalJam.value = text.trim();
-                    totalJamContainer.classList.remove('hidden');
-                }
-            } else {
-                jamAkhirInput.setCustomValidity('');
-                totalJamContainer.classList.add('hidden');
-            }
-        }
-
-        jamAkhirInput.addEventListener('change', validateTime);
-        jamMulaiInput.addEventListener('change', validateTime);
-        tanggalInput.addEventListener('change', calculateHari);
-
-        // Initialize day on page load
+        karyawanSelect.addEventListener('change', checkStatus);
+        tanggalInput.addEventListener('change', () => { calculateHari(); if (karyawanSelect.value) checkStatus(); });
         calculateHari();
+
+        // Submit validation
+        if (presensiForm) {
+            presensiForm.addEventListener('submit', function(e) {
+                // Blokir jika sudah pulang
+                if (currentStatus === 'sudah_pulang') {
+                    e.preventDefault();
+                    showAlertModal(
+                        'Presensi Sudah Selesai',
+                        'Anda sudah melakukan Presensi Masuk dan Presensi Pulang hari ini.\nSilakan kembali lagi besok!',
+                        'info'
+                    );
+                    return;
+                }
+                const isPulang = presensiForm.action.includes('/presensi-pulang');
+                if (isPulang) {
+                    const pekVal = pekerjaanTextarea ? pekerjaanTextarea.value.trim() : '';
+                    const fotoVal = document.getElementById('fotoInput') ? document.getElementById('fotoInput').value : '';
+                    if (!pekVal) {
+                        e.preventDefault();
+                        showAlertModal('Deskripsi Pekerjaan Kosong', 'Mohon isi deskripsi pekerjaan sebelum menyimpan Presensi Pulang.', 'warning');
+                        return;
+                    }
+                    if (!fotoVal) {
+                        e.preventDefault();
+                        showAlertModal('Foto Belum Diambil', 'Mohon ambil foto selfie sebagai bukti kehadiran sebelum menyimpan Presensi Pulang.', 'warning');
+                        return;
+                    }
+                }
+                stopCamera();
+            });
+        }
 
         // --- CAMERA INTEGRATION CODE ---
         const startCameraBtn = document.getElementById('startCameraBtn');
@@ -435,13 +546,77 @@
             });
         }
 
-        // Safe cleanup: stop camera if user submits form or leaves page
-        const presensiForm = document.querySelector('form');
-        if (presensiForm) {
-            presensiForm.addEventListener('submit', function() {
-                stopCamera();
-            });
+        // (stopCamera is called in submit handler above)
+    </script>
+
+    <!-- Custom Alert Modal -->
+    <div id="alertModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+        <div id="alertModalContent" class="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl transform scale-95 transition-transform duration-200">
+            <div class="flex flex-col items-center text-center gap-4">
+                <!-- Icon -->
+                <div id="alertModalIcon" class="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"></div>
+                <!-- Text -->
+                <div>
+                    <h3 id="alertModalTitle" class="font-display text-lg font-bold text-fg mb-1"></h3>
+                    <p id="alertModalMessage" class="text-sm text-muted whitespace-pre-line leading-relaxed"></p>
+                </div>
+                <!-- Button -->
+                <button type="button" onclick="closeAlertModal()" id="alertModalBtn" class="w-full px-6 py-2.5 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press text-sm">
+                    Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const alertModal = document.getElementById('alertModal');
+        const alertModalContent = document.getElementById('alertModalContent');
+
+        function showAlertModal(title, message, type = 'info') {
+            const iconEl = document.getElementById('alertModalIcon');
+            const titleEl = document.getElementById('alertModalTitle');
+            const msgEl = document.getElementById('alertModalMessage');
+            const btnEl = document.getElementById('alertModalBtn');
+
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+
+            const configs = {
+                info: {
+                    bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                    icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+                },
+                warning: {
+                    bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                    icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`
+                },
+                error: {
+                    bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                    icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+                }
+            };
+            const cfg = configs[type] || configs.info;
+            iconEl.className = `w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${cfg.bg} ${cfg.iconColor}`;
+            iconEl.innerHTML = cfg.icon;
+            btnEl.className = `w-full px-6 py-2.5 text-white font-semibold rounded-xl transition-colors btn-press text-sm ${cfg.btnClass}`;
+
+            alertModal.classList.remove('hidden');
+            setTimeout(() => {
+                alertModal.classList.remove('opacity-0');
+                alertModalContent.classList.remove('scale-95');
+            }, 10);
         }
+
+        function closeAlertModal() {
+            alertModal.classList.add('opacity-0');
+            alertModalContent.classList.add('scale-95');
+            setTimeout(() => alertModal.classList.add('hidden'), 200);
+        }
+
+        // Tutup modal jika klik backdrop
+        alertModal.addEventListener('click', function(e) {
+            if (e.target === alertModal) closeAlertModal();
+        });
     </script>
 </body>
 </html>

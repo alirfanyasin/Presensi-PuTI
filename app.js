@@ -49,9 +49,10 @@ app.get("/", async (req, res) => {
       if (err) throw err;
       let totalMinutes = 0;
       rows.forEach((p) => {
-        const [startH, startM] = p.jamMulai.split(":").map(Number);
-        const [endH, endM] = p.jamAkhir.split(":").map(Number);
-        totalMinutes += endH * 60 + endM - (startH * 60 + startM);
+        if (!p.jamMasuk || !p.jamPulang) return;
+        const parts = p.jamMasuk.split(":").map(Number);
+        const partsA = p.jamPulang.split(":").map(Number);
+        totalMinutes += partsA[0] * 60 + partsA[1] - (parts[0] * 60 + parts[1]);
       });
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
@@ -70,9 +71,17 @@ app.get("/", async (req, res) => {
             stats,
             recent,
             success:
-              req.query.success === "1"
-                ? "Presensi berhasil disimpan!"
-                : undefined,
+              req.query.success === "masuk"
+                ? "Presensi Masuk berhasil dicatat!"
+                : req.query.success === "pulang"
+                  ? "Presensi Pulang berhasil dicatat!"
+                  : undefined,
+            error:
+              req.query.error === "notfound"
+                ? "Data presensi masuk tidak ditemukan untuk hari ini. Pastikan Anda sudah melakukan Presensi Masuk."
+                : req.query.error === "sudah_pulang"
+                  ? "Anda sudah melakukan Presensi Pulang hari ini."
+                  : undefined,
           });
         },
       );
@@ -83,42 +92,84 @@ app.get("/", async (req, res) => {
   }
 });
 
-// Route: Save Presensi
-app.post("/presensi", (req, res) => {
-  const { karyawanId, tanggal, jamMulai, jamAkhir, pekerjaan, foto } = req.body;
-  const createdAt = new Date().toISOString();
+// API: Check apakah karyawan sudah masuk hari ini (untuk menentukan form yang ditampilkan)
+app.get("/api/check-presensi", (req, res) => {
+  const { karyawanId, tanggal } = req.query;
+  if (!karyawanId || !tanggal) return res.json({ status: "none" });
+  db.get(
+    "SELECT id, jamMasuk, jamPulang FROM presensi WHERE karyawanId = ? AND tanggal = ? ORDER BY id DESC LIMIT 1",
+    [karyawanId, tanggal],
+    (err, row) => {
+      if (err) return res.json({ status: "none" });
+      if (!row) return res.json({ status: "none" });
+      if (row.jamPulang) return res.json({ status: "sudah_pulang", jamMasuk: row.jamMasuk, jamPulang: row.jamPulang });
+      return res.json({ status: "sudah_masuk", jamMasuk: row.jamMasuk });
+    }
+  );
+});
 
+// Route: Presensi Masuk (INSERT new record, time auto from server)
+app.post("/presensi-masuk", (req, res) => {
+  const { karyawanId, tanggal } = req.body;
+  const now = new Date();
+  const createdAt = now.toISOString();
+  const pad = (n) => String(n).padStart(2, "0");
+  const jamMasuk = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const hari = moment(tanggal).locale("id").format("dddd");
-  const [hM, mM] = jamMulai.split(":").map(Number);
-  const [hA, mA] = jamAkhir.split(":").map(Number);
-  const totalMins = hA * 60 + mA - (hM * 60 + mM);
-  const hours = Math.floor(totalMins / 60);
-  const mins = totalMins % 60;
-  let totalJamStr = "";
-  if (hours > 0) totalJamStr += `${hours} Jam `;
-  if (mins > 0) totalJamStr += `${mins} Menit`;
-  if (!totalJamStr) totalJamStr = "0 Menit";
-  const totalJam = totalJamStr.trim();
 
   db.run(
-    "INSERT INTO presensi (karyawanId, tanggal, jamMulai, jamAkhir, pekerjaan, createdAt, hari, totalJam, foto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [
-      karyawanId,
-      tanggal,
-      jamMulai,
-      jamAkhir,
-      pekerjaan,
-      createdAt,
-      hari,
-      totalJam,
-      foto || null,
-    ],
+    "INSERT INTO presensi (karyawanId, tanggal, jamMasuk, jamPulang, pekerjaan, createdAt, updatedAt, hari, totalJam, foto) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, NULL, NULL)",
+    [karyawanId, tanggal, jamMasuk, createdAt, createdAt, hari],
     (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send("Error saving data");
+      if (err) { console.error(err); return res.status(500).send("Error saving data"); }
+      res.redirect("/?success=masuk");
+    },
+  );
+});
+
+// Route: Presensi Pulang (UPDATE existing masuk record)
+app.post("/presensi-pulang", (req, res) => {
+  const { karyawanId, tanggal, pekerjaan, foto } = req.body;
+  const now = new Date();
+  const updatedAt = now.toISOString();
+  const pad = (n) => String(n).padStart(2, "0");
+  const jamPulang = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+  // Find existing masuk record for this karyawan+tanggal that hasn't checked out
+  db.get(
+    "SELECT * FROM presensi WHERE karyawanId = ? AND tanggal = ? AND jamPulang IS NULL ORDER BY id DESC LIMIT 1",
+    [karyawanId, tanggal],
+    (err, existing) => {
+      if (err) { console.error(err); return res.status(500).send("Error"); }
+      if (!existing) {
+        // Check if already checked out
+        db.get("SELECT id FROM presensi WHERE karyawanId = ? AND tanggal = ? AND jamPulang IS NOT NULL LIMIT 1", [karyawanId, tanggal], (e, row) => {
+          return res.redirect(row ? "/?error=sudah_pulang" : "/?error=notfound");
+        });
+        return;
       }
-      res.redirect("/?success=1");
+
+      // Calculate duration (HH:MM:SS format)
+      const [hM, mM] = existing.jamMasuk.split(":").map(Number);
+      const [hA, mA] = jamPulang.split(":").map(Number);
+      const totalMins = hA * 60 + mA - (hM * 60 + mM);
+      let totalJamStr = "";
+      if (totalMins > 0) {
+        const h = Math.floor(totalMins / 60);
+        const m = totalMins % 60;
+        if (h > 0) totalJamStr += `${h} Jam `;
+        if (m > 0) totalJamStr += `${m} Menit`;
+      }
+      if (!totalJamStr) totalJamStr = "0 Menit";
+
+      db.run(
+        "UPDATE presensi SET jamPulang = ?, pekerjaan = ?, foto = ?, totalJam = ?, updatedAt = ? WHERE id = ?",
+        [jamPulang, pekerjaan || "", foto || null, totalJamStr.trim(), updatedAt, existing.id],
+        (err) => {
+          if (err) { console.error(err); return res.status(500).send("Error"); }
+          res.redirect("/?success=pulang");
+        },
+      );
     },
   );
 });
@@ -175,11 +226,12 @@ app.get("/daftar-kehadiran", async (req, res) => {
 
 // Route: Edit Data
 app.post("/edit", (req, res) => {
-  const { id, tanggal, jamMulai, jamAkhir, pekerjaan, returnUrl } = req.body;
+  const { id, tanggal, jamMasuk, jamPulang, pekerjaan, returnUrl } = req.body;
+  const updatedAt = new Date().toISOString();
 
   const hari = moment(tanggal).locale("id").format("dddd");
-  const [hM, mM] = jamMulai.split(":").map(Number);
-  const [hA, mA] = jamAkhir.split(":").map(Number);
+  const [hM, mM] = jamMasuk.split(":").map(Number);
+  const [hA, mA] = jamPulang.split(":").map(Number);
   const totalMins = hA * 60 + mA - (hM * 60 + mM);
   const hours = Math.floor(totalMins / 60);
   const mins = totalMins % 60;
@@ -190,8 +242,8 @@ app.post("/edit", (req, res) => {
   const totalJam = totalJamStr.trim();
 
   db.run(
-    "UPDATE presensi SET tanggal = ?, jamMulai = ?, jamAkhir = ?, pekerjaan = ?, hari = ?, totalJam = ? WHERE id = ?",
-    [tanggal, jamMulai, jamAkhir, pekerjaan, hari, totalJam, id],
+    "UPDATE presensi SET tanggal = ?, jamMasuk = ?, jamPulang = ?, pekerjaan = ?, hari = ?, totalJam = ?, updatedAt = ? WHERE id = ?",
+    [tanggal, jamMasuk, jamPulang, pekerjaan, hari, totalJam, updatedAt, id],
     (err) => {
       if (err) console.error(err);
       res.redirect(`${returnUrl || "/daftar-kehadiran"}?success=edited`);
@@ -326,16 +378,16 @@ app.get("/export", async (req, res) => {
         "No",
         "Nama Karyawan",
         "Tanggal",
-        "Jam Mulai",
-        "Jam Akhir",
+        "Jam Masuk",
+        "Jam Pulang",
         "Deskripsi Pekerjaan",
       ];
       const csvRows = rows.map((p, i) => [
         i + 1,
         `"${p.nama}"`,
         p.tanggal,
-        p.jamMulai,
-        p.jamAkhir,
+        p.jamMasuk,
+        p.jamPulang,
         `"${p.pekerjaan.replace(/"/g, '""')}"`,
       ]);
 
@@ -396,11 +448,11 @@ app.get("/export-pdf", async (req, res) => {
 
         let totalMinutes = 0;
         const presensi = rows.map((r) => {
-          const [hM, mM] = r.jamMulai.split(":").map(Number);
-          const [hA, mA] = r.jamAkhir.split(":").map(Number);
+          const [hM, mM] = r.jamMasuk.split(":").map(Number);
+          const [hA, mA] = r.jamPulang.split(":").map(Number);
           totalMinutes += hA * 60 + mA - (hM * 60 + mM);
 
-          const pukulStr = `${r.jamMulai.replace(":", ".")} s/d ${r.jamAkhir.replace(":", ".")}`;
+          const pukulStr = `${r.jamMasuk.replace(":", ".")} s/d ${r.jamPulang.replace(":", ".")}`;
 
           return {
             ...r,
