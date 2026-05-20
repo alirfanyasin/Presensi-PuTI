@@ -67,10 +67,41 @@ const db = new sqlite3.Database(dbPath, (err) => {
                             if (!columnNames.includes('foto')) {
                                 db.run("ALTER TABLE presensi ADD COLUMN foto TEXT");
                             }
+                            if (!columnNames.includes('menitTambahan')) {
+                                db.run("ALTER TABLE presensi ADD COLUMN menitTambahan INTEGER DEFAULT 0");
+                            }
                         }
                     });
                 }
             });
+
+            db.run(`CREATE TABLE IF NOT EXISTS overtime (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                karyawanId INTEGER NOT NULL,
+                presensiId INTEGER,
+                tanggal TEXT NOT NULL,
+                durasiMenit INTEGER NOT NULL,
+                sisaMenit INTEGER NOT NULL,
+                keterangan TEXT,
+                createdAt TEXT NOT NULL,
+                updatedAt TEXT,
+                FOREIGN KEY (karyawanId) REFERENCES karyawan (id),
+                FOREIGN KEY (presensiId) REFERENCES presensi (id)
+            )`);
+            
+            db.run(`CREATE TABLE IF NOT EXISTS overtime_transfer (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                karyawanId INTEGER NOT NULL,
+                overtimeId INTEGER NOT NULL,
+                presensiId INTEGER NOT NULL,
+                tanggalTransfer TEXT NOT NULL,
+                durasiMenit INTEGER NOT NULL,
+                keterangan TEXT,
+                createdAt TEXT NOT NULL,
+                FOREIGN KEY (karyawanId) REFERENCES karyawan (id),
+                FOREIGN KEY (overtimeId) REFERENCES overtime (id),
+                FOREIGN KEY (presensiId) REFERENCES presensi (id)
+            )`);
         });
     }
 });

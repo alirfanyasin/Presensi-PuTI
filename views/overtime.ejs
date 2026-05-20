@@ -1,0 +1,738 @@
+<%- include('partials/header', { title: 'Overtime & Lembur' }) %>
+    <%- include('partials/nav', { path: '/overtime' }) %>
+
+        <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+            <!-- Page Header -->
+            <div
+                class="mb-6 sm:mb-8 animate-fadeInUp stagger-1 text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center justify-center sm:justify-start gap-3 mb-2">
+                        <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg">Overtime & Lembur</h2>
+                        <span
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-accentLight text-accent">
+                            <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                            Pengelolaan Jam Kerja
+                        </span>
+                    </div>
+                    <p class="text-sm sm:text-base text-muted">Kelola kelebihan jam kerja harian dan alokasikan untuk
+                        melengkapi hari kerja lainnya.</p>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-fadeInUp stagger-2">
+                <!-- Stat Card 1 -->
+                <div class="bg-card rounded-2xl border border-border p-6 shadow-sm flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 bg-accentLight rounded-xl flex items-center justify-center text-accent flex-shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-muted uppercase tracking-wider mb-0.5">Total
+                            Akumulasi Lembur</span>
+                        <span class="text-2xl font-bold text-fg">
+                            <%= stats.totalJamGenerated %> Jam
+                        </span>
+                        <span class="block text-[11px] text-muted mt-0.5">Total <%= stats.totalMenit %> menit
+                                terdeteksi</span>
+                    </div>
+                </div>
+
+                <!-- Stat Card 2 -->
+                <div class="bg-card rounded-2xl border border-border p-6 shadow-sm flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600 flex-shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-muted uppercase tracking-wider mb-0.5">Saldo
+                            Lembur Aktif</span>
+                        <span class="text-2xl font-bold text-green-600">
+                            <%= stats.totalJamSisa %> Jam
+                        </span>
+                        <span class="block text-[11px] text-muted mt-0.5">Tersedia <%= stats.totalSisa %> menit untuk
+                                ditransfer</span>
+                    </div>
+                </div>
+
+                <!-- Stat Card 3 -->
+                <div class="bg-card rounded-2xl border border-border p-6 shadow-sm flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 flex-shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-muted uppercase tracking-wider mb-0.5">Lembur
+                            Dialokasikan</span>
+                        <span class="text-2xl font-bold text-indigo-600">
+                            <%= stats.totalJamTerpakai %> Jam
+                        </span>
+                        <span class="block text-[11px] text-muted mt-0.5">Sebanyak <%= stats.totalTerpakai %> menit
+                                dialihkan</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Tabs/Sections -->
+            <div class="space-y-8 animate-fadeInUp stagger-3">
+
+                <!-- Overtime Records Section -->
+                <div class="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                    <div class="px-6 py-5 border-b border-border bg-accentLighter/10 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-fg">Daftar Saldo Lembur Karyawan</h3>
+                            <p class="text-xs text-muted">Kelebihan waktu di atas 8 jam per hari yang tercatat otomatis
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="table-container overflow-x-auto">
+                        <table class="w-full min-w-[800px]">
+                            <thead class="bg-accentLighter border-b border-border">
+                                <tr>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        No</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Nama Karyawan</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Tanggal Lembur</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Durasi Lembur</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Saldo Tersisa</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Status</th>
+                                    <th
+                                        class="px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">
+                                        Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <% if (overtimeRecords.length===0) { %>
+                                    <tr>
+                                        <td colspan="7" class="py-10 text-center text-muted">
+                                            <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none"
+                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <h4 class="font-bold text-fg mb-1">Belum Ada Catatan Lembur</h4>
+                                            <p class="text-xs">Data lembur akan terbuat secara otomatis jika durasi
+                                                presensi melebihi 8 jam.</p>
+                                        </td>
+                                    </tr>
+                                    <% } else { %>
+                                        <% overtimeRecords.forEach((r, i)=> { %>
+                                            <tr class="hover:bg-accentLighter/10 transition-colors">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-muted font-medium">
+                                                    <%= i + 1 %>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center gap-3">
+                                                        <div
+                                                            class="w-8 h-8 bg-accentLight rounded-full flex items-center justify-center flex-shrink-0">
+                                                            <span class="text-xs font-bold text-accent">
+                                                                <%= r.nama.charAt(0) %>
+                                                            </span>
+                                                        </div>
+                                                        <span class="font-medium text-fg">
+                                                            <%= r.nama %>
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-fg">
+                                                    <%= moment(r.tanggal).locale('id').format('DD MMMM YYYY') %>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-muted font-medium">
+                                                    <%= Math.floor(r.durasiMenit / 60) %> Jam <%= r.durasiMenit % 60 %>
+                                                            Menit
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-fg">
+                                                    <%= Math.floor(r.sisaMenit / 60) %> Jam <%= r.sisaMenit % 60 %>
+                                                            Menit
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <% if (r.sisaMenit===0) { %>
+                                                        <span
+                                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                            Terpakai Semua
+                                                        </span>
+                                                        <% } else if (r.sisaMenit===r.durasiMenit) { %>
+                                                            <span
+                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                Tersedia Penuh
+                                                            </span>
+                                                            <% } else { %>
+                                                                <span
+                                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                                                    Terpakai Sebagian
+                                                                </span>
+                                                                <% } %>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                    <div class="flex items-center justify-center gap-2">
+                                                        <% if (r.sisaMenit> 0) { %>
+                                                            <button data-record='<%= JSON.stringify(r) %>'
+                                                                onclick="openTransferModal(this)"
+                                                                class="px-3 py-1.5 bg-accent text-white font-semibold rounded-lg hover:bg-accentHover transition-colors btn-press text-xs flex items-center gap-1">
+                                                                <svg class="w-3.5 h-3.5" fill="none"
+                                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                        stroke-width="2"
+                                                                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                                                </svg>
+                                                                Alihkan Saldo
+                                                            </button>
+                                                            <% } else { %>
+                                                                <button disabled
+                                                                    class="px-3 py-1.5 bg-gray-100 text-gray-400 font-semibold rounded-lg text-xs cursor-not-allowed flex items-center gap-1">
+                                                                    Terpakai Habis
+                                                                </button>
+                                                                <% } %>
+                                                                    <button data-record='<%= JSON.stringify(r) %>'
+                                                                        onclick="openEditModal(this)"
+                                                                        class="p-1.5 text-muted hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                        title="Edit Saldo Manual">
+                                                                        <svg class="w-4 h-4" fill="none"
+                                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round"
+                                                                                stroke-linejoin="round" stroke-width="2"
+                                                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                        </svg>
+                                                                    </button>
+                                                                    <button onclick="openDeleteModal(<%= r.id %>)"
+                                                                        class="p-1.5 text-muted hover:text-accent hover:bg-accentLight rounded-lg transition-colors"
+                                                                        title="Hapus Data">
+                                                                        <svg class="w-4 h-4" fill="none"
+                                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round"
+                                                                                stroke-linejoin="round" stroke-width="2"
+                                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                        </svg>
+                                                                    </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Transfer History Section -->
+                <div class="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                    <div class="px-6 py-5 border-b border-border bg-accentLighter/10 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-display text-lg font-bold text-fg">Riwayat Alokasi & Pengalihan Lembur</h3>
+                            <p class="text-xs text-muted">Jejak audit alokasi jam lembur karyawan ke presensi hari lain
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="table-container overflow-x-auto">
+                        <table class="w-full min-w-[800px]">
+                            <thead class="bg-accentLighter border-b border-border">
+                                <tr>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        No</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Nama Karyawan</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Tanggal Transaksi</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Lembur Sumber</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Target Presensi</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Jumlah Dialihkan</th>
+                                    <th
+                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
+                                        Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <% if (transferHistory.length===0) { %>
+                                    <tr>
+                                        <td colspan="7" class="py-8 text-center text-muted text-sm">
+                                            Belum ada transaksi alokasi yang tercatat.
+                                        </td>
+                                    </tr>
+                                    <% } else { %>
+                                        <% transferHistory.forEach((h, i)=> { %>
+                                            <tr class="hover:bg-accentLighter/10 transition-colors">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-muted font-medium">
+                                                    <%= i + 1 %>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-fg">
+                                                    <%= h.namaKaryawan %>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-muted">
+                                                    <%= moment(h.createdAt).locale('id').format('DD MMM YYYY HH:mm') %>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-fg">
+                                                    <%= moment(h.tanggalSumber).locale('id').format('DD MMM YYYY') %>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-fg">
+                                                    <%= moment(h.tanggalTarget).locale('id').format('DD MMM YYYY') %>
+                                                </td>
+                                                <td
+                                                    class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">
+                                                    <%= Math.floor(h.durasiMenit / 60) %> Jam <%= h.durasiMenit % 60 %>
+                                                            Menit
+                                                </td>
+                                                <td class="px-6 py-4 text-sm text-muted max-w-[250px] truncate"
+                                                    title="<%= h.keterangan %>">
+                                                    <%= h.keterangan %>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Modal 1: Transfer Overtime -->
+        <div id="transferModal"
+            class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
+            <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto"
+                id="transferModalContent">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="font-display text-xl font-bold text-fg flex items-center gap-2">
+                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                        Alokasikan Saldo Lembur
+                    </h3>
+                    <button type="button" onclick="closeTransferModal()"
+                        class="text-muted hover:text-fg transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form action="/overtime/transfer" method="POST" class="space-y-4">
+                    <input type="hidden" id="transOvertimeId" name="overtimeId">
+
+                    <div>
+                        <label class="block text-sm font-semibold text-fg mb-1">Karyawan</label>
+                        <input type="text" id="transNamaKaryawan" disabled
+                            class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-fg mb-1">Sumber Kelebihan Lembur</label>
+                        <div
+                            class="bg-accentLighter/30 border border-accentLight/60 rounded-xl p-3 text-xs text-fg space-y-1">
+                            <p>Tanggal: <span class="font-semibold" id="transTanggalLembur"></span></p>
+                            <p>Saldo Tersedia: <span class="font-semibold text-accent" id="transSaldoTersedia"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="transPresensiId" class="block text-sm font-semibold text-fg mb-1">Presensi Hari
+                            Target (Kurang dari 8 Jam)</label>
+                        <select id="transPresensiId" name="presensiId" required
+                            class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm"
+                            onchange="onTargetDateChange(this)">
+                            <option value="" disabled selected>-- Pilih Hari Target --</option>
+                        </select>
+                        <p id="noTargetMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Karyawan ini tidak
+                            memiliki hari kerja di bawah 8 jam yang perlu ditransfer.</p>
+                    </div>
+
+                    <div id="transferCalculationContainer"
+                        class="hidden bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-fg space-y-1.5">
+                        <p>Durasi Asli Target: <span class="font-semibold" id="calcTargetOriginal"></span></p>
+                        <p>Saldo Tambahan Saat Ini: <span class="font-semibold" id="calcTargetTambahan"></span></p>
+                        <p>Kekurangan Jam: <span class="font-semibold text-indigo-600" id="calcKekurangan"></span></p>
+                    </div>
+
+                    <div>
+                        <label for="transDurasiMenitTransfer" class="block text-sm font-semibold text-fg mb-1">Jumlah
+                            Menit yang Dialihkan</label>
+                        <div class="relative flex items-center">
+                            <input type="number" id="transDurasiMenitTransfer" name="durasiMenitTransfer" min="1"
+                                required
+                                class="w-full pl-4 pr-16 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm"
+                                oninput="onTransferMinutesInput(this)">
+                            <span class="absolute right-4 text-xs text-muted font-semibold">Menit</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-muted mt-1 px-1">
+                            <span id="transDurasiJamText"></span>
+                            <button type="button" onclick="autoFillMaxTransfer()"
+                                class="text-accent hover:underline font-bold" id="btnSetMax">Set Maksimal</button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeTransferModal()"
+                            class="flex-1 px-4 py-2.5 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press">Batal</button>
+                        <button type="submit" id="btnSubmitTransfer"
+                            class="flex-1 px-4 py-2.5 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press">Proses
+                            Alokasi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal 2: Edit Overtime -->
+        <div id="editOtModal"
+            class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl transform scale-95 transition-transform duration-300"
+                id="editOtModalContent">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="font-display text-lg font-bold text-fg">Sesuaikan Saldo Manual</h3>
+                    <button type="button" onclick="closeEditModal()" class="text-muted hover:text-fg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form action="/overtime/edit" method="POST" class="space-y-4">
+                    <input type="hidden" id="editOtId" name="id">
+
+                    <div>
+                        <label class="block text-sm font-semibold text-fg mb-0.5">Karyawan / Tanggal</label>
+                        <input type="text" id="editOtKaryawanInfo" disabled
+                            class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-xs cursor-not-allowed">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-fg mb-0.5">Durasi Lembur Asli</label>
+                        <input type="text" id="editOtDurasiAsli" disabled
+                            class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-xs cursor-not-allowed">
+                    </div>
+
+                    <div>
+                        <label for="editOtSisaMenit" class="block text-sm font-semibold text-fg mb-1">Saldo Tersisa
+                            Baru</label>
+                        <div class="relative flex items-center">
+                            <input type="number" id="editOtSisaMenit" name="sisaMenit" min="0" required
+                                class="w-full pl-4 pr-16 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm"
+                                oninput="onEditMinutesInput(this)">
+                            <span class="absolute right-4 text-xs text-muted font-semibold">Menit</span>
+                        </div>
+                        <span class="block text-[10px] text-muted mt-1 px-1" id="editOtSisaJamText"></span>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeEditModal()"
+                            class="flex-1 px-4 py-2 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press text-sm">Batal</button>
+                        <button type="submit"
+                            class="flex-1 px-4 py-2 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press text-sm">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal 3: Delete Overtime Confirmation -->
+        <div id="deleteOtModal"
+            class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+            <div class="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl transform scale-95 transition-transform duration-300"
+                id="deleteOtModalContent">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-accentLight rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-fg mb-2">Hapus Catatan Lembur?</h3>
+                    <p class="text-muted text-xs mb-5 leading-relaxed">Catatan lembur dan riwayat transfer yang berelasi
+                        akan dihapus. Presensi target yang menerima transfer lembur ini juga otomatis akan direvert.</p>
+                    <form action="/overtime/delete" method="POST" class="flex gap-3">
+                        <input type="hidden" id="deleteOtId" name="id">
+                        <button type="button" onclick="closeDeleteModal()"
+                            class="flex-1 px-4 py-2 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press text-sm">Batal</button>
+                        <button type="submit"
+                            class="flex-1 px-4 py-2 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press text-sm">Hapus</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts / Toast -->
+        <% if (typeof success !=='undefined' && success) { %>
+            <div id="toast"
+                class="toast fixed top-20 right-4 left-4 sm:left-auto sm:right-4 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 z-50 bg-success text-white show">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="text-sm">
+                    <%= success %>
+                </span>
+            </div>
+            <script>
+                setTimeout(() => document.getElementById('toast').classList.remove('show'), 3000);
+            </script>
+            <% } %>
+
+                <% if (typeof error !=='undefined' && error) { %>
+                    <div id="toastError"
+                        class="toast fixed top-20 right-4 left-4 sm:left-auto sm:right-4 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 z-50 bg-accent text-white show">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span class="text-sm">
+                            <%= error %>
+                        </span>
+                    </div>
+                    <script>
+                        setTimeout(() => document.getElementById('toastError').classList.remove('show'), 4000);
+                    </script>
+                    <% } %>
+
+                        <script>
+                            // Load underHoursPresences from backend EJS context
+                            const rawUnderHours = `<%- JSON.stringify(underHoursPresences) %>`;
+                            const underHoursList = JSON.parse(rawUnderHours);
+
+                            // Modals DOM
+                            const transferModal = document.getElementById('transferModal');
+                            const transferModalContent = document.getElementById('transferModalContent');
+                            const editOtModal = document.getElementById('editOtModal');
+                            const editOtModalContent = document.getElementById('editOtModalContent');
+                            const deleteOtModal = document.getElementById('deleteOtModal');
+                            const deleteOtModalContent = document.getElementById('deleteOtModalContent');
+
+                            // Values used in calculation
+                            let activeSisaMenit = 0;
+                            let activeMaxNeededMins = 0;
+
+                            // Helper to format minutes as text (e.g. "1 Jam 30 Menit")
+                            function formatMinutes(minutes) {
+                                if (minutes <= 0) return "0 Menit";
+                                const h = Math.floor(minutes / 60);
+                                const m = minutes % 60;
+                                let str = "";
+                                if (h > 0) str += h + " Jam ";
+                                if (m > 0) str += m + " Menit";
+                                return str.trim();
+                            }
+
+                            // Modal 1: Transfer
+                            function openTransferModal(element) {
+                                const record = JSON.parse(element.getAttribute('data-record'));
+
+                                activeSisaMenit = record.sisaMenit;
+                                document.getElementById('transOvertimeId').value = record.id;
+                                document.getElementById('transNamaKaryawan').value = record.nama;
+                                document.getElementById('transTanggalLembur').textContent = new Date(record.tanggal).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                                document.getElementById('transSaldoTersedia').textContent = formatMinutes(record.sisaMenit);
+
+                                // Populate Target Dropdown filtered by KaryawanId
+                                const selectTarget = document.getElementById('transPresensiId');
+                                selectTarget.innerHTML = '<option value="" disabled selected>-- Pilih Hari Target --</option>';
+
+                                const filteredTargets = underHoursList.filter(p => p.karyawanId === record.karyawanId);
+
+                                const noTargetMessage = document.getElementById('noTargetMessage');
+                                const transferCalculationContainer = document.getElementById('transferCalculationContainer');
+                                transferCalculationContainer.classList.add('hidden');
+
+                                if (filteredTargets.length === 0) {
+                                    selectTarget.required = false;
+                                    selectTarget.disabled = true;
+                                    noTargetMessage.classList.remove('hidden');
+                                    document.getElementById('transDurasiMenitTransfer').disabled = true;
+                                    document.getElementById('btnSubmitTransfer').disabled = true;
+                                } else {
+                                    selectTarget.required = true;
+                                    selectTarget.disabled = false;
+                                    noTargetMessage.classList.add('hidden');
+                                    document.getElementById('transDurasiMenitTransfer').disabled = false;
+                                    document.getElementById('btnSubmitTransfer').disabled = false;
+
+                                    filteredTargets.forEach(p => {
+                                        const opt = document.createElement('option');
+                                        opt.value = p.id;
+                                        opt.textContent = `${p.formattedHari}, ${p.formattedDate} (${p.totalJamStr})`;
+                                        // attach data variables
+                                        opt.setAttribute('data-total-mins', p.totalMins);
+                                        opt.setAttribute('data-menit-tambahan', p.menitTambahan || 0);
+                                        selectTarget.appendChild(opt);
+                                    });
+                                }
+
+                                // Reset input fields
+                                document.getElementById('transDurasiMenitTransfer').value = '';
+                                document.getElementById('transDurasiJamText').textContent = '';
+
+                                transferModal.classList.remove('hidden');
+                                setTimeout(() => {
+                                    transferModal.classList.remove('opacity-0');
+                                    transferModalContent.classList.remove('scale-95');
+                                }, 10);
+                            }
+
+                            function closeTransferModal() {
+                                transferModal.classList.add('opacity-0');
+                                transferModalContent.classList.add('scale-95');
+                                setTimeout(() => transferModal.classList.add('hidden'), 200);
+                            }
+
+                            // Triggered when target dropdown changes
+                            function onTargetDateChange(selectElement) {
+                                const selectedOption = selectElement.options[selectElement.selectedIndex];
+                                if (!selectedOption || selectElement.value === '') return;
+
+                                const totalMins = parseInt(selectedOption.getAttribute('data-total-mins'), 10);
+                                const menitTambahan = parseInt(selectedOption.getAttribute('data-menit-tambahan'), 10);
+
+                                const currentWorked = totalMins + menitTambahan;
+                                const deficiency = 480 - currentWorked; // 480 mins = 8 hours
+
+                                activeMaxNeededMins = deficiency;
+
+                                // Display calculations box
+                                document.getElementById('calcTargetOriginal').textContent = formatMinutes(totalMins);
+                                document.getElementById('calcTargetTambahan').textContent = formatMinutes(menitTambahan);
+                                document.getElementById('calcKekurangan').textContent = formatMinutes(deficiency);
+                                document.getElementById('transferCalculationContainer').classList.remove('hidden');
+
+                                // Set max and auto-populate
+                                const inputTransfer = document.getElementById('transDurasiMenitTransfer');
+                                const maxPossibleTransfer = Math.min(activeSisaMenit, deficiency);
+
+                                inputTransfer.max = maxPossibleTransfer;
+                                inputTransfer.placeholder = `Maks. ${maxPossibleTransfer} Menit`;
+
+                                // Auto fill with the exact deficiency or the remaining balance
+                                inputTransfer.value = maxPossibleTransfer;
+                                onTransferMinutesInput(inputTransfer);
+                            }
+
+                            // Live formatted text for transfer input
+                            function onTransferMinutesInput(inputElement) {
+                                const val = parseInt(inputElement.value, 10);
+                                const textLabel = document.getElementById('transDurasiJamText');
+                                const btnSubmit = document.getElementById('btnSubmitTransfer');
+
+                                if (isNaN(val) || val <= 0) {
+                                    textLabel.textContent = '';
+                                    return;
+                                }
+
+                                textLabel.textContent = `Setara dengan: ${formatMinutes(val)}`;
+
+                                // Verify bounds
+                                const maxVal = parseInt(inputElement.max, 10) || activeSisaMenit;
+                                if (val > maxVal) {
+                                    inputElement.setCustomValidity(`Nilai tidak boleh melebihi batas maksimal yaitu ${maxVal} menit.`);
+                                    inputElement.reportValidity();
+                                    btnSubmit.disabled = true;
+                                } else {
+                                    inputElement.setCustomValidity('');
+                                    btnSubmit.disabled = false;
+                                }
+                            }
+
+                            function autoFillMaxTransfer() {
+                                const inputTransfer = document.getElementById('transDurasiMenitTransfer');
+                                const selectTarget = document.getElementById('transPresensiId');
+
+                                let maxVal = activeSisaMenit;
+                                if (selectTarget.value !== '') {
+                                    maxVal = Math.min(activeSisaMenit, activeMaxNeededMins);
+                                }
+
+                                inputTransfer.value = maxVal;
+                                onTransferMinutesInput(inputTransfer);
+                            }
+
+                            // Modal 2: Manual Edit Balance
+                            function openEditModal(element) {
+                                const record = JSON.parse(element.getAttribute('data-record'));
+
+                                document.getElementById('editOtId').value = record.id;
+                                document.getElementById('editOtKaryawanInfo').value = `${record.nama} / ${new Date(record.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}`;
+                                document.getElementById('editOtDurasiAsli').value = formatMinutes(record.durasiMenit);
+
+                                const inputSisa = document.getElementById('editOtSisaMenit');
+                                inputSisa.value = record.sisaMenit;
+                                inputSisa.max = record.durasiMenit;
+                                onEditMinutesInput(inputSisa);
+
+                                editOtModal.classList.remove('hidden');
+                                setTimeout(() => {
+                                    editOtModal.classList.remove('opacity-0');
+                                    editOtModalContent.classList.remove('scale-95');
+                                }, 10);
+                            }
+
+                            function closeEditModal() {
+                                editOtModal.classList.add('opacity-0');
+                                editOtModalContent.classList.add('scale-95');
+                                setTimeout(() => editOtModal.classList.add('hidden'), 200);
+                            }
+
+                            function onEditMinutesInput(inputElement) {
+                                const val = parseInt(inputElement.value, 10);
+                                const textLabel = document.getElementById('editOtSisaJamText');
+                                const maxVal = parseInt(inputElement.max, 10);
+
+                                if (isNaN(val) || val < 0) {
+                                    textLabel.textContent = '';
+                                    return;
+                                }
+
+                                textLabel.textContent = `Setara dengan: ${formatMinutes(val)}`;
+
+                                if (val > maxVal) {
+                                    inputElement.setCustomValidity(`Saldo sisa tidak boleh melebihi durasi asli yaitu ${maxVal} menit.`);
+                                    inputElement.reportValidity();
+                                } else {
+                                    inputElement.setCustomValidity('');
+                                }
+                            }
+
+                            // Modal 3: Delete
+                            function openDeleteModal(id) {
+                                document.getElementById('deleteOtId').value = id;
+
+                                deleteOtModal.classList.remove('hidden');
+                                setTimeout(() => {
+                                    deleteOtModal.classList.remove('opacity-0');
+                                    deleteOtModalContent.classList.remove('scale-95');
+                                }, 10);
+                            }
+
+                            function closeDeleteModal() {
+                                deleteOtModal.classList.add('opacity-0');
+                                deleteOtModalContent.classList.add('scale-95');
+                                setTimeout(() => deleteOtModal.classList.add('hidden'), 200);
+                            }
+                        </script>
