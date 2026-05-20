@@ -780,8 +780,23 @@ app.get("/export-pdf", async (req, res) => {
 app.get("/overtime", async (req, res) => {
   try {
     const karyawanList = await getKaryawan();
+    const filterNama = req.query.filterNama || "all";
 
-    // Stats calculations
+    // Default date to current pay period (same logic as /daftar-kehadiran)
+    let filterTanggalMulai = req.query.filterTanggalMulai;
+    let filterTanggalSelesai = req.query.filterTanggalSelesai;
+    if (!filterTanggalMulai && !filterTanggalSelesai) {
+      const todayStr = moment().format("YYYY-MM-DD");
+      const currentPeriodMonth = getPeriodMonthStr(todayStr);
+      const bounds = await getActualPeriodBounds(currentPeriodMonth);
+      filterTanggalMulai = bounds.startDate;
+      filterTanggalSelesai = bounds.endDate;
+    } else {
+      filterTanggalMulai = filterTanggalMulai || "";
+      filterTanggalSelesai = filterTanggalSelesai || "";
+    }
+
+    // Stats (all-time, unfiltered)
     db.all("SELECT durasiMenit, sisaMenit FROM overtime", (errStats, otStats) => {
       if (errStats) console.error(errStats);
       let totalMenit = 0;
@@ -793,7 +808,156 @@ app.get("/overtime", async (req, res) => {
         });
       }
       const totalTerpakai = totalMenit - totalSisa;
+      const stats = {
+        totalMenit, totalSisa, totalTerpakai,
+        totalJamGenerated: (totalMenit / 60).toFixed(1),
+        totalJamSisa: (totalSisa / 60).toFixed(1),
+        totalJamTerpakai: (totalTerpakai / 60).toFixed(1)
+      };
 
+      // Overtime records – filtered by nama and date range
+      let otQuery = "SELECT o.*, k.nama FROM overtime o JOIN karyawan k ON o.karyawanId = k.id WHERE 1=1";
+      const otParams = [];
+      if (filterNama !== "all") {
+        otQuery += " AND o.karyawanId = ?";
+        otParams.push(filterNama);
+      }
+      if (filterTanggalMulai) {
+        otQuery += " AND o.tanggal >= ?";
+        otParams.push(filterTanggalMulai);
+      }
+      if (filterTanggalSelesai) {
+        otQuery += " AND o.tanggal <= ?";
+        otParams.push(filterTanggalSelesai);
+      }
+      otQuery += " ORDER BY o.tanggal DESC, o.id DESC";
+
+      db.all(otQuery, otParams, (errRecords, overtimeRecords) => {
+        if (errRecords) console.error(errRecords);
+
+        // Under-hours presences (for transfer modal dropdown – always unfiltered by date)
+        db.all(
+          "SELECT p.*, k.nama FROM presensi p JOIN karyawan k ON p.karyawanId = k.id WHERE p.jamMasuk IS NOT NULL AND p.jamPulang IS NOT NULL AND p.jamPulang != '' ORDER BY p.tanggal DESC, p.id DESC",
+          async (errPres, allPres) => {
+            if (errPres) console.error(errPres);
+
+            const underHoursPresences = [];
+            if (allPres) {
+              for (const p of allPres) {
+                const [hM, mM] = p.jamMasuk.split(":").map(Number);
+                const [hA, mA] = p.jamPulang.split(":").map(Number);
+                const totalMins = hA * 60 + mA - (hM * 60 + mM);
+                const currentWorked = totalMins + (p.menitTambahan || 0);
+                if (currentWorked < 480) {
+                  const check = await isHoliday(p.tanggal);
+                  if (!check.isHoliday) {
+                    underHoursPresences.push({
+                      ...p,
+                      totalMins,
+                      formattedDate: moment(p.tanggal).locale("id").format("DD MMM YYYY"),
+                      formattedHari: p.hari || moment(p.tanggal).locale("id").format("dddd"),
+                    });
+                  }
+                }
+              }
+            }
+
+            // Transfer history – filtered by nama + target presensi date range
+            let histQuery = `SELECT t.*, k.nama as namaKaryawan, p.tanggal as tanggalTarget,
+              p.totalJam as totalJamTarget, o.tanggal as tanggalSumber
+              FROM overtime_transfer t
+              JOIN karyawan k ON t.karyawanId = k.id
+              JOIN presensi p ON t.presensiId = p.id
+              JOIN overtime o ON t.overtimeId = o.id
+              WHERE 1=1`;
+            const histParams = [];
+            if (filterNama !== "all") {
+              histQuery += " AND t.karyawanId = ?";
+              histParams.push(filterNama);
+            }
+            if (filterTanggalMulai) {
+              histQuery += " AND p.tanggal >= ?";
+              histParams.push(filterTanggalMulai);
+            }
+            if (filterTanggalSelesai) {
+              histQuery += " AND p.tanggal <= ?";
+              histParams.push(filterTanggalSelesai);
+            }
+            histQuery += " ORDER BY t.createdAt DESC";
+
+            db.all(histQuery, histParams, (errHist, transferHistory) => {
+              if (errHist) console.error(errHist);
+
+              res.render("overtime", {
+                path: "/overtime",
+                stats,
+                overtimeRecords: overtimeRecords || [],
+                underHoursPresences,
+                transferHistory: transferHistory || [],
+                karyawanList,
+                moment,
+                filterNama,
+                filterTanggalMulai,
+                filterTanggalSelesai,
+                pdfStartDate: filterTanggalMulai || "",
+                pdfEndDate: filterTanggalSelesai || "",
+                success: req.query.success === "transferred"
+                  ? "Saldo lembur berhasil dialokasikan!"
+                  : req.query.success === "edited"
+                    ? "Saldo lembur berhasil diperbarui!"
+                    : req.query.success === "deleted"
+                      ? "Data lembur berhasil dihapus!"
+                      : undefined,
+                error: req.query.error === "invalid_transfer"
+                  ? "Jumlah transfer tidak valid atau melebihi sisa saldo lembur."
+                  : req.query.error === "target_exceeded"
+                    ? "Jumlah jam target tidak boleh melebihi batas 8 jam kerja."
+                    : req.query.error === "db"
+                      ? "Terjadi kesalahan pada database."
+                      : undefined
+              });
+            });
+          }
+        );
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// Route: Export Overtime PDF (only transfer history, filtered by nama + date range)
+app.get("/overtime/pdf", async (req, res) => {
+  try {
+    const karyawanList = await getKaryawan();
+    const filterNama = req.query.filterNama || "all";
+
+    // Default date to current pay period if not provided
+    let filterTanggalMulai = req.query.filterTanggalMulai;
+    let filterTanggalSelesai = req.query.filterTanggalSelesai;
+    if (!filterTanggalMulai && !filterTanggalSelesai) {
+      const todayStr = moment().format("YYYY-MM-DD");
+      const currentPeriodMonth = getPeriodMonthStr(todayStr);
+      const bounds = await getActualPeriodBounds(currentPeriodMonth);
+      filterTanggalMulai = bounds.startDate;
+      filterTanggalSelesai = bounds.endDate;
+    } else {
+      filterTanggalMulai = filterTanggalMulai || "";
+      filterTanggalSelesai = filterTanggalSelesai || "";
+    }
+
+    db.all("SELECT durasiMenit, sisaMenit FROM overtime", (errStats, otStats) => {
+      if (errStats) console.error(errStats);
+      let totalMenit = 0;
+      let totalSisa = 0;
+      if (otStats) {
+        otStats.forEach(o => {
+          totalMenit += o.durasiMenit;
+          totalSisa += o.sisaMenit;
+        });
+      }
+      const totalTerpakai = totalMenit - totalSisa;
       const stats = {
         totalMenit,
         totalSisa,
@@ -803,74 +967,65 @@ app.get("/overtime", async (req, res) => {
         totalJamTerpakai: (totalTerpakai / 60).toFixed(1)
       };
 
-      // Overtime records with details
-      db.all(
-        "SELECT o.*, k.nama FROM overtime o JOIN karyawan k ON o.karyawanId = k.id ORDER BY o.tanggal DESC, o.id DESC",
-        (errRecords, overtimeRecords) => {
-          if (errRecords) console.error(errRecords);
+      // Build overtime query with optional name filter
+      let otQuery = "SELECT o.*, k.nama FROM overtime o JOIN karyawan k ON o.karyawanId = k.id";
+      const otParams = [];
+      if (filterNama !== "all") {
+        otQuery += " WHERE o.karyawanId = ?";
+        otParams.push(filterNama);
+      }
+      otQuery += " ORDER BY o.tanggal DESC, o.id DESC";
 
-          // Get presence history for all employees that have durasi < 8 hours (480 mins)
-          db.all(
-            "SELECT p.*, k.nama FROM presensi p JOIN karyawan k ON p.karyawanId = k.id WHERE p.jamMasuk IS NOT NULL AND p.jamPulang IS NOT NULL AND p.jamPulang != '' ORDER BY p.tanggal DESC, p.id DESC",
-            async (errPres, allPres) => {
-              if (errPres) console.error(errPres);
+      db.all(otQuery, otParams, (errRecords, overtimeRecords) => {
+        if (errRecords) console.error(errRecords);
 
-              const underHoursPresences = [];
-              if (allPres) {
-                for (const p of allPres) {
-                  // calculate actual duration
-                  const [hM, mM] = p.jamMasuk.split(":").map(Number);
-                  const [hA, mA] = p.jamPulang.split(":").map(Number);
-                  const totalMins = hA * 60 + mA - (hM * 60 + mM);
-                  if (totalMins < 480) {
-                    const check = await isHoliday(p.tanggal);
-                    if (!check.isHoliday) {
-                      underHoursPresences.push({
-                        ...p,
-                        totalMins,
-                        formattedDate: moment(p.tanggal).locale("id").format("DD MMM YYYY"),
-                        formattedHari: p.hari || moment(p.tanggal).locale("id").format("dddd"),
-                      });
-                    }
-                  }
-                }
-              }
+        // Build transfer history query with optional filters
+        let histQuery = `SELECT t.*, k.nama as namaKaryawan, p.tanggal as tanggalTarget,
+          p.totalJam as totalJamTarget, o.tanggal as tanggalSumber
+          FROM overtime_transfer t
+          JOIN karyawan k ON t.karyawanId = k.id
+          JOIN presensi p ON t.presensiId = p.id
+          JOIN overtime o ON t.overtimeId = o.id
+          WHERE 1=1`;
+        const histParams = [];
 
-              // Transfer History
-              db.all(
-                "SELECT t.*, k.nama as namaKaryawan, p.tanggal as tanggalTarget, p.totalJam as totalJamTarget, o.tanggal as tanggalSumber FROM overtime_transfer t JOIN karyawan k ON t.karyawanId = k.id JOIN presensi p ON t.presensiId = p.id JOIN overtime o ON t.overtimeId = o.id ORDER BY t.createdAt DESC",
-                (errHist, transferHistory) => {
-                  if (errHist) console.error(errHist);
-
-                  res.render("overtime", {
-                    path: "/overtime",
-                    stats,
-                    overtimeRecords: overtimeRecords || [],
-                    underHoursPresences,
-                    transferHistory: transferHistory || [],
-                    karyawanList,
-                    moment,
-                    success: req.query.success === "transferred"
-                      ? "Saldo lembur berhasil dialokasikan!"
-                      : req.query.success === "edited"
-                        ? "Saldo lembur berhasil diperbarui!"
-                        : req.query.success === "deleted"
-                          ? "Data lembur berhasil dihapus!"
-                          : undefined,
-                    error: req.query.error === "invalid_transfer"
-                      ? "Jumlah transfer tidak valid atau melebihi sisa saldo lembur."
-                      : req.query.error === "target_exceeded"
-                        ? "Jumlah jam target tidak boleh melebihi batas 8 jam kerja."
-                        : req.query.error === "db"
-                          ? "Terjadi kesalahan pada database."
-                          : undefined
-                  });
-                }
-              );
-            }
-          );
+        if (filterNama !== "all") {
+          histQuery += " AND t.karyawanId = ?";
+          histParams.push(filterNama);
         }
-      );
+        if (filterTanggalMulai) {
+          histQuery += " AND p.tanggal >= ?";
+          histParams.push(filterTanggalMulai);
+        }
+        if (filterTanggalSelesai) {
+          histQuery += " AND p.tanggal <= ?";
+          histParams.push(filterTanggalSelesai);
+        }
+        histQuery += " ORDER BY t.createdAt DESC";
+
+        db.all(histQuery, histParams, (errHist, transferHistory) => {
+          if (errHist) console.error(errHist);
+
+          // Resolve filterNama to a name string
+          let filterNamaLabel = "Semua Karyawan";
+          if (filterNama !== "all") {
+            const found = karyawanList.find(k => String(k.id) === String(filterNama));
+            if (found) filterNamaLabel = found.nama;
+          }
+
+          res.render("overtime-pdf", {
+            stats,
+            overtimeRecords: overtimeRecords || [],
+            transferHistory: transferHistory || [],
+            karyawanList,
+            moment,
+            filterNama,
+            filterNamaLabel,
+            filterTanggalMulai,
+            filterTanggalSelesai
+          });
+        });
+      });
     });
   } catch (err) {
     console.error(err);

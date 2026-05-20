@@ -82,8 +82,91 @@
                 </div>
             </div>
 
+            <!-- Filter Section -->
+            <div class="bg-card rounded-2xl border border-border p-4 sm:p-6 mb-6 animate-fadeInUp stagger-2 shadow-sm">
+                <form action="/overtime" method="GET"
+                    class="flex flex-col sm:flex-row gap-4 items-start sm:items-end flex-wrap">
+                    <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
+                        <label for="filterNama" class="block text-sm font-semibold text-fg mb-2">Filter Nama</label>
+                        <select id="filterNama" name="filterNama"
+                            class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                            <option value="all" <%=filterNama==='all' ? 'selected' : '' %>>Semua Karyawan</option>
+                            <% karyawanList.forEach(k=> { %>
+                                <option value="<%= k.id %>" <%=filterNama==k.id ? 'selected' : '' %>><%= k.nama %>
+                                </option>
+                                <% }) %>
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
+                        <label for="filterTanggalMulai" class="block text-sm font-semibold text-fg mb-2">Tanggal
+                            Mulai</label>
+                        <input type="date" id="filterTanggalMulai" name="filterTanggalMulai"
+                            value="<%= filterTanggalMulai %>"
+                            class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                    </div>
+                    <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
+                        <label for="filterTanggalSelesai" class="block text-sm font-semibold text-fg mb-2">Tanggal
+                            Selesai</label>
+                        <input type="date" id="filterTanggalSelesai" name="filterTanggalSelesai"
+                            value="<%= filterTanggalSelesai %>"
+                            class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        <button type="submit"
+                            class="flex-1 sm:flex-none px-4 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                            Filter
+                        </button>
+                        <a href="/overtime"
+                            class="flex-1 sm:flex-none px-4 py-2.5 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                            Reset
+                        </a>
+                        <% if (filterNama !=='all' ) { %>
+                            <a href="/overtime/pdf?filterNama=<%= filterNama %>&filterTanggalMulai=<%= filterTanggalMulai %>&filterTanggalSelesai=<%= filterTanggalSelesai %>"
+                                target="_blank"
+                                class="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                Export PDF Riwayat
+                            </a>
+                            <% } %>
+                    </div>
+                </form>
+                <% const _fn=filterNama || 'all' ; const _fm=filterTanggalMulai || '' ; const _fs=filterTanggalSelesai
+                    || '' ; %>
+                    <% if (_fm || _fs || _fn !=='all' ) { %>
+                        <div
+                            class="mt-3 px-3 py-2 bg-accentLight/20 border border-accentLight rounded-lg text-xs text-fg flex items-center gap-2">
+                            <svg class="w-4 h-4 text-accent flex-shrink-0" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>
+                                Menampilkan data
+                                <% if (_fn !=='all' ) { %> untuk <strong class="text-accent">
+                                        <%= karyawanList.find(k=> String(k.id) === String(_fn))?.nama || '' %>
+                                    </strong>
+                                    <% } else { %> <strong>semua karyawan</strong>
+                                        <% } %>
+                                            <% if (_fm || _fs) { %>
+                                                , periode <strong class="text-accent">
+                                                    <%= _fm ? moment(_fm).locale('id').format('DD MMM YYYY') : 'Awal' %>
+                                                </strong>
+                                                sampai <strong class="text-accent">
+                                                    <%= _fs ? moment(_fs).locale('id').format('DD MMM YYYY') : 'Akhir'
+                                                        %>
+                                                </strong>
+                                                <% } %>
+                            </span>
+                        </div>
+                        <% } %>
+            </div>
+
             <!-- Main Content Tabs/Sections -->
             <div class="space-y-8 animate-fadeInUp stagger-3">
+
 
                 <!-- Overtime Records Section -->
                 <div class="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
@@ -267,15 +350,12 @@
                                     <th
                                         class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
                                         Jumlah Dialihkan</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
-                                        Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border">
                                 <% if (transferHistory.length===0) { %>
                                     <tr>
-                                        <td colspan="7" class="py-8 text-center text-muted text-sm">
+                                        <td colspan="6" class="py-8 text-center text-muted text-sm">
                                             Belum ada transaksi alokasi yang tercatat.
                                         </td>
                                     </tr>
@@ -301,10 +381,6 @@
                                                     class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">
                                                     <%= Math.floor(h.durasiMenit / 60) %> Jam <%= h.durasiMenit % 60 %>
                                                             Menit
-                                                </td>
-                                                <td class="px-6 py-4 text-sm text-muted max-w-[250px] truncate"
-                                                    title="<%= h.keterangan %>">
-                                                    <%= h.keterangan %>
                                                 </td>
                                             </tr>
                                             <% }) %>
@@ -579,7 +655,8 @@
                                     filteredTargets.forEach(p => {
                                         const opt = document.createElement('option');
                                         opt.value = p.id;
-                                        opt.textContent = `${p.formattedHari}, ${p.formattedDate} (${p.totalJamStr})`;
+                                        const currentWorked = p.totalMins + (p.menitTambahan || 0);
+                                        opt.textContent = `${p.formattedHari}, ${p.formattedDate} (${formatMinutes(currentWorked)})`;
                                         // attach data variables
                                         opt.setAttribute('data-total-mins', p.totalMins);
                                         opt.setAttribute('data-menit-tambahan', p.menitTambahan || 0);
