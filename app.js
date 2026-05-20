@@ -441,7 +441,7 @@ app.get("/export-pdf", async (req, res) => {
     const formattedRange = `${startPeriod.format("D MMMM")} – ${endPeriod.format("D MMMM YYYY")}`;
 
     db.all(
-      "SELECT p.*, k.nama FROM presensi p JOIN karyawan k ON p.karyawanId = k.id WHERE p.karyawanId = ? AND p.tanggal LIKE ? ORDER BY p.tanggal ASC, p.id ASC",
+      "SELECT p.*, k.nama FROM presensi p JOIN karyawan k ON p.karyawanId = k.id WHERE p.karyawanId = ? AND p.tanggal LIKE ? AND p.jamPulang IS NOT NULL AND p.jamPulang != '' ORDER BY p.tanggal ASC, p.id ASC",
       [filterNama, `${monthStr}-%`],
       (err, rows) => {
         if (err) throw err;
