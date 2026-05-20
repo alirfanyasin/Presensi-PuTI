@@ -13,7 +13,8 @@
         <div class="mb-6 sm:mb-8 animate-fadeInUp stagger-1 text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-1">Presensi <%= monthName %></h2>
-                <p class="text-sm sm:text-base text-muted">Detail dan rekap absensi kehadiran selama bulan <%= monthName %></p>
+                <p class="text-sm font-semibold text-accent mb-1"><%= formattedRange %></p>
+                <p class="text-xs sm:text-sm text-muted">Detail dan rekap absensi kehadiran karyawan pada periode ini</p>
             </div>
         </div>
 
@@ -39,10 +40,7 @@
                     <a href="/detail-bulanan?month=<%= monthStr %>" class="flex-1 sm:flex-none px-4 py-2.5 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press text-sm text-center">
                         Reset
                     </a>
-                    <a href="/export?month=<%= monthStr %>&filterNama=<%= filterNama %>" class="flex-1 sm:flex-none px-4 py-2.5 bg-success text-white font-medium rounded-xl hover:bg-green-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        Export CSV
-                    </a>
+
                     <% if (filterNama !== 'all') { %>
                         <a href="/export-pdf?month=<%= monthStr %>&filterNama=<%= filterNama %>" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
