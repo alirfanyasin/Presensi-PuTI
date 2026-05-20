@@ -2,3 +2,6 @@ node_modules
 *.db-shm
 *.db-wal
 presensi.db
+uploads/
+backup/
+cache/
