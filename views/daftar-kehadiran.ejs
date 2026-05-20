@@ -45,17 +45,8 @@
                             Reset
                         </a>
 
-                        <% if (filterNama !== 'all') { 
-                            let targetMonth = '';
-                            if (filterTanggalMulai) {
-                                targetMonth = filterTanggalMulai.substring(0, 7);
-                            } else if (filterTanggalSelesai) {
-                                targetMonth = filterTanggalSelesai.substring(0, 7);
-                            } else {
-                                targetMonth = new Date().toISOString().substring(0, 7);
-                            }
-                        %>
-                            <a href="/export-pdf?month=<%= targetMonth %>&filterNama=<%= filterNama %>" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
+                        <% if (filterNama !== 'all' && pdfStartDate && pdfEndDate) { %>
+                            <a href="/export-pdf?startDate=<%= pdfStartDate %>&endDate=<%= pdfEndDate %>&filterNama=<%= filterNama %>" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                 Export PDF (A4)
                             </a>

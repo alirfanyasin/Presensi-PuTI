@@ -336,7 +336,8 @@ app.get("/daftar-kehadiran", async (req, res) => {
     let filterTanggalMulai = req.query.filterTanggalMulai;
     let filterTanggalSelesai = req.query.filterTanggalSelesai;
 
-    if (filterTanggalMulai === undefined && filterTanggalSelesai === undefined) {
+    // If both date filters are missing or empty, default to current pay period
+    if (!filterTanggalMulai && !filterTanggalSelesai) {
       const todayStr = moment().format("YYYY-MM-DD");
       const currentPeriodMonth = getPeriodMonthStr(todayStr);
       const bounds = await getActualPeriodBounds(currentPeriodMonth);
@@ -367,42 +368,53 @@ app.get("/daftar-kehadiran", async (req, res) => {
     query += " ORDER BY p.tanggal DESC, p.id DESC";
 
     db.all(query, params, async (err, rows) => {
-      if (err) throw err;
-      
-      const filteredRows = [];
-      for (const r of rows) {
-        const check = await isHoliday(r.tanggal);
-        if (!check.isHoliday) {
-          filteredRows.push(r);
-        }
+      if (err) {
+        console.error(err);
+        return res.status(500).send("Internal Server Error");
       }
+      
+      try {
+        const filteredRows = [];
+        for (const r of rows) {
+          const check = await isHoliday(r.tanggal);
+          if (!check.isHoliday) {
+            filteredRows.push(r);
+          }
+        }
 
-      const presensi = filteredRows.map((r) => ({
-        ...r,
-        formattedHari: r.hari || moment(r.tanggal).locale("id").format("dddd"),
-        formattedDate: moment(r.tanggal).locale("id").format("DD MMM YYYY"),
-        totalJamStr: r.totalJam || "",
-      }));
+        const presensi = filteredRows.map((r) => ({
+          ...r,
+          formattedHari: r.hari || moment(r.tanggal).locale("id").format("dddd"),
+          formattedDate: moment(r.tanggal).locale("id").format("DD MMM YYYY"),
+          totalJamStr: r.totalJam || "",
+        }));
 
-      res.render("daftar-kehadiran", {
-        karyawanList,
-        presensi,
-        filterNama,
-        filterTanggalMulai,
-        filterTanggalSelesai,
-        moment,
-        success:
-          req.query.success === "deleted"
-            ? "Data berhasil dihapus"
-            : req.query.success === "edited"
-              ? "Data berhasil diperbarui"
-              : undefined,
-      });
+        res.render("daftar-kehadiran", {
+          karyawanList,
+          presensi,
+          filterNama,
+          filterTanggalMulai,
+          filterTanggalSelesai,
+          pdfStartDate: filterTanggalMulai || "",
+          pdfEndDate: filterTanggalSelesai || "",
+          moment,
+          success:
+            req.query.success === "deleted"
+              ? "Data berhasil dihapus"
+              : req.query.success === "edited"
+                ? "Data berhasil diperbarui"
+                : undefined,
+        });
+      } catch (innerErr) {
+        console.error(innerErr);
+        res.status(500).send("Internal Server Error");
+      }
     });
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal Server Error");
   }
+
 });
 
 // Route: Edit Data
@@ -566,16 +578,20 @@ app.get("/detail-bulanan", async (req, res) => {
     console.error(err);
     res.status(500).send("Internal Server Error");
   }
-});
-
-// Route: Export PDF (Print A4)
+});// Route: Export PDF (Print A4)
 app.get("/export-pdf", async (req, res) => {
   try {
     const filterNama = req.query.filterNama || "";
+    // Support both legacy ?month=YYYY-MM and new ?startDate=...&endDate=...
+    const startDateParam = req.query.startDate || "";
+    const endDateParam = req.query.endDate || "";
     const monthStr = req.query.month || "";
 
-    if (!filterNama || filterNama === "all" || !monthStr) {
-      return res.status(400).send("Parameter filterNama dan month wajib diisi");
+    if (!filterNama || filterNama === "all") {
+      return res.status(400).send("Parameter filterNama wajib diisi");
+    }
+    if (!startDateParam && !endDateParam && !monthStr) {
+      return res.status(400).send("Parameter startDate/endDate atau month wajib diisi");
     }
 
     const karyawanList = await getKaryawan();
@@ -584,11 +600,25 @@ app.get("/export-pdf", async (req, res) => {
       return res.status(404).send("Karyawan tidak ditemukan");
     }
 
-    const { startDate, endDate, startMoment, endMoment } = await getActualPeriodBounds(monthStr);
-    const formattedRange = `${startMoment.locale("id").format("D MMMM")} – ${endMoment.locale("id").format("D MMMM YYYY")}`;
+    let startDate, endDate, formattedRange;
+
+    if (startDateParam && endDateParam) {
+      // Use the directly provided date range
+      startDate = startDateParam;
+      endDate = endDateParam;
+      const startMoment = moment(startDate, "YYYY-MM-DD");
+      const endMoment = moment(endDate, "YYYY-MM-DD");
+      formattedRange = `${startMoment.locale("id").format("D MMMM")} – ${endMoment.locale("id").format("D MMMM YYYY")}`;
+    } else {
+      // Legacy: derive from monthStr
+      const bounds = await getActualPeriodBounds(monthStr);
+      startDate = bounds.startDate;
+      endDate = bounds.endDate;
+      formattedRange = `${bounds.startMoment.locale("id").format("D MMMM")} – ${bounds.endMoment.locale("id").format("D MMMM YYYY")}`;
+    }
 
     db.all(
-      "SELECT p.*, k.nama FROM presensi p JOIN karyawan k ON p.karyawanId = k.id WHERE p.karyawanId = ? AND p.tanggal >= ? AND p.tanggal <= ? AND p.jamPulang IS NOT NULL AND p.jamPulang != '' ORDER BY p.tanggal ASC, p.id ASC",
+      "SELECT p.*, k.nama FROM presensi p JOIN karyawan k ON p.karyawanId = k.id WHERE p.karyawanId = ? AND p.tanggal >= ? AND p.tanggal <= ? AND p.jamMasuk IS NOT NULL AND p.jamMasuk != '' AND p.jamPulang IS NOT NULL AND p.jamPulang != '' ORDER BY p.tanggal ASC, p.id ASC",
       [filterNama, startDate, endDate],
       async (err, rows) => {
         if (err) throw err;
@@ -607,7 +637,7 @@ app.get("/export-pdf", async (req, res) => {
           const [hA, mA] = r.jamPulang.split(":").map(Number);
           totalMinutes += hA * 60 + mA - (hM * 60 + mM);
 
-          const pukulStr = `${r.jamMasuk.replace(":", ".")} s/d ${r.jamPulang.replace(":", ".")}`;
+          const pukulStr = `${r.jamMasuk.replace(":", ".")} s/d ${r.jamPulang.replace(":", ".")}` ;
 
           return {
             ...r,
@@ -630,7 +660,7 @@ app.get("/export-pdf", async (req, res) => {
 
         res.render("presensi-pdf", {
           karyawanName: karyawan.nama,
-          monthStr,
+          monthStr: monthStr || startDate.substring(0, 7),
           formattedRange,
           presensi,
           totalDurasiStr,
