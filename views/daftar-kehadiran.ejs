@@ -30,8 +30,12 @@
                         </select>
                     </div>
                     <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
-                        <label for="filterTanggal" class="block text-sm font-semibold text-fg mb-2">Filter Tanggal</label>
-                        <input type="date" id="filterTanggal" name="filterTanggal" value="<%= filterTanggal %>" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                        <label for="filterTanggalMulai" class="block text-sm font-semibold text-fg mb-2">Tanggal Mulai</label>
+                        <input type="date" id="filterTanggalMulai" name="filterTanggalMulai" value="<%= filterTanggalMulai %>" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                    </div>
+                    <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
+                        <label for="filterTanggalSelesai" class="block text-sm font-semibold text-fg mb-2">Tanggal Selesai</label>
+                        <input type="date" id="filterTanggalSelesai" name="filterTanggalSelesai" value="<%= filterTanggalSelesai %>" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
                     </div>
                     <div class="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                         <button type="submit" class="flex-1 sm:flex-none px-4 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm flex items-center justify-center gap-2">
@@ -40,25 +44,30 @@
                         <a href="/daftar-kehadiran" class="flex-1 sm:flex-none px-4 py-2.5 bg-inputBg text-muted font-medium rounded-xl hover:bg-border transition-colors btn-press text-sm flex items-center justify-center gap-2">
                             Reset
                         </a>
-                        <a href="/export?filterNama=<%= filterNama %>&filterTanggal=<%= filterTanggal %>" class="flex-1 sm:flex-none px-4 py-2.5 bg-success text-white font-medium rounded-xl hover:bg-green-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            Export CSV
-                        </a>
-                        <% if (filterNama !== 'all') { 
-                            let targetMonth = '';
-                            if (filterTanggal) {
-                                targetMonth = filterTanggal.substring(0, 7);
-                            } else {
-                                targetMonth = new Date().toISOString().substring(0, 7);
-                            }
-                        %>
-                            <a href="/export-pdf?month=<%= targetMonth %>&filterNama=<%= filterNama %>" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
+
+                        <% if (filterNama !== 'all' && pdfStartDate && pdfEndDate) { %>
+                            <a href="/export-pdf?startDate=<%= pdfStartDate %>&endDate=<%= pdfEndDate %>&filterNama=<%= filterNama %>" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors btn-press text-sm flex items-center justify-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                                 Export PDF (A4)
                             </a>
                         <% } %>
                     </div>
                 </form>
+            </div>
+
+            <!-- Active Filter Information -->
+            <div class="mb-6 px-4 py-3 bg-accentLight/20 border border-accentLight rounded-xl flex items-center gap-2.5 text-sm text-fg animate-fadeInUp">
+                <svg class="w-5 h-5 text-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>
+                    <% if (filterTanggalMulai || filterTanggalSelesai) { %>
+                        Menampilkan data presensi dari tanggal <strong class="text-accent font-semibold"><%= filterTanggalMulai ? moment(filterTanggalMulai).locale('id').format('DD MMMM YYYY') : 'Awal' %></strong> 
+                        sampai <strong class="text-accent font-semibold"><%= filterTanggalSelesai ? moment(filterTanggalSelesai).locale('id').format('DD MMMM YYYY') : 'Akhir' %></strong>.
+                    <% } else { %>
+                        Menampilkan seluruh riwayat presensi kerja (akhir pekan dan tanggal merah otomatis disembunyikan).
+                    <% } %>
+                </span>
             </div>
 
             <!-- Desktop Table Section (Visible on desktop, hidden on mobile) -->
@@ -69,19 +78,16 @@
                             <tr>
                                 <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">No</th>
                                 <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Nama</th>
-                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Hari</th>
                                 <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tanggal</th>
                                 <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Waktu</th>
-                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Total Jam</th>
-                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Pekerjaan</th>
-                                <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Gambar</th>
+                                <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Durasi</th>
                                 <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border">
                             <% if (presensi.length === 0) { %>
                                 <tr>
-                                    <td colspan="9" class="py-10 text-center">
+                                    <td colspan="6" class="py-10 text-center">
                                         <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                         </svg>
@@ -100,28 +106,17 @@
                                                 <span class="font-medium text-fg"><%= p.nama %></span>
                                             </div>
                                         </td>
-                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg font-medium text-accent"><%= p.formattedHari %></td>
-                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg"><%= p.formattedDate %></td>
-                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted"><%= p.jamMulai %> - <%= p.jamAkhir %></td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg">
+                                            <span class="font-medium text-accent"><%= p.formattedHari %></span>, <%= p.formattedDate %>
+                                        </td>
+                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted"><span class="text-green-600 font-semibold"><%= p.jamMasuk %></span> - <span class="text-accent font-semibold"><%= p.jamPulang %></span></td>
                                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-success"><%= p.totalJamStr %></td>
-                                        <td class="px-4 sm:px-6 py-4 text-sm text-muted max-w-[200px] sm:max-w-xs">
-                                            <p class="truncate" title="<%= p.pekerjaan %>"><%= p.pekerjaan %></p>
-                                        </td>
-                                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-center">
-                                            <% if (p.foto) { %>
-                                                <div class="inline-block relative cursor-pointer group" onclick="showProofPhoto('<%= p.foto %>', '<%= p.nama %>', '<%= p.createdAt %>')">
-                                                    <img src="<%= p.foto %>" class="w-10 h-10 object-cover rounded-lg border border-border shadow-sm group-hover:border-accent transition-colors" alt="Bukti">
-                                                    <div class="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center transition-opacity">
-                                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                                    </div>
-                                                </div>
-                                            <% } else { %>
-                                                <span class="text-xs text-muted/60 font-medium">-</span>
-                                            <% } %>
-                                        </td>
                                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-center">
                                             <div class="flex items-center justify-center gap-2">
-                                                <button onclick='openEditModal(<%- JSON.stringify(p) %>)' class="text-muted hover:text-blue-600 transition-colors p-1 rounded hover:bg-blue-50" title="Edit">
+                                                <button data-presence="<%= JSON.stringify(p) %>" onclick='openDetailModal(this)' class="text-muted hover:text-indigo-600 transition-colors p-1 rounded hover:bg-indigo-50" title="Detail">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                </button>
+                                                <button data-presence="<%= JSON.stringify(p) %>" onclick='openEditModal(this)' class="text-muted hover:text-blue-600 transition-colors p-1 rounded hover:bg-blue-50" title="Edit">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                                 </button>
                                                 <button onclick="openDeleteModal(<%= p.id %>)" class="text-muted hover:text-accent transition-colors p-1 rounded hover:bg-accentLight/50" title="Hapus">
@@ -163,7 +158,10 @@
                                 </div>
                                 <!-- Actions -->
                                 <div class="flex items-center gap-1 bg-inputBg p-1 rounded-xl">
-                                    <button onclick='openEditModal(<%- JSON.stringify(p) %>)' class="text-muted hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-white active:scale-95" title="Edit">
+                                    <button data-presence="<%= JSON.stringify(p) %>" onclick='openDetailModal(this)' class="text-muted hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-white active:scale-95" title="Detail">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    </button>
+                                    <button data-presence="<%= JSON.stringify(p) %>" onclick='openEditModal(this)' class="text-muted hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-white active:scale-95" title="Edit">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </button>
                                     <button onclick="openDeleteModal(<%= p.id %>)" class="text-muted hover:text-accent transition-colors p-2 rounded-lg hover:bg-white active:scale-95" title="Hapus">
@@ -176,7 +174,7 @@
                             <div class="grid grid-cols-2 gap-3 bg-inputBg/50 p-3 rounded-xl text-xs">
                                 <div>
                                     <span class="block text-muted mb-0.5 text-[9px] uppercase font-bold tracking-wider">Waktu Kerja</span>
-                                    <span class="font-medium text-fg"><%= p.jamMulai %> - <%= p.jamAkhir %></span>
+                                    <span class="font-medium text-fg"><%= p.jamMasuk %> - <%= p.jamPulang %></span>
                                 </div>
                                 <div>
                                     <span class="block text-muted mb-0.5 text-[9px] uppercase font-bold tracking-wider">Durasi</span>
@@ -232,16 +230,16 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="editJamMulai" class="block text-sm font-semibold text-fg mb-1">Jam Mulai</label>
-                        <input type="time" id="editJamMulai" name="jamMulai" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                        <label for="editJamMasuk" class="block text-sm font-semibold text-fg mb-1">Jam Masuk</label>
+                        <input type="time" id="editJamMasuk" name="jamMasuk" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
                     </div>
                     <div>
-                        <label for="editJamAkhir" class="block text-sm font-semibold text-fg mb-1">Jam Akhir</label>
-                        <input type="time" id="editJamAkhir" name="jamAkhir" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                        <label for="editJamPulang" class="block text-sm font-semibold text-fg mb-1">Jam Pulang</label>
+                        <input type="time" id="editJamPulang" name="jamPulang" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
                     </div>
                 </div>
                 <div class="form-group hidden" id="editTotalJamContainer">
-                    <label class="block text-sm font-semibold text-fg mb-1">Total Jam</label>
+                    <label class="block text-sm font-semibold text-fg mb-1">Durasi</label>
                     <input type="text" id="editTotalJam" readonly disabled class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
                 </div>
                 <div>
@@ -277,6 +275,72 @@
         </div>
     </div>
 
+    <!-- Detail Modal -->
+    <div id="detailModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
+        <div class="bg-card rounded-2xl p-6 max-w-lg w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto" id="detailModalContent">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-display text-xl font-bold text-fg">Detail Presensi</h3>
+                <button type="button" onclick="closeDetailModal()" class="text-muted hover:text-fg transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Profil Singkat -->
+                <div class="flex items-center gap-4 bg-accentLighter/30 p-4 rounded-2xl border border-border/40">
+                    <div class="w-12 h-12 bg-accentLight rounded-full flex items-center justify-center flex-shrink-0">
+                        <span id="detailAvatar" class="text-lg font-bold text-accent"></span>
+                    </div>
+                    <div>
+                        <h4 id="detailNama" class="font-bold text-fg text-lg"></h4>
+                        <p id="detailHariTanggal" class="text-sm text-muted"></p>
+                    </div>
+                </div>
+
+                <!-- Detail Waktu -->
+                <div class="grid grid-cols-2 gap-4 bg-inputBg/50 p-4 rounded-xl border border-border/40 text-sm">
+                    <div>
+                        <span class="block text-muted mb-1 text-xs uppercase font-bold tracking-wider">Waktu Kerja</span>
+                        <span id="detailWaktu" class="font-medium text-fg"></span>
+                    </div>
+                    <div>
+                        <span class="block text-muted mb-1 text-xs uppercase font-bold tracking-wider">Durasi</span>
+                        <span id="detailDurasi" class="font-semibold text-success"></span>
+                    </div>
+                </div>
+
+                <!-- Pekerjaan -->
+                <div>
+                    <span class="block text-muted mb-2 text-xs uppercase font-bold tracking-wider">Deskripsi Pekerjaan</span>
+                    <div class="bg-inputBg/20 border border-border p-4 rounded-xl">
+                        <p id="detailPekerjaan" class="text-sm text-fg whitespace-pre-line leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <!-- Gambar/Bukti -->
+                <div id="detailGambarContainer">
+                    <span class="block text-muted mb-2 text-xs uppercase font-bold tracking-wider">Bukti Kehadiran</span>
+                    <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-border cursor-pointer group" id="detailGambarWrapper">
+                        <img id="detailGambar" class="w-full h-full object-cover" alt="Bukti Kehadiran" src="">
+                        <div class="absolute inset-0 bg-black/35 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="px-4 py-2 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-xl border border-white/35">Lihat Fullscreen</span>
+                        </div>
+                    </div>
+                    <div id="detailNoGambar" class="flex flex-col items-center justify-center py-6 bg-inputBg/20 border border-dashed border-border rounded-xl text-muted text-sm gap-2">
+                        <svg class="w-8 h-8 text-muted/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Tidak ada foto bukti</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-border flex justify-end">
+                <button type="button" onclick="closeDetailModal()" class="px-6 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors btn-press text-sm">Tutup</button>
+            </div>
+        </div>
+    </div>
+
     <% if (typeof success !== 'undefined') { %>
         <div id="toast" class="toast fixed top-20 right-4 left-4 sm:left-auto sm:right-4 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 z-50 bg-success text-white show">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -292,13 +356,62 @@
         const editModalContent = document.getElementById('editModalContent');
         const deleteModal = document.getElementById('deleteModal');
         const deleteModalContent = document.getElementById('deleteModalContent');
+        const detailModal = document.getElementById('detailModal');
+        const detailModalContent = document.getElementById('detailModalContent');
 
-        function openEditModal(data) {
+        function openDetailModal(dataOrElement) {
+            let data = dataOrElement;
+            if (dataOrElement instanceof HTMLElement) {
+                data = JSON.parse(dataOrElement.getAttribute('data-presence'));
+            }
+            document.getElementById('detailAvatar').textContent = data.nama.charAt(0);
+            document.getElementById('detailNama').textContent = data.nama;
+            document.getElementById('detailHariTanggal').textContent = `${data.formattedHari}, ${data.formattedDate}`;
+            document.getElementById('detailWaktu').textContent = `${data.jamMasuk} - ${data.jamPulang}`;
+            document.getElementById('detailDurasi').textContent = data.totalJamStr;
+            document.getElementById('detailPekerjaan').textContent = data.pekerjaan;
+
+            const detailGambarWrapper = document.getElementById('detailGambarWrapper');
+            const detailGambar = document.getElementById('detailGambar');
+            const detailNoGambar = document.getElementById('detailNoGambar');
+
+            if (data.foto) {
+                detailGambar.src = data.foto;
+                detailGambarWrapper.classList.remove('hidden');
+                detailNoGambar.classList.add('hidden');
+                detailGambarWrapper.onclick = function() {
+                    showProofPhoto(data.foto, data.nama, data.createdAt);
+                };
+            } else {
+                detailGambar.src = '';
+                detailGambarWrapper.classList.add('hidden');
+                detailNoGambar.classList.remove('hidden');
+                detailGambarWrapper.onclick = null;
+            }
+
+            detailModal.classList.remove('hidden');
+            setTimeout(() => {
+                detailModal.classList.remove('opacity-0');
+                detailModalContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeDetailModal() {
+            detailModal.classList.add('opacity-0');
+            detailModalContent.classList.add('scale-95');
+            setTimeout(() => detailModal.classList.add('hidden'), 200);
+        }
+
+        function openEditModal(dataOrElement) {
+            let data = dataOrElement;
+            if (dataOrElement instanceof HTMLElement) {
+                data = JSON.parse(dataOrElement.getAttribute('data-presence'));
+            }
             document.getElementById('editId').value = data.id;
             document.getElementById('editNama').value = data.nama;
             document.getElementById('editTanggal').value = data.tanggal;
-            document.getElementById('editJamMulai').value = data.jamMulai;
-            document.getElementById('editJamAkhir').value = data.jamAkhir;
+            document.getElementById('editJamMasuk').value = data.jamMasuk;
+            document.getElementById('editJamPulang').value = data.jamPulang;
             document.getElementById('editPekerjaan').value = data.pekerjaan;
             
             editModal.classList.remove('hidden');
@@ -331,8 +444,8 @@
             setTimeout(() => deleteModal.classList.add('hidden'), 200);
         }
 
-        const jamMulai = document.getElementById('editJamMulai');
-        const jamAkhir = document.getElementById('editJamAkhir');
+        const jamMasuk = document.getElementById('editJamMasuk');
+        const jamPulang = document.getElementById('editJamPulang');
         const editTanggal = document.getElementById('editTanggal');
         const editHariContainer = document.getElementById('editHariContainer');
         const editHari = document.getElementById('editHari');
@@ -356,15 +469,15 @@
         }
 
         function validateEditTime() {
-            if (jamMulai.value && jamAkhir.value) {
-                if (jamAkhir.value <= jamMulai.value) {
-                    jamAkhir.setCustomValidity('Jam akhir harus lebih besar dari jam mulai');
-                    jamAkhir.reportValidity();
+            if (jamMasuk.value && jamPulang.value) {
+                if (jamPulang.value <= jamMasuk.value) {
+                    jamPulang.setCustomValidity('Jam pulang harus lebih besar dari jam masuk');
+                    jamPulang.reportValidity();
                     totalJamContainer.classList.add('hidden');
                 } else {
-                    jamAkhir.setCustomValidity('');
-                    const [hM, mM] = jamMulai.value.split(':').map(Number);
-                    const [hA, mA] = jamAkhir.value.split(':').map(Number);
+                    jamPulang.setCustomValidity('');
+                    const [hM, mM] = jamMasuk.value.split(':').map(Number);
+                    const [hA, mA] = jamPulang.value.split(':').map(Number);
                     const totalMins = (hA * 60 + mA) - (hM * 60 + mM);
                     const hours = Math.floor(totalMins / 60);
                     const mins = totalMins % 60;
@@ -379,17 +492,21 @@
                 totalJamContainer.classList.add('hidden');
             }
         }
-        jamAkhir.addEventListener('change', validateEditTime);
-        jamMulai.addEventListener('change', validateEditTime);
+        jamPulang.addEventListener('change', validateEditTime);
+        jamMasuk.addEventListener('change', validateEditTime);
         editTanggal.addEventListener('change', calculateHari);
 
         // --- LIVE MONITORING AUTO REFRESH (SWAP DOM SILENTLY) ---
         function checkNewData() {
-            // Berhenti refresh jika modal edit atau delete sedang terbuka agar tidak mengganggu input user
+            // Berhenti refresh jika modal edit, delete, atau detail sedang terbuka agar tidak mengganggu input user
             const editModal = document.getElementById('editModal');
             const deleteModal = document.getElementById('deleteModal');
+            const detailModal = document.getElementById('detailModal');
+            const photoModal = document.getElementById('photoModal');
             const isModalOpen = (editModal && !editModal.classList.contains('hidden')) || 
-                                (deleteModal && !deleteModal.classList.contains('hidden'));
+                                (deleteModal && !deleteModal.classList.contains('hidden')) ||
+                                (detailModal && !detailModal.classList.contains('hidden')) ||
+                                (photoModal && !photoModal.classList.contains('hidden'));
             
             if (isModalOpen) return;
 
