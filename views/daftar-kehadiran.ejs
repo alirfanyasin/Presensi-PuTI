@@ -231,11 +231,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label for="editJamMasuk" class="block text-sm font-semibold text-fg mb-1">Jam Masuk</label>
-                        <input type="time" id="editJamMasuk" name="jamMasuk" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                        <input type="time" id="editJamMasuk" name="jamMasuk" step="1" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
                     </div>
                     <div>
                         <label for="editJamPulang" class="block text-sm font-semibold text-fg mb-1">Jam Pulang</label>
-                        <input type="time" id="editJamPulang" name="jamPulang" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                        <input type="time" id="editJamPulang" name="jamPulang" step="1" required class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
                     </div>
                 </div>
                 <div class="form-group hidden" id="editTotalJamContainer">
@@ -488,7 +488,7 @@
                     totalJamContainer.classList.remove('hidden');
                 }
             } else {
-                jamAkhir.setCustomValidity('');
+                jamPulang.setCustomValidity('');
                 totalJamContainer.classList.add('hidden');
             }
         }

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catatan Alokasi Jam Lembur</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 11.5px;
+      color: #1e293b;
+      background: #fff;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 18mm 18mm 22mm 18mm;
+      position: relative;
+    }
+
+    /* ---- HEADER ---- */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 2.5px solid #6366f1;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+    .page-header .logo-area h1 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #4f46e5;
+      letter-spacing: -0.5px;
+    }
+    .page-header .logo-area p {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .page-header .meta-right {
+      text-align: right;
+      font-size: 10px;
+      color: #475569;
+      line-height: 1.7;
+    }
+
+    /* ---- INFO BANNER ---- */
+    .info-banner {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      padding: 7px 14px;
+      margin-bottom: 14px;
+      font-size: 10.5px;
+      color: #3730a3;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .info-banner strong { color: #4f46e5; }
+
+    /* ---- SECTION HEADING ---- */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 5px;
+      padding-left: 5px;
+      border-left: 3px solid #6366f1;
+    }
+    .section-sub {
+      font-size: 10px;
+      color: #64748b;
+      margin-bottom: 12px;
+      padding-left: 8px;
+    }
+
+    /* ---- TABLE ---- */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    thead tr { background: #eef2ff; }
+    thead th {
+      padding: 7px 9px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #4338ca;
+      border-bottom: 1.5px solid #c7d2fe;
+      white-space: nowrap;
+    }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr { border-bottom: 1px solid #f1f5f9; }
+    tbody td {
+      padding: 6.5px 9px;
+      color: #334155;
+      vertical-align: middle;
+    }
+    .empty-row td {
+      text-align: center;
+      color: #94a3b8;
+      padding: 28px;
+      font-style: italic;
+    }
+    .duration-cell { color: #4f46e5; font-weight: 700; }
+
+    /* ---- SUMMARY ROW ---- */
+    .summary-row td {
+      border-top: 2px solid #c7d2fe;
+      padding-top: 8px;
+      padding-bottom: 8px;
+      font-weight: 700;
+      background: #f0f3ff;
+    }
+
+    /* ---- SIGNATURE ---- */
+    .sig-section {
+      margin-top: 36px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 52px;
+    }
+    .sig-box {
+      text-align: center;
+      font-size: 11px;
+      color: #475569;
+    }
+    .sig-box .sig-line {
+      border-top: 1px solid #94a3b8;
+      padding-top: 6px;
+      width: 160px;
+      margin-top: 46px;
+    }
+    .sig-box .sig-name { font-weight: 700; color: #1e293b; }
+    .sig-box .sig-role { font-size: 9.5px; }
+
+    /* ---- FOOTER ---- */
+    .page-footer {
+      position: absolute;
+      bottom: 12mm;
+      left: 18mm;
+      right: 18mm;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #94a3b8;
+    }
+
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    @page { size: A4; margin: 0; }
+  </style>
+</head>
+<body>
+
+<%
+  const now = moment().locale('id');
+  const printDate = now.format('DD MMMM YYYY, HH:mm');
+
+  // Resolve nama label
+  let namaLabel = filterNamaLabel || 'Semua Karyawan';
+  if (filterNama && filterNama !== 'all' && !filterNamaLabel) {
+    const found = karyawanList.find(k => String(k.id) === String(filterNama));
+    if (found) namaLabel = found.nama;
+  }
+
+  // Period label
+  let periodeLabel = 'Semua Periode';
+  if (filterTanggalMulai && filterTanggalSelesai) {
+    periodeLabel = moment(filterTanggalMulai).locale('id').format('DD MMM YYYY') + ' s/d ' + moment(filterTanggalSelesai).locale('id').format('DD MMM YYYY');
+  } else if (filterTanggalMulai) {
+    periodeLabel = 'Mulai ' + moment(filterTanggalMulai).locale('id').format('DD MMM YYYY');
+  } else if (filterTanggalSelesai) {
+    periodeLabel = 'Sampai ' + moment(filterTanggalSelesai).locale('id').format('DD MMM YYYY');
+  }
+
+  // Total menit dialihkan
+  let grandTotalMenit = 0;
+  if (transferHistory) {
+    transferHistory.forEach(h => { grandTotalMenit += h.durasiMenit; });
+  }
+  const grandJam = Math.floor(grandTotalMenit / 60);
+  const grandMnt = grandTotalMenit % 60;
+%>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="logo-area">
+      <h1>Catatan Alokasi Jam Lembur</h1>
+      <p>Riwayat pengalihan saldo lembur ke presensi hari kerja</p>
+    </div>
+    <div class="meta-right">
+      <div><strong>Tanggal Cetak:</strong> <%= printDate %></div>
+      <div><strong>Karyawan:</strong> <%= namaLabel %></div>
+      <div><strong>Periode Absensi:</strong> <%= periodeLabel %></div>
+    </div>
+  </div>
+
+  <!-- Info Banner -->
+  <div class="info-banner">
+    <span>&#128100; <strong><%= namaLabel %></strong></span>
+    <span>&#128197; Periode: <strong><%= periodeLabel %></strong></span>
+    <span>&#8614; Total Dialihkan: <strong><%= grandJam %> Jam <%= grandMnt %> Menit (<%= grandTotalMenit %> menit)</strong></span>
+  </div>
+
+  <!-- Table -->
+  <div class="section-title">Riwayat Alokasi &amp; Pengalihan Lembur</div>
+  <div class="section-sub">
+    Jejak audit alokasi jam lembur ke presensi hari lain &mdash; difilter berdasarkan <strong>tanggal absensi target</strong>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:26px">No</th>
+        <th>Nama Karyawan</th>
+        <th>Tgl Transaksi</th>
+        <th>Lembur Sumber</th>
+        <th>Target Absensi</th>
+        <th>Durasi Dialihkan</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (!transferHistory || transferHistory.length === 0) { %>
+        <tr class="empty-row">
+          <td colspan="6">
+            Belum ada riwayat alokasi<% if (filterTanggalMulai || filterTanggalSelesai) { %> pada periode ini<% } %><% if (filterNama && filterNama !== 'all') { %> untuk karyawan ini<% } %>.
+          </td>
+        </tr>
+      <% } else { %>
+        <% transferHistory.forEach((h, i) => { %>
+          <tr>
+            <td style="text-align:center"><%= i + 1 %></td>
+            <td><strong><%= h.namaKaryawan %></strong></td>
+            <td style="white-space:nowrap"><%= moment(h.createdAt).locale('id').format('DD MMM YYYY HH:mm') %></td>
+            <td style="white-space:nowrap"><%= moment(h.tanggalSumber).locale('id').format('DD MMM YYYY') %></td>
+            <td style="white-space:nowrap"><strong><%= moment(h.tanggalTarget).locale('id').format('dddd, DD MMM YYYY') %></strong></td>
+            <td class="duration-cell" style="white-space:nowrap"><%= Math.floor(h.durasiMenit / 60) %> Jam <%= h.durasiMenit % 60 %> Mnt</td>
+          </tr>
+        <% }) %>
+        <!-- Summary row -->
+        <tr class="summary-row">
+          <td colspan="5" style="text-align:right; padding-right:12px">Total Keseluruhan:</td>
+          <td class="duration-cell"><%= grandJam %> Jam <%= grandMnt %> Menit</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+
+  <!-- Signature -->
+  <div class="sig-section">
+    <div class="sig-box" style="text-align: left; min-width: 220px;">
+      <div>Mengetahui,</div>
+      <div class="sig-role" style="font-weight: 600; margin-bottom: 55px;">Kaur. Pusat Teknologi dan Informasi</div>
+      <div class="sig-name">(Selfina Anggraini)</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="page-footer">
+    <span>Presensi PuTI &mdash; Catatan Alokasi Jam Lembur</span>
+    <span>Dicetak: <%= printDate %></span>
+  </div>
+
+</div>
+
+<script>window.print();</script>
+</body>
+</html>
