@@ -9,6 +9,27 @@ const { isHoliday } = require("./holidayHelper");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Retrieve Git versioning metadata for the footer
+const { execSync } = require("child_process");
+const pkg = require("./package.json");
+let gitInfo = {
+  version: pkg.version || "1.0.0",
+  branch: "",
+  hash: "",
+  date: ""
+};
+
+try {
+  gitInfo.branch = execSync("git rev-parse --abbrev-ref HEAD", { stdio: "pipe" }).toString().trim();
+  gitInfo.hash = execSync("git rev-parse --short HEAD", { stdio: "pipe" }).toString().trim();
+  gitInfo.date = execSync("git log -1 --format=\"%cs\"", { stdio: "pipe" }).toString().trim();
+} catch (err) {
+  console.warn("Gagal membaca metadata Git:", err.message);
+}
+
+app.locals.gitInfo = gitInfo;
+
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
