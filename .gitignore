@@ -2,3 +2,6 @@
 *.db-wal
 presensi.db
 node_modules/
+uploads/
+backup/
+cache/
