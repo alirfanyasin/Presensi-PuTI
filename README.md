@@ -19,7 +19,7 @@ Aplikasi pencatatan presensi karyawan PuTI menggunakan Express.js dan database M
    DB_HOST=localhost
    DB_USER=root
    DB_PASSWORD=
-   DB_DATABASE=presensi_puti
+   DB_DATABASE=nama_database
    DB_PORT=3306
    ```
 
