@@ -44,6 +44,14 @@
                                         class="w-full px-4 py-3 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
                                 </div>
 
+                                <!-- Surat Tugas (muncul saat libur) -->
+                                <div id="suratTugasSection" class="hidden form-group">
+                                    <label class="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl cursor-pointer hover:bg-yellow-100 transition-colors">
+                                        <input type="checkbox" id="suratTugasCheck" name="suratTugas" value="true" class="w-5 h-5 text-accent rounded border-gray-300 focus:ring-accent">
+                                        <span class="text-sm font-semibold text-yellow-800">Sedang Surat Tugas (Izinkan Absen di Hari Libur)</span>
+                                    </label>
+                                </div>
+
                                 <!-- Status Presensi Info (muncul setelah pilih nama) -->
                                 <div id="statusInfo" class="hidden">
                                     <!-- Loading -->
@@ -169,6 +177,20 @@
                                                 Foto Ulang
                                             </button>
                                         </div>
+
+                                        <div id="suratTugasUploadContainer" class="hidden mt-4">
+                                            <div class="flex items-center justify-center w-full">
+                                                <label for="suratTugasUploadInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
+                                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                                        <svg class="w-8 h-8 mb-3 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                                        <p class="mb-2 text-sm text-muted"><span class="font-semibold">Klik untuk upload foto Surat Tugas</span></p>
+                                                    </div>
+                                                    <input id="suratTugasUploadInput" type="file" accept="image/*" class="hidden" />
+                                                </label>
+                                            </div>
+                                            <img id="suratTugasPreview" class="hidden w-full h-full object-cover rounded-xl mt-4 aspect-video border border-border" alt="Preview Surat Tugas">
+                                        </div>
+
                                         <input type="hidden" name="foto" id="fotoInput">
                                         <input type="file" accept="image/*" capture="user" id="cameraFallbackInput"
                                             class="hidden">
@@ -389,6 +411,21 @@
                                 waktuPulangInfo.classList.remove('hidden');
                                 pekerjaanSection.classList.remove('hidden');
                                 fotoSection.classList.remove('hidden');
+
+                                const isSuratTugas = document.getElementById('suratTugasCheck') && document.getElementById('suratTugasCheck').checked;
+                                if (isSuratTugas) {
+                                    document.getElementById('cameraContainer').classList.add('hidden');
+                                    document.getElementById('postCaptureControls').classList.add('hidden');
+                                    document.getElementById('suratTugasUploadContainer').classList.remove('hidden');
+                                    const pText = document.querySelector('#fotoSection p.text-muted');
+                                    if(pText) pText.textContent = 'Unggah foto sebagai bukti kehadiran pulang Surat Tugas Anda.';
+                                } else {
+                                    document.getElementById('cameraContainer').classList.remove('hidden');
+                                    document.getElementById('suratTugasUploadContainer').classList.add('hidden');
+                                    const pText = document.querySelector('#fotoSection p.text-muted');
+                                    if(pText) pText.textContent = 'Ambil foto selfie sebagai bukti kehadiran pulang Anda.';
+                                }
+
                                 statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
                 <span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span>
                 <span class="text-sm font-semibold text-orange-700">Sudah Masuk pukul <strong>${jamMasuk}</strong> — silakan Presensi Pulang</span>
@@ -426,31 +463,60 @@
                                 const tanggal = tanggalInput.value;
                                 if (!tanggal) { resetFormSections(); return; }
 
+                                const suratTugasCheck = document.getElementById('suratTugasCheck');
+                                const isSuratTugas = suratTugasCheck && suratTugasCheck.checked;
+
+                                let isHolidayDay = false;
+                                let currentHolidayName = '';
+
                                 // Check holiday first
                                 try {
                                     const holidayRes = await fetch(`/api/check-presensi?tanggal=${tanggal}`);
                                     const holidayData = await holidayRes.json();
                                     if (holidayData.status === 'holiday') {
-                                        statusInfo.classList.remove('hidden');
-                                        statusLoading.classList.add('hidden');
-                                        showHolidayMode(holidayData.holidayName);
-                                        karyawanSelect.disabled = true;
-                                        return;
+                                        isHolidayDay = true;
+                                        currentHolidayName = holidayData.holidayName;
+                                        const stSection = document.getElementById('suratTugasSection');
+                                        if (stSection) stSection.classList.remove('hidden');
+                                        
+                                        if (!isSuratTugas) {
+                                            statusInfo.classList.remove('hidden');
+                                            statusLoading.classList.add('hidden');
+                                            showHolidayMode(holidayData.holidayName);
+                                            karyawanSelect.disabled = true;
+                                            return;
+                                        } else {
+                                            karyawanSelect.disabled = false;
+                                        }
                                     } else {
+                                        const stSection = document.getElementById('suratTugasSection');
+                                        if (stSection) stSection.classList.add('hidden');
                                         karyawanSelect.disabled = false;
                                     }
                                 } catch (e) {
                                     console.error("Gagal memeriksa hari libur:", e);
                                 }
 
-                                if (!karyawanId) { resetFormSections(); return; }
+                                if (!karyawanId) { 
+                                    resetFormSections(); 
+                                    if (isHolidayDay && isSuratTugas) {
+                                        statusInfo.classList.remove('hidden');
+                                        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 border border-yellow-200 rounded-xl">
+                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block animate-pulse"></span>
+                <span class="text-sm font-semibold text-yellow-700">Mode Surat Tugas Aktif — Silakan pilih nama Anda</span>
+            </div>`;
+                                        statusBadge.classList.remove('hidden');
+                                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
+                                    }
+                                    return; 
+                                }
 
                                 statusInfo.classList.remove('hidden');
                                 statusLoading.classList.remove('hidden');
                                 statusBadge.classList.add('hidden');
 
                                 try {
-                                    const res = await fetch(`/api/check-presensi?karyawanId=${karyawanId}&tanggal=${tanggal}`);
+                                    const res = await fetch(`/api/check-presensi?karyawanId=${karyawanId}&tanggal=${tanggal}&suratTugas=${isSuratTugas}`);
                                     const data = await res.json();
                                     statusLoading.classList.add('hidden');
                                     if (data.status === 'holiday') {
@@ -470,6 +536,10 @@
 
                             karyawanSelect.addEventListener('change', checkStatus);
                             tanggalInput.addEventListener('change', () => { calculateHari(); checkStatus(); });
+                            
+                            const stCheck = document.getElementById('suratTugasCheck');
+                            if (stCheck) stCheck.addEventListener('change', checkStatus);
+
                             calculateHari();
                             checkStatus();
 
@@ -636,6 +706,51 @@
                                             video.classList.add('hidden');
                                             cameraControls.classList.add('hidden');
                                             postCaptureControls.classList.remove('hidden');
+                                        };
+                                        img.src = event.target.result;
+                                    };
+                                    reader.readAsDataURL(file);
+                                });
+                            }
+
+                            const suratTugasUploadInput = document.getElementById('suratTugasUploadInput');
+                            const suratTugasPreview = document.getElementById('suratTugasPreview');
+                            
+                            if (suratTugasUploadInput) {
+                                suratTugasUploadInput.addEventListener('change', function(e) {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+
+                                    const reader = new FileReader();
+                                    reader.onload = function(event) {
+                                        const img = new Image();
+                                        img.onload = function() {
+                                            const maxW = 640;
+                                            const maxH = 480;
+                                            let w = img.width;
+                                            let h = img.height;
+
+                                            if (w > maxW || h > maxH) {
+                                                const ratio = Math.min(maxW / w, maxH / h);
+                                                w = Math.round(w * ratio);
+                                                h = Math.round(h * ratio);
+                                            }
+
+                                            canvas.width = w;
+                                            canvas.height = h;
+                                            const ctx = canvas.getContext('2d');
+                                            ctx.drawImage(img, 0, 0, w, h);
+
+                                            let quality = 0.6;
+                                            let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                                            while (dataUrl.length * 0.75 > 150000 && quality > 0.1) {
+                                                quality -= 0.1;
+                                                dataUrl = canvas.toDataURL('image/jpeg', quality);
+                                            }
+                                            
+                                            suratTugasPreview.src = dataUrl;
+                                            suratTugasPreview.classList.remove('hidden');
+                                            fotoInput.value = dataUrl;
                                         };
                                         img.src = event.target.result;
                                     };

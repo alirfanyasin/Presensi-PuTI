@@ -222,13 +222,15 @@ app.get("/", async (req, res) => {
 
 // API: Check apakah karyawan sudah masuk hari ini (untuk menentukan form yang ditampilkan)
 app.get("/api/check-presensi", async (req, res) => {
-  const { karyawanId, tanggal } = req.query;
+  const { karyawanId, tanggal, suratTugas } = req.query;
   if (!tanggal) return res.json({ status: "none" });
 
   try {
-    const check = await isHoliday(tanggal);
-    if (check.isHoliday) {
-      return res.json({ status: "holiday", holidayName: check.name });
+    if (suratTugas !== 'true') {
+      const check = await isHoliday(tanggal);
+      if (check.isHoliday) {
+        return res.json({ status: "holiday", holidayName: check.name });
+      }
     }
 
     if (!karyawanId) return res.json({ status: "none" });
@@ -256,11 +258,13 @@ app.get("/api/check-presensi", async (req, res) => {
 
 // Route: Presensi Masuk (INSERT new record, time auto from server)
 app.post("/presensi-masuk", async (req, res) => {
-  const { karyawanId, tanggal } = req.body;
+  const { karyawanId, tanggal, suratTugas } = req.body;
 
-  const check = await isHoliday(tanggal);
-  if (check.isHoliday) {
-    return res.redirect("/?error=holiday");
+  if (suratTugas !== 'true') {
+    const check = await isHoliday(tanggal);
+    if (check.isHoliday) {
+      return res.redirect("/?error=holiday");
+    }
   }
 
   const now = new Date();
@@ -281,11 +285,13 @@ app.post("/presensi-masuk", async (req, res) => {
 
 // Route: Presensi Pulang (UPDATE existing masuk record)
 app.post("/presensi-pulang", async (req, res) => {
-  const { karyawanId, tanggal, pekerjaan, foto } = req.body;
+  const { karyawanId, tanggal, pekerjaan, foto, suratTugas } = req.body;
 
-  const check = await isHoliday(tanggal);
-  if (check.isHoliday) {
-    return res.redirect("/?error=holiday");
+  if (suratTugas !== 'true') {
+    const check = await isHoliday(tanggal);
+    if (check.isHoliday) {
+      return res.redirect("/?error=holiday");
+    }
   }
 
   const now = new Date();
@@ -414,17 +420,8 @@ app.get("/daftar-kehadiran", async (req, res) => {
       }
 
       try {
-        const filteredRows = [];
-        for (const r of rows) {
-          if (isManualFilter) {
-            filteredRows.push(r);
-          } else {
-            const check = await isHoliday(r.tanggal);
-            if (!check.isHoliday) {
-              filteredRows.push(r);
-            }
-          }
-        }
+        const filteredRows = rows; // Remove holiday filtering because Surat Tugas can be on holidays
+
 
         const presensi = filteredRows.map((r) => ({
           ...r,
@@ -593,13 +590,7 @@ app.get("/riwayat-bulanan", async (req, res) => {
       return res.status(500).send("Internal Server Error");
     }
 
-    const filteredRows = [];
-    for (const r of rows) {
-      const check = await isHoliday(r.tanggal);
-      if (!check.isHoliday) {
-        filteredRows.push(r);
-      }
-    }
+    const filteredRows = rows;
 
     const grouped = filteredRows.reduce((acc, curr) => {
       const monthStr = getPeriodMonthStr(curr.tanggal);
@@ -665,13 +656,7 @@ app.get("/detail-bulanan", async (req, res) => {
     db.all(query, params, async (err, rows) => {
       if (err) throw err;
 
-      const filteredRows = [];
-      for (const r of rows) {
-        const check = await isHoliday(r.tanggal);
-        if (!check.isHoliday) {
-          filteredRows.push(r);
-        }
-      }
+      const filteredRows = rows;
 
       const presensi = filteredRows.map((r) => ({
         ...r,
@@ -739,17 +724,7 @@ app.get("/export-pdf", async (req, res) => {
       async (err, rows) => {
         if (err) throw err;
 
-        const filteredRows = [];
-        for (const r of rows) {
-          if (isManualFilter) {
-            filteredRows.push(r);
-          } else {
-            const check = await isHoliday(r.tanggal);
-            if (!check.isHoliday) {
-              filteredRows.push(r);
-            }
-          }
-        }
+        const filteredRows = rows;
 
         let totalMinutes = 0;
         const presensi = filteredRows.map((r) => {
