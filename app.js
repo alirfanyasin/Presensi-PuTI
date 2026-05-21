@@ -727,12 +727,13 @@ app.get("/export-pdf", async (req, res) => {
         const filteredRows = rows;
 
         let totalMinutes = 0;
-        const presensi = filteredRows.map((r) => {
+        
+        const presensi = await Promise.all(filteredRows.map(async (r) => {
           const [hM, mM] = r.jamMasuk.split(":").map(Number);
           const [hA, mA] = r.jamPulang.split(":").map(Number);
-          totalMinutes += hA * 60 + mA - (hM * 60 + mM);
-
+          
           const pukulStr = `${r.jamMasuk.replace(":", ".")} s/d ${r.jamPulang.replace(":", ".")}`;
+          const check = await isHoliday(r.tanggal);
 
           return {
             ...r,
@@ -741,7 +742,13 @@ app.get("/export-pdf", async (req, res) => {
               .format("dddd, D MMMM YYYY"),
             pukulStr,
             totalJam: r.totalJam || "",
+            isSuratTugas: check.isHoliday,
+            mins: hA * 60 + mA - (hM * 60 + mM)
           };
+        }));
+
+        presensi.forEach(p => {
+          totalMinutes += p.mins;
         });
 
         const totalHours = Math.floor(totalMinutes / 60);
