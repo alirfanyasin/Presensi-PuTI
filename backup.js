@@ -216,14 +216,22 @@ const runBackup = () => {
                 const lastBackupInfoPath = path.join(backupDir, 'backup_info.json');
                 fs.writeFileSync(lastBackupInfoPath, JSON.stringify({ lastBackup: moment().format('YYYY-MM-DD HH:mm:ss') }, null, 2));
 
-                db.close(() => {
+                if (require.main === module) {
+                    db.close(() => {
+                        resolve();
+                    });
+                } else {
                     resolve();
-                });
+                }
             } catch (err) {
                 console.error("Gagal melakukan backup:", err.message);
-                db.close(() => {
+                if (require.main === module) {
+                    db.close(() => {
+                        reject(err);
+                    });
+                } else {
                     reject(err);
-                });
+                }
             }
         })();
     });

@@ -629,11 +629,12 @@
                                 document.getElementById('transTanggalLembur').textContent = new Date(record.tanggal).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                                 document.getElementById('transSaldoTersedia').textContent = formatMinutes(record.sisaMenit);
 
-                                // Populate Target Dropdown filtered by KaryawanId
+                                // Populate Target Dropdown filtered by KaryawanId and same calendar month as overtime source
                                 const selectTarget = document.getElementById('transPresensiId');
                                 selectTarget.innerHTML = '<option value="" disabled selected>-- Pilih Hari Target --</option>';
 
-                                const filteredTargets = underHoursList.filter(p => p.karyawanId === record.karyawanId);
+                                const recordMonth = record.tanggal.substring(0, 7); // "YYYY-MM"
+                                const filteredTargets = underHoursList.filter(p => p.karyawanId === record.karyawanId && p.tanggal.substring(0, 7) === recordMonth);
 
                                 const noTargetMessage = document.getElementById('noTargetMessage');
                                 const transferCalculationContainer = document.getElementById('transferCalculationContainer');
@@ -813,4 +814,4 @@
                                 setTimeout(() => deleteOtModal.classList.add('hidden'), 200);
                             }
                         </script>
-<%- include('partials/footer') %>
+                        <%- include('partials/footer') %>
