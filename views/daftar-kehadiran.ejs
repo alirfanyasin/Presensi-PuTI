@@ -181,22 +181,6 @@
                                     <span class="font-semibold text-success"><%= p.totalJamStr %></span>
                                 </div>
                             </div>
-
-                            <!-- Pekerjaan -->
-                            <div>
-                                <span class="block text-muted mb-1 text-[9px] uppercase font-bold tracking-wider">Deskripsi Pekerjaan</span>
-                                <div class="bg-inputBg/20 border border-border/60 p-3 rounded-xl flex flex-col gap-3">
-                                    <% if (p.foto) { %>
-                                        <div class="relative w-full aspect-video rounded-lg overflow-hidden border border-border cursor-pointer group" onclick="showProofPhoto('<%= p.foto %>', '<%= p.nama %>')">
-                                            <img src="<%= p.foto %>" class="w-full h-full object-cover" alt="Bukti Kehadiran">
-                                            <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <span class="px-3 py-1.5 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-lg border border-white/35">Lihat Fullscreen</span>
-                                            </div>
-                                        </div>
-                                    <% } %>
-                                    <p class="text-xs text-fg whitespace-pre-line leading-relaxed"><%= p.pekerjaan %></p>
-                                </div>
-                            </div>
                         </div>
                     <% }) %>
                 <% } %>
