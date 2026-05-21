@@ -90,7 +90,7 @@
                         <label for="filterNama" class="block text-sm font-semibold text-fg mb-2">Filter Nama</label>
                         <select id="filterNama" name="filterNama"
                             class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
-                            <option value="all" <%=filterNama==='all' ? 'selected' : '' %>>Semua Karyawan</option>
+                            <option value="all" <%=filterNama==='all' ? 'selected' : '' %>>Semua Student Staff</option>
                             <% karyawanList.forEach(k=> { %>
                                 <option value="<%= k.id %>" <%=filterNama==k.id ? 'selected' : '' %>><%= k.nama %>
                                 </option>
@@ -148,7 +148,7 @@
                                 <% if (_fn !=='all' ) { %> untuk <strong class="text-accent">
                                         <%= karyawanList.find(k=> String(k.id) === String(_fn))?.nama || '' %>
                                     </strong>
-                                    <% } else { %> <strong>semua karyawan</strong>
+                                    <% } else { %> <strong>semua student staff</strong>
                                         <% } %>
                                             <% if (_fm || _fs) { %>
                                                 , periode <strong class="text-accent">
@@ -172,7 +172,7 @@
                 <div class="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
                     <div class="px-6 py-5 border-b border-border bg-accentLighter/10 flex items-center justify-between">
                         <div>
-                            <h3 class="font-display text-lg font-bold text-fg">Daftar Saldo Lembur Karyawan</h3>
+                            <h3 class="font-display text-lg font-bold text-fg">Daftar Saldo Lembur Student Staff</h3>
                             <p class="text-xs text-muted">Kelebihan waktu di atas 8 jam per hari yang tercatat otomatis
                             </p>
                         </div>
@@ -187,7 +187,7 @@
                                         No</th>
                                     <th
                                         class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
-                                        Nama Karyawan</th>
+                                        Nama Student Staff</th>
                                     <th
                                         class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
                                         Tanggal Lembur</th>
@@ -323,7 +323,7 @@
                     <div class="px-6 py-5 border-b border-border bg-accentLighter/10 flex items-center justify-between">
                         <div>
                             <h3 class="font-display text-lg font-bold text-fg">Riwayat Alokasi & Pengalihan Lembur</h3>
-                            <p class="text-xs text-muted">Jejak audit alokasi jam lembur karyawan ke presensi hari lain
+                            <p class="text-xs text-muted">Jejak audit alokasi jam lembur student staff ke presensi hari lain
                             </p>
                         </div>
                     </div>
@@ -337,7 +337,7 @@
                                         No</th>
                                     <th
                                         class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
-                                        Nama Karyawan</th>
+                                        Nama Student Staff</th>
                                     <th
                                         class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">
                                         Tanggal Transaksi</th>
@@ -419,7 +419,7 @@
                     <input type="hidden" id="transOvertimeId" name="overtimeId">
 
                     <div>
-                        <label class="block text-sm font-semibold text-fg mb-1">Karyawan</label>
+                        <label class="block text-sm font-semibold text-fg mb-1">Student Staff</label>
                         <input type="text" id="transNamaKaryawan" disabled
                             class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-sm cursor-not-allowed">
                     </div>
@@ -442,7 +442,7 @@
                             onchange="onTargetDateChange(this)">
                             <option value="" disabled selected>-- Pilih Hari Target --</option>
                         </select>
-                        <p id="noTargetMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Karyawan ini tidak
+                        <p id="noTargetMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Student Staff ini tidak
                             memiliki hari kerja di bawah 8 jam yang perlu ditransfer.</p>
                     </div>
 
@@ -500,7 +500,7 @@
                     <input type="hidden" id="editOtId" name="id">
 
                     <div>
-                        <label class="block text-sm font-semibold text-fg mb-0.5">Karyawan / Tanggal</label>
+                        <label class="block text-sm font-semibold text-fg mb-0.5">Student Staff / Tanggal</label>
                         <input type="text" id="editOtKaryawanInfo" disabled
                             class="w-full px-4 py-2 bg-gray-100 border border-border rounded-xl text-muted text-xs cursor-not-allowed">
                     </div>

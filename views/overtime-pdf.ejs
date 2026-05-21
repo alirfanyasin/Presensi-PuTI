@@ -170,7 +170,7 @@
   const printDate = now.format('DD MMMM YYYY, HH:mm');
 
   // Resolve nama label
-  let namaLabel = filterNamaLabel || 'Semua Karyawan';
+  let namaLabel = filterNamaLabel || 'Semua Student Staff';
   if (filterNama && filterNama !== 'all' && !filterNamaLabel) {
     const found = karyawanList.find(k => String(k.id) === String(filterNama));
     if (found) namaLabel = found.nama;
@@ -205,7 +205,7 @@
     </div>
     <div class="meta-right">
       <div><strong>Tanggal Cetak:</strong> <%= printDate %></div>
-      <div><strong>Karyawan:</strong> <%= namaLabel %></div>
+      <div><strong>Student Staff:</strong> <%= namaLabel %></div>
       <div><strong>Periode Absensi:</strong> <%= periodeLabel %></div>
     </div>
   </div>
@@ -227,7 +227,7 @@
     <thead>
       <tr>
         <th style="width:26px">No</th>
-        <th>Nama Karyawan</th>
+        <th>Nama Student Staff</th>
         <th>Tgl Transaksi</th>
         <th>Lembur Sumber</th>
         <th>Target Absensi</th>
@@ -238,7 +238,7 @@
       <% if (!transferHistory || transferHistory.length === 0) { %>
         <tr class="empty-row">
           <td colspan="6">
-            Belum ada riwayat alokasi<% if (filterTanggalMulai || filterTanggalSelesai) { %> pada periode ini<% } %><% if (filterNama && filterNama !== 'all') { %> untuk karyawan ini<% } %>.
+            Belum ada riwayat alokasi<% if (filterTanggalMulai || filterTanggalSelesai) { %> pada periode ini<% } %><% if (filterNama && filterNama !== 'all') { %> untuk student staff ini<% } %>.
           </td>
         </tr>
       <% } else { %>

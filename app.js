@@ -1227,6 +1227,63 @@ app.post("/overtime/delete", (req, res) => {
   });
 });
 
+// --- STUDENT STAFF (KARYAWAN) CRUD ---
+
+app.get("/student-staff", async (req, res) => {
+  try {
+    const karyawanList = await getKaryawan();
+    res.render("student-staff", {
+      karyawanList,
+      path: "/student-staff",
+      success_msg: req.query.success === 'added' ? 'Student Staff berhasil ditambahkan.' :
+                   req.query.success === 'edited' ? 'Student Staff berhasil diperbarui.' :
+                   req.query.success === 'deleted' ? 'Student Staff berhasil dihapus.' : null,
+      error_msg: req.query.error === 'add_failed' ? 'Gagal menambahkan Student Staff.' :
+                 req.query.error === 'edit_failed' ? 'Gagal memperbarui Student Staff.' :
+                 req.query.error === 'delete_failed' ? 'Gagal menghapus Student Staff.' : null
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.post("/student-staff/add", (req, res) => {
+  const { nama, nim } = req.body;
+  if (!nama || !nim) return res.redirect("/student-staff?error=add_failed");
+  db.run("INSERT INTO karyawan (nama, nim) VALUES (?, ?)", [nama, nim], (err) => {
+    if (err) {
+      console.error(err);
+      return res.redirect("/student-staff?error=add_failed");
+    }
+    res.redirect("/student-staff?success=added");
+  });
+});
+
+app.post("/student-staff/edit", (req, res) => {
+  const { id, nama, nim } = req.body;
+  if (!id || !nama || !nim) return res.redirect("/student-staff?error=edit_failed");
+  db.run("UPDATE karyawan SET nama = ?, nim = ? WHERE id = ?", [nama, nim, id], (err) => {
+    if (err) {
+      console.error(err);
+      return res.redirect("/student-staff?error=edit_failed");
+    }
+    res.redirect("/student-staff?success=edited");
+  });
+});
+
+app.post("/student-staff/delete", (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.redirect("/student-staff?error=delete_failed");
+  db.run("DELETE FROM karyawan WHERE id = ?", [id], (err) => {
+    if (err) {
+      console.error(err);
+      return res.redirect("/student-staff?error=delete_failed");
+    }
+    res.redirect("/student-staff?success=deleted");
+  });
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`==================================================`);
   console.log(`Server running locally: http://localhost:${PORT}`);

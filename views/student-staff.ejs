@@ -1,0 +1,230 @@
+<%- include('partials/header', { title: 'Daftar Student Staff' }) %>
+<%- include('partials/nav', { path: '/student-staff' }) %>
+
+<main class="flex-grow w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+    <!-- Page Header -->
+    <div class="mb-6 sm:mb-8 animate-fadeInUp flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-1">Daftar Student Staff</h2>
+            <p class="text-xs sm:text-sm text-muted">Kelola data Student Staff (Tambah, Edit, Hapus)</p>
+        </div>
+        <button onclick="openAddModal()" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm inline-flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Tambah Data
+        </button>
+    </div>
+
+    <% if (typeof success_msg !== 'undefined' && success_msg) { %>
+        <div class="mb-6 bg-success/20 text-success border border-success/30 px-4 py-3 rounded-xl animate-fadeInUp">
+            <%= success_msg %>
+        </div>
+    <% } %>
+    <% if (typeof error_msg !== 'undefined' && error_msg) { %>
+        <div class="mb-6 bg-red-500/20 text-red-500 border border-red-500/30 px-4 py-3 rounded-xl animate-fadeInUp">
+            <%= error_msg %>
+        </div>
+    <% } %>
+
+    <!-- Desktop Table Section -->
+    <div class="hidden md:block bg-card rounded-2xl border border-border overflow-hidden animate-fadeInUp stagger-1 shadow-sm mb-6">
+        <div class="table-container overflow-x-auto">
+            <table class="w-full min-w-[600px]">
+                <thead class="bg-accentLighter border-b border-border">
+                    <tr>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">No</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Nama</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">NIM</th>
+                        <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    <% if (karyawanList && karyawanList.length === 0) { %>
+                        <tr>
+                            <td colspan="4" class="py-10 text-center">
+                                <p class="text-muted text-sm">Data tidak ditemukan.</p>
+                            </td>
+                        </tr>
+                    <% } else if (karyawanList) { %>
+                        <% karyawanList.forEach((k, i) => { %>
+                            <tr class="hover:bg-accentLighter/30 transition-colors">
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted font-medium"><%= i + 1 %></td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg font-medium"><%= k.nama %></td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg"><%= k.nim || '-' %></td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <button onclick='openEditModal(<%- JSON.stringify(k) %>)' class="text-muted hover:text-indigo-600 transition-colors p-1.5 rounded hover:bg-indigo-50" title="Edit">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </button>
+                                        <button onclick='openDeleteModal(<%- JSON.stringify(k) %>)' class="text-muted hover:text-red-500 transition-colors p-1.5 rounded hover:bg-red-50" title="Hapus">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile Card Section -->
+    <div class="md:hidden space-y-4 animate-fadeInUp stagger-1 mb-6">
+        <% if (karyawanList && karyawanList.length === 0) { %>
+            <div class="bg-card rounded-2xl border border-border p-8 text-center shadow-sm">
+                <p class="text-muted text-sm">Data tidak ditemukan.</p>
+            </div>
+        <% } else if (karyawanList) { %>
+            <% karyawanList.forEach(k => { %>
+                <div class="bg-card rounded-2xl border border-border p-5 shadow-sm space-y-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-bold text-fg text-sm"><%= k.nama %></h4>
+                            <p class="text-xs text-muted mt-1">NIM: <span class="font-medium text-fg"><%= k.nim || '-' %></span></p>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick='openEditModal(<%- JSON.stringify(k) %>)' class="text-muted hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-inputBg" title="Edit">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <button onclick='openDeleteModal(<%- JSON.stringify(k) %>)' class="text-muted hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-inputBg" title="Hapus">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        <% } %>
+    </div>
+</main>
+
+<!-- Add Modal -->
+<div id="addModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300" id="addModalContent">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="font-display text-xl font-bold text-fg">Tambah Student Staff</h3>
+            <button type="button" onclick="closeAddModal()" class="text-muted hover:text-fg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form action="/student-staff/add" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Nama Student Staff</label>
+                <input type="text" name="nama" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Masukkan nama lengkap">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">NIM</label>
+                <input type="text" name="nim" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Masukkan NIM">
+            </div>
+            <div class="mt-6 pt-4 border-t border-border flex justify-end gap-3">
+                <button type="button" onclick="closeAddModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
+                <button type="submit" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300" id="editModalContent">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="font-display text-xl font-bold text-fg">Edit Student Staff</h3>
+            <button type="button" onclick="closeEditModal()" class="text-muted hover:text-fg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form action="/student-staff/edit" method="POST" class="space-y-4">
+            <input type="hidden" name="id" id="editId">
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Nama Student Staff</label>
+                <input type="text" name="nama" id="editNama" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Masukkan nama lengkap">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">NIM</label>
+                <input type="text" name="nim" id="editNim" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Masukkan NIM">
+            </div>
+            <div class="mt-6 pt-4 border-t border-border flex justify-end gap-3">
+                <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
+                <button type="submit" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300" id="deleteModalContent">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display text-xl font-bold text-fg">Konfirmasi Hapus</h3>
+            <button type="button" onclick="closeDeleteModal()" class="text-muted hover:text-fg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <p class="text-sm text-muted mb-6">Apakah Anda yakin ingin menghapus data <span id="deleteNama" class="font-bold text-fg"></span>? <br><br><span class="text-red-500 font-semibold">Peringatan:</span> Menghapus data ini juga akan menghapus seluruh data presensi dan overtime yang bersangkutan secara permanen.</p>
+        <form action="/student-staff/delete" method="POST">
+            <input type="hidden" name="id" id="deleteId">
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeDeleteModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
+                <button type="submit" class="px-5 py-2.5 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors text-sm">Ya, Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Add Modal
+    const addModal = document.getElementById('addModal');
+    const addModalContent = document.getElementById('addModalContent');
+    function openAddModal() {
+        addModal.classList.remove('hidden');
+        setTimeout(() => {
+            addModal.classList.remove('opacity-0');
+            addModalContent.classList.remove('scale-95');
+        }, 10);
+    }
+    function closeAddModal() {
+        addModal.classList.add('opacity-0');
+        addModalContent.classList.add('scale-95');
+        setTimeout(() => addModal.classList.add('hidden'), 300);
+    }
+
+    // Edit Modal
+    const editModal = document.getElementById('editModal');
+    const editModalContent = document.getElementById('editModalContent');
+    function openEditModal(data) {
+        document.getElementById('editId').value = data.id;
+        document.getElementById('editNama').value = data.nama;
+        document.getElementById('editNim').value = data.nim || '';
+        
+        editModal.classList.remove('hidden');
+        setTimeout(() => {
+            editModal.classList.remove('opacity-0');
+            editModalContent.classList.remove('scale-95');
+        }, 10);
+    }
+    function closeEditModal() {
+        editModal.classList.add('opacity-0');
+        editModalContent.classList.add('scale-95');
+        setTimeout(() => editModal.classList.add('hidden'), 300);
+    }
+
+    // Delete Modal
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteModalContent = document.getElementById('deleteModalContent');
+    function openDeleteModal(data) {
+        document.getElementById('deleteId').value = data.id;
+        document.getElementById('deleteNama').textContent = data.nama;
+        
+        deleteModal.classList.remove('hidden');
+        setTimeout(() => {
+            deleteModal.classList.remove('opacity-0');
+            deleteModalContent.classList.remove('scale-95');
+        }, 10);
+    }
+    function closeDeleteModal() {
+        deleteModal.classList.add('opacity-0');
+        deleteModalContent.classList.add('scale-95');
+        setTimeout(() => deleteModal.classList.add('hidden'), 300);
+    }
+</script>
+
+<%- include('partials/footer') %>

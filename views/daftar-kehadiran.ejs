@@ -13,7 +13,7 @@
                             Live Monitoring
                         </span>
                     </div>
-                    <p class="text-sm sm:text-base text-muted">Riwayat presensi seluruh karyawan secara real-time</p>
+                    <p class="text-sm sm:text-base text-muted">Riwayat presensi seluruh student staff secara real-time</p>
                 </div>
             </div>
 
@@ -23,7 +23,7 @@
                     <div class="w-full sm:w-auto flex-1 sm:max-w-xs">
                         <label for="filterNama" class="block text-sm font-semibold text-fg mb-2">Filter Nama</label>
                         <select id="filterNama" name="filterNama" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
-                            <option value="all" <%= filterNama === 'all' ? 'selected' : '' %>>Semua Karyawan</option>
+                            <option value="all" <%= filterNama === 'all' ? 'selected' : '' %>>Semua Student Staff</option>
                             <% karyawanList.forEach(k => { %>
                                 <option value="<%= k.id %>" <%= filterNama == k.id ? 'selected' : '' %>><%= k.nama %></option>
                             <% }) %>

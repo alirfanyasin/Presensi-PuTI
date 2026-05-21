@@ -60,7 +60,8 @@ class MySQLWrapper {
     const queries = [
       `CREATE TABLE IF NOT EXISTS karyawan (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          nama VARCHAR(255) NOT NULL
+          nama VARCHAR(255) NOT NULL,
+          nim VARCHAR(50) DEFAULT NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
       `CREATE TABLE IF NOT EXISTS presensi (
