@@ -1,61 +1,65 @@
-    <!-- Navigation -->
-    <nav class="bg-card border-b border-border sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between h-auto sm:h-16 py-3 sm:py-0 gap-3 sm:gap-4">
-                
-                <!-- Logo & Date (Top row on mobile, left on desktop) -->
-                <div class="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-accent rounded-xl flex items-center justify-center logo-pulse">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                            </svg>
-                        </div>
-                        <h1 class="font-display text-xl font-bold text-fg">HITAM</h1>
-                    </div>
-                    <!-- Date Display on Mobile -->
-                    <div class="flex sm:hidden items-center gap-1.5 text-xs font-semibold text-accent bg-accentLight/40 px-3 py-1.5 rounded-xl">
-                        <span id="currentDateMobile"></span>
-                    </div>
-                </div>
+<!-- Navigation -->
+<nav class="bg-card border-b border-border sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div
+            class="flex flex-col sm:flex-row sm:items-center sm:justify-between h-auto sm:h-16 py-3 sm:py-0 gap-3 sm:gap-4">
 
-                <!-- Nav Links (Bottom row on mobile, centered/right on desktop) -->
-                <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0 hide-scrollbar justify-start">
-                    <a href="/" class="nav-item <%= path === '/' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
-                        Presensi
-                    </a>
-                    <a href="/daftar-kehadiran" class="nav-item <%= path === '/daftar-kehadiran' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
-                        Daftar Kehadiran
-                    </a>
-                    <a href="/riwayat-bulanan" class="nav-item <%= path.startsWith('/riwayat-bulanan') || path.startsWith('/detail-bulanan') ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
-                        Riwayat Bulanan
-                    </a>
-                    <a href="/overtime" class="nav-item <%= path === '/overtime' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
-                        Overtime
-                    </a>
-                    <a href="/student-staff" class="nav-item <%= path === '/student-staff' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
-                        Student Staff
-                    </a>
+            <!-- Logo & Date (Top row on mobile, left on desktop) -->
+            <div class="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+                <div class="flex items-center gap-3">
+                    <img src="/logo_typography.png" alt="HITAM Logo" class="h-auto w-32">
                 </div>
-
-                <!-- Date Display (Desktop only) -->
-                <div class="hidden sm:flex items-center gap-2 text-sm text-muted">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <span id="currentDateDesktop"></span>
+                <!-- Date Display on Mobile -->
+                <div
+                    class="flex sm:hidden items-center gap-1.5 text-xs font-semibold text-accent bg-accentLight/40 px-3 py-1.5 rounded-xl">
+                    <span id="currentDateMobile"></span>
                 </div>
             </div>
+
+            <!-- Nav Links (Bottom row on mobile, centered/right on desktop) -->
+            <div
+                class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0 hide-scrollbar justify-start">
+                <a href="/"
+                    class="nav-item <%= path === '/' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
+                    Presensi
+                </a>
+                <a href="/daftar-kehadiran"
+                    class="nav-item <%= path === '/daftar-kehadiran' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
+                    Daftar Kehadiran
+                </a>
+                <a href="/riwayat-bulanan"
+                    class="nav-item <%= path.startsWith('/riwayat-bulanan') || path.startsWith('/detail-bulanan') ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
+                    Riwayat Bulanan
+                </a>
+                <a href="/overtime"
+                    class="nav-item <%= path === '/overtime' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
+                    Overtime
+                </a>
+                <a href="/student-staff"
+                    class="nav-item <%= path === '/student-staff' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
+                    Student Staff
+                </a>
+            </div>
+
+            <!-- Date Display (Desktop only) -->
+            <div class="hidden sm:flex items-center gap-2 text-sm text-muted">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span id="currentDateDesktop"></span>
+            </div>
         </div>
-    </nav>
-    <script>
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const dateStr = new Date().toLocaleDateString('id-ID', options);
-        if (document.getElementById('currentDateDesktop')) {
-            document.getElementById('currentDateDesktop').textContent = dateStr;
-        }
-        if (document.getElementById('currentDateMobile')) {
-            const optionsMobile = { weekday: 'short', day: 'numeric', month: 'short' };
-            document.getElementById('currentDateMobile').textContent = new Date().toLocaleDateString('id-ID', optionsMobile);
-        }
-    </script>
+    </div>
+</nav>
+<script>
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateStr = new Date().toLocaleDateString('id-ID', options);
+    if (document.getElementById('currentDateDesktop')) {
+        document.getElementById('currentDateDesktop').textContent = dateStr;
+    }
+    if (document.getElementById('currentDateMobile')) {
+        const optionsMobile = { weekday: 'short', day: 'numeric', month: 'short' };
+        document.getElementById('currentDateMobile').textContent = new Date().toLocaleDateString('id-ID', optionsMobile);
+    }
+</script>
