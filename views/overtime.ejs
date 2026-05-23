@@ -415,7 +415,7 @@
                     </button>
                 </div>
 
-                <form action="/overtime/transfer" method="POST" class="space-y-4">
+                <form id="transferOvertimeForm" action="/overtime/transfer" method="POST" class="space-y-4">
                     <input type="hidden" id="transOvertimeId" name="overtimeId">
 
                     <div>
@@ -434,16 +434,51 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label for="transPresensiId" class="block text-sm font-semibold text-fg mb-1">Presensi Hari
-                            Target (Kurang dari 8 Jam)</label>
+                    <div class="flex items-center gap-2 py-1">
+                        <input type="checkbox" id="alokasikanHariCuti" name="alokasikanHariCuti" value="true" class="w-4 h-4 text-accent border-border rounded focus:ring-accent focus:ring-offset-0 cursor-pointer" onchange="toggleAlokasiCuti(this)">
+                        <label for="alokasikanHariCuti" class="text-sm font-semibold text-fg cursor-pointer select-none">Alokasikan ke WFH / Tidak Masuk</label>
+                    </div>
+
+                    <div id="targetPresenceContainer">
+                        <label for="transPresensiId" class="block text-sm font-semibold text-fg mb-1">Presensi Hari Target (Kurang dari 8 Jam)</label>
                         <select id="transPresensiId" name="presensiId" required
                             class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm"
                             onchange="onTargetDateChange(this)">
                             <option value="" disabled selected>-- Pilih Hari Target --</option>
                         </select>
-                        <p id="noTargetMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Student Staff ini tidak
-                            memiliki hari kerja di bawah 8 jam yang perlu ditransfer.</p>
+                        <p id="noTargetMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Student Staff ini tidak memiliki hari kerja di bawah 8 jam yang perlu ditransfer.</p>
+                    </div>
+
+                    <div id="absentTargetContainer" class="hidden">
+                        <label for="transAbsentDateId" class="block text-sm font-semibold text-fg mb-1">Pilih Hari WFH / Tidak Masuk Kerja</label>
+                        <select id="transAbsentDateId" name="absentDateId"
+                            class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm"
+                            onchange="onAbsentDateChange(this)">
+                            <option value="" disabled selected>-- Pilih Tanggal WFH / Tidak Masuk --</option>
+                        </select>
+                        <p id="noAbsentMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Student Staff ini tidak memiliki hari WFH / tidak masuk di periode yang sama.</p>
+                    </div>
+
+                    <div id="pekerjaanAbsentContainer" class="hidden">
+                        <label for="transPekerjaanAbsent" class="block text-sm font-semibold text-fg mb-1">Deskripsi Pekerjaan <span class="text-accent text-xs">(wajib)</span></label>
+                        <textarea id="transPekerjaanAbsent" name="pekerjaan" rows="3" placeholder="Tuliskan deskripsi pekerjaan alokasi..."
+                            class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg placeholder-muted resize-none focus:border-accent transition-colors text-sm"></textarea>
+                    </div>
+
+                    <div id="fotoAbsentContainer" class="hidden">
+                        <label class="block text-sm font-semibold text-fg mb-1">Bukti Foto <span class="text-accent text-xs">(wajib)</span></label>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="absentPhotoUploadInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                                    <svg class="w-8 h-8 mb-2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    <p class="text-xs text-muted font-semibold">Klik untuk unggah foto bukti alokasi</p>
+                                </div>
+                                <input id="absentPhotoUploadInput" type="file" accept="image/*" class="hidden" />
+                            </label>
+                        </div>
+                        <img id="absentPhotoPreview" class="hidden w-full rounded-xl mt-3 aspect-video border border-border object-cover" alt="Preview Bukti Foto">
+                        <input type="hidden" name="foto" id="absentFotoInput">
+                        <canvas id="absentCanvas" class="hidden"></canvas>
                     </div>
 
                     <div id="transferCalculationContainer"
@@ -596,6 +631,10 @@
                             const rawUnderHours = `<%- JSON.stringify(underHoursPresences) %>`;
                             const underHoursList = JSON.parse(rawUnderHours);
 
+                            // Load absentDatesList from backend EJS context
+                            const rawAbsentDates = `<%- JSON.stringify(absentDatesList) %>`;
+                            const absentDatesList = JSON.parse(rawAbsentDates);
+
                             // Modals DOM
                             const transferModal = document.getElementById('transferModal');
                             const transferModalContent = document.getElementById('transferModalContent');
@@ -619,6 +658,131 @@
                                 return str.trim();
                             }
 
+                            // Function to toggle between normal under-8-hours allocation and absent/holiday allocation
+                            function toggleAlokasiCuti(checkbox) {
+                                const isChecked = checkbox.checked;
+                                const targetPresenceContainer = document.getElementById('targetPresenceContainer');
+                                const absentTargetContainer = document.getElementById('absentTargetContainer');
+                                const pekerjaanAbsentContainer = document.getElementById('pekerjaanAbsentContainer');
+                                const fotoAbsentContainer = document.getElementById('fotoAbsentContainer');
+                                const transferCalculationContainer = document.getElementById('transferCalculationContainer');
+                                
+                                const selectTarget = document.getElementById('transPresensiId');
+                                const selectAbsent = document.getElementById('transAbsentDateId');
+                                const textareaPekerjaan = document.getElementById('transPekerjaanAbsent');
+                                
+                                // Reset calculations display
+                                transferCalculationContainer.classList.add('hidden');
+                                
+                                if (isChecked) {
+                                    // Hide normal target container, remove required
+                                    targetPresenceContainer.classList.add('hidden');
+                                    selectTarget.required = false;
+                                    selectTarget.value = '';
+                                    
+                                    // Show absent target container, make required
+                                    absentTargetContainer.classList.remove('hidden');
+                                    selectAbsent.required = true;
+                                    selectAbsent.value = '';
+                                    
+                                    // Show pekerjaan & foto containers, make pekerjaan required
+                                    pekerjaanAbsentContainer.classList.remove('hidden');
+                                    textareaPekerjaan.required = true;
+                                    textareaPekerjaan.value = '';
+                                    
+                                    fotoAbsentContainer.classList.remove('hidden');
+                                    
+                                    // Reset upload elements
+                                    document.getElementById('absentPhotoUploadInput').value = '';
+                                    document.getElementById('absentPhotoPreview').src = '';
+                                    document.getElementById('absentPhotoPreview').classList.add('hidden');
+                                    document.getElementById('absentFotoInput').value = '';
+                                    
+                                    // Disable transfer input until date is selected
+                                    const inputTransfer = document.getElementById('transDurasiMenitTransfer');
+                                    inputTransfer.value = '';
+                                    inputTransfer.max = '';
+                                    inputTransfer.placeholder = 'Pilih tanggal terlebih dahulu';
+                                    document.getElementById('transDurasiJamText').textContent = '';
+                                } else {
+                                    // Show normal target container, make required
+                                    targetPresenceContainer.classList.remove('hidden');
+                                    selectTarget.required = true;
+                                    selectTarget.value = '';
+                                    
+                                    // Hide absent target container, remove required
+                                    absentTargetContainer.classList.add('hidden');
+                                    selectAbsent.required = false;
+                                    selectAbsent.value = '';
+                                    
+                                    // Hide pekerjaan & foto, remove required
+                                    pekerjaanAbsentContainer.classList.add('hidden');
+                                    textareaPekerjaan.required = false;
+                                    textareaPekerjaan.value = '';
+                                    
+                                    fotoAbsentContainer.classList.add('hidden');
+                                    document.getElementById('absentPhotoUploadInput').value = '';
+                                    document.getElementById('absentFotoInput').value = '';
+                                    document.getElementById('absentPhotoPreview').src = '';
+                                    document.getElementById('absentPhotoPreview').classList.add('hidden');
+                                    
+                                    // Disable transfer input until date is selected
+                                    const inputTransfer = document.getElementById('transDurasiMenitTransfer');
+                                    inputTransfer.value = '';
+                                    inputTransfer.max = '';
+                                    inputTransfer.placeholder = 'Pilih hari target terlebih dahulu';
+                                    document.getElementById('transDurasiJamText').textContent = '';
+                                }
+                                
+                                checkSubmitStatus();
+                            }
+
+                            // Triggered when absent date select changes
+                            function onAbsentDateChange(selectElement) {
+                                const selectedOption = selectElement.options[selectElement.selectedIndex];
+                                if (!selectedOption || selectElement.value === '') return;
+
+                                // Limit for absent days is max 4 hours (240 minutes)
+                                const limit = 240;
+                                activeMaxNeededMins = limit;
+
+                                // Display calculations box
+                                document.getElementById('calcTargetOriginal').textContent = formatMinutes(0);
+                                document.getElementById('calcTargetTambahan').textContent = formatMinutes(0);
+                                document.getElementById('calcKekurangan').textContent = formatMinutes(limit);
+                                document.getElementById('transferCalculationContainer').classList.remove('hidden');
+
+                                const inputTransfer = document.getElementById('transDurasiMenitTransfer');
+                                const maxPossibleTransfer = Math.min(activeSisaMenit, limit);
+
+                                inputTransfer.max = maxPossibleTransfer;
+                                inputTransfer.placeholder = `Maks. ${maxPossibleTransfer} Menit`;
+
+                                // Auto fill with the max possible transfer
+                                inputTransfer.value = maxPossibleTransfer;
+                                onTransferMinutesInput(inputTransfer);
+                                
+                                checkSubmitStatus();
+                            }
+
+                            // Helper to determine the pay period month of a given date (16th of current month to 15th of next month is current+1 period)
+                            function getPeriodMonthStr(dateStr) {
+                                if (!dateStr) return "";
+                                const parts = dateStr.split("-");
+                                if (parts.length < 3) return "";
+                                let year = parseInt(parts[0], 10);
+                                let month = parseInt(parts[1], 10);
+                                const day = parseInt(parts[2], 10);
+                                if (day >= 16) {
+                                    month += 1;
+                                    if (month > 12) {
+                                        month = 1;
+                                        year += 1;
+                                    }
+                                }
+                                return `${year}-${String(month).padStart(2, '0')}`;
+                            }
+
                             // Modal 1: Transfer
                             function openTransferModal(element) {
                                 const record = JSON.parse(element.getAttribute('data-record'));
@@ -633,25 +797,36 @@
                                 const selectTarget = document.getElementById('transPresensiId');
                                 selectTarget.innerHTML = '<option value="" disabled selected>-- Pilih Hari Target --</option>';
 
-                                const recordMonth = record.tanggal.substring(0, 7); // "YYYY-MM"
-                                const filteredTargets = underHoursList.filter(p => p.karyawanId === record.karyawanId && p.tanggal.substring(0, 7) === recordMonth);
+                                const selectAbsent = document.getElementById('transAbsentDateId');
+                                selectAbsent.innerHTML = '<option value="" disabled selected>-- Pilih Tanggal WFH / Tidak Masuk --</option>';
+
+                                const todayLocal = new Date();
+                                const year = todayLocal.getFullYear();
+                                const month = String(todayLocal.getMonth() + 1).padStart(2, '0');
+                                const day = String(todayLocal.getDate()).padStart(2, '0');
+                                const todayStr = `${year}-${month}-${day}`;
+                                const currentPeriod = getPeriodMonthStr(todayStr);
+
+                                const recordPeriod = getPeriodMonthStr(record.tanggal);
+                                const filteredTargets = underHoursList.filter(p => p.karyawanId === record.karyawanId && getPeriodMonthStr(p.tanggal) === recordPeriod);
+                                
+                                let filteredAbsents = [];
+                                if (recordPeriod === currentPeriod) {
+                                    filteredAbsents = absentDatesList.filter(p => p.karyawanId === record.karyawanId && getPeriodMonthStr(p.tanggal) === recordPeriod && p.tanggal <= todayStr);
+                                }
 
                                 const noTargetMessage = document.getElementById('noTargetMessage');
+                                const noAbsentMessage = document.getElementById('noAbsentMessage');
                                 const transferCalculationContainer = document.getElementById('transferCalculationContainer');
                                 transferCalculationContainer.classList.add('hidden');
 
+                                // Handle Targets
                                 if (filteredTargets.length === 0) {
-                                    selectTarget.required = false;
                                     selectTarget.disabled = true;
                                     noTargetMessage.classList.remove('hidden');
-                                    document.getElementById('transDurasiMenitTransfer').disabled = true;
-                                    document.getElementById('btnSubmitTransfer').disabled = true;
                                 } else {
-                                    selectTarget.required = true;
                                     selectTarget.disabled = false;
                                     noTargetMessage.classList.add('hidden');
-                                    document.getElementById('transDurasiMenitTransfer').disabled = false;
-                                    document.getElementById('btnSubmitTransfer').disabled = false;
 
                                     filteredTargets.forEach(p => {
                                         const opt = document.createElement('option');
@@ -661,9 +836,37 @@
                                         // attach data variables
                                         opt.setAttribute('data-total-mins', p.totalMins);
                                         opt.setAttribute('data-menit-tambahan', p.menitTambahan || 0);
+                                        opt.setAttribute('data-is-absent', 'false');
                                         selectTarget.appendChild(opt);
                                     });
                                 }
+
+                                // Handle Absents
+                                if (filteredAbsents.length === 0) {
+                                    selectAbsent.disabled = true;
+                                    noAbsentMessage.classList.remove('hidden');
+                                } else {
+                                    selectAbsent.disabled = false;
+                                    noAbsentMessage.classList.add('hidden');
+
+                                    filteredAbsents.forEach(p => {
+                                        const opt = document.createElement('option');
+                                        opt.value = `new_date:${p.tanggal}`;
+                                        opt.textContent = `${p.formattedHari}, ${p.formattedDate} (WFH / Tidak Masuk)`;
+                                        // attach data variables
+                                        opt.setAttribute('data-total-mins', 0);
+                                        opt.setAttribute('data-menit-tambahan', 0);
+                                        opt.setAttribute('data-is-absent', 'true');
+                                        selectAbsent.appendChild(opt);
+                                    });
+                                }
+
+                                // Reset checkbox
+                                const checkboxCuti = document.getElementById('alokasikanHariCuti');
+                                checkboxCuti.checked = false;
+                                
+                                // Call toggle function to initialize form layout
+                                toggleAlokasiCuti(checkboxCuti);
 
                                 // Reset input fields
                                 document.getElementById('transDurasiMenitTransfer').value = '';
@@ -711,6 +914,8 @@
                                 // Auto fill with the exact deficiency or the remaining balance
                                 inputTransfer.value = maxPossibleTransfer;
                                 onTransferMinutesInput(inputTransfer);
+                                
+                                checkSubmitStatus();
                             }
 
                             // Live formatted text for transfer input
@@ -727,7 +932,9 @@
                                 textLabel.textContent = `Setara dengan: ${formatMinutes(val)}`;
 
                                 // Verify bounds
-                                const maxVal = parseInt(inputElement.max, 10) || activeSisaMenit;
+                                const isAbsent = document.getElementById('alokasikanHariCuti').checked;
+                                const maxVal = isAbsent ? Math.min(activeSisaMenit, 240) : Math.min(activeSisaMenit, activeMaxNeededMins);
+                                
                                 if (val > maxVal) {
                                     inputElement.setCustomValidity(`Nilai tidak boleh melebihi batas maksimal yaitu ${maxVal} menit.`);
                                     inputElement.reportValidity();
@@ -738,18 +945,152 @@
                                 }
                             }
 
+                            function checkSubmitStatus() {
+                                const isAbsent = document.getElementById('alokasikanHariCuti').checked;
+                                const btnSubmit = document.getElementById('btnSubmitTransfer');
+                                const inputTransfer = document.getElementById('transDurasiMenitTransfer');
+                                const val = parseInt(inputTransfer.value, 10);
+
+                                let isValid = true;
+
+                                if (isAbsent) {
+                                    const selectAbsent = document.getElementById('transAbsentDateId');
+                                    const textareaPekerjaan = document.getElementById('transPekerjaanAbsent');
+                                    const fotoVal = document.getElementById('absentFotoInput').value;
+
+                                    if (selectAbsent.value === '') isValid = false;
+                                    if (textareaPekerjaan.value.trim() === '') isValid = false;
+                                    if (!fotoVal) isValid = false;
+
+                                    const maxVal = Math.min(activeSisaMenit, 240);
+                                    if (isNaN(val) || val <= 0 || val > maxVal) isValid = false;
+                                } else {
+                                    const selectTarget = document.getElementById('transPresensiId');
+                                    if (selectTarget.value === '') isValid = false;
+
+                                    const maxVal = Math.min(activeSisaMenit, activeMaxNeededMins);
+                                    if (isNaN(val) || val <= 0 || val > maxVal) isValid = false;
+                                }
+
+                                btnSubmit.disabled = !isValid;
+                            }
+
                             function autoFillMaxTransfer() {
                                 const inputTransfer = document.getElementById('transDurasiMenitTransfer');
-                                const selectTarget = document.getElementById('transPresensiId');
+                                const isAbsent = document.getElementById('alokasikanHariCuti').checked;
 
                                 let maxVal = activeSisaMenit;
-                                if (selectTarget.value !== '') {
+                                if (isAbsent) {
+                                    maxVal = Math.min(activeSisaMenit, 240);
+                                } else {
                                     maxVal = Math.min(activeSisaMenit, activeMaxNeededMins);
                                 }
 
                                 inputTransfer.value = maxVal;
                                 onTransferMinutesInput(inputTransfer);
+                                checkSubmitStatus();
                             }
+
+                            // Image Upload & Compression & Form event bindings
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const photoInput = document.getElementById('absentPhotoUploadInput');
+                                const hiddenFoto = document.getElementById('absentFotoInput');
+                                const previewImg = document.getElementById('absentPhotoPreview');
+                                const canvas = document.getElementById('absentCanvas');
+                                const textareaPekerjaan = document.getElementById('transPekerjaanAbsent');
+
+                                if (photoInput) {
+                                    photoInput.addEventListener('change', (e) => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                            const img = new Image();
+                                            img.onload = () => {
+                                                const MAX_WIDTH = 800;
+                                                const MAX_HEIGHT = 600;
+                                                let width = img.width;
+                                                let height = img.height;
+
+                                                if (width > height) {
+                                                    if (width > MAX_WIDTH) {
+                                                        height *= MAX_WIDTH / width;
+                                                        width = MAX_WIDTH;
+                                                    }
+                                                } else {
+                                                    if (height > MAX_HEIGHT) {
+                                                        width *= MAX_HEIGHT / height;
+                                                        height = MAX_HEIGHT;
+                                                    }
+                                                }
+
+                                                canvas.width = width;
+                                                canvas.height = height;
+                                                const ctx = canvas.getContext('2d');
+                                                ctx.drawImage(img, 0, 0, width, height);
+
+                                                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                                hiddenFoto.value = dataUrl;
+                                                previewImg.src = dataUrl;
+                                                previewImg.classList.remove('hidden');
+                                                
+                                                checkSubmitStatus();
+                                            };
+                                            img.src = event.target.result;
+                                        };
+                                        reader.readAsDataURL(file);
+                                    });
+                                }
+
+                                if (textareaPekerjaan) {
+                                    textareaPekerjaan.addEventListener('input', () => {
+                                        checkSubmitStatus();
+                                    });
+                                }
+
+                                // Attach form submit validator
+                                const form = document.getElementById('transferOvertimeForm');
+                                if (form) {
+                                    form.addEventListener('submit', (e) => {
+                                        const isAbsent = document.getElementById('alokasikanHariCuti').checked;
+                                        if (isAbsent) {
+                                            const fotoVal = hiddenFoto.value;
+                                            const pekerjaanVal = textareaPekerjaan.value;
+                                            const selectAbsentVal = document.getElementById('transAbsentDateId').value;
+                                            const minutesVal = parseInt(document.getElementById('transDurasiMenitTransfer').value, 10);
+
+                                            if (!selectAbsentVal) {
+                                                alert('Silakan pilih tanggal tidak masuk kerja.');
+                                                e.preventDefault();
+                                                return false;
+                                            }
+                                            if (!pekerjaanVal.trim()) {
+                                                alert('Deskripsi pekerjaan wajib diisi.');
+                                                e.preventDefault();
+                                                return false;
+                                            }
+                                            if (!fotoVal) {
+                                                alert('Bukti foto wajib diunggah.');
+                                                e.preventDefault();
+                                                return false;
+                                            }
+                                            if (isNaN(minutesVal) || minutesVal <= 0 || minutesVal > 240) {
+                                                alert('Jumlah menit alokasi cuti tidak valid (maksimal 240 menit/4 jam).');
+                                                e.preventDefault();
+                                                return false;
+                                            }
+                                        } else {
+                                            const selectTargetVal = document.getElementById('transPresensiId').value;
+                                            if (!selectTargetVal) {
+                                                alert('Silakan pilih hari target.');
+                                                e.preventDefault();
+                                                return false;
+                                            }
+                                        }
+                                    });
+                                }
+                            });
 
                             // Modal 2: Manual Edit Balance
                             function openEditModal(element) {

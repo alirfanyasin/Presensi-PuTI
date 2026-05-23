@@ -16,19 +16,26 @@ let gitInfo = {
   version: pkg.version || "1.0.0",
   branch: "",
   hash: "",
-  date: ""
+  date: "",
 };
 
 try {
-  gitInfo.branch = execSync("git rev-parse --abbrev-ref HEAD", { stdio: "pipe" }).toString().trim();
-  gitInfo.hash = execSync("git rev-parse --short HEAD", { stdio: "pipe" }).toString().trim();
-  gitInfo.date = execSync("git log -1 --format=\"%cs\"", { stdio: "pipe" }).toString().trim();
+  gitInfo.branch = execSync("git rev-parse --abbrev-ref HEAD", {
+    stdio: "pipe",
+  })
+    .toString()
+    .trim();
+  gitInfo.hash = execSync("git rev-parse --short HEAD", { stdio: "pipe" })
+    .toString()
+    .trim();
+  gitInfo.date = execSync('git log -1 --format="%cs"', { stdio: "pipe" })
+    .toString()
+    .trim();
 } catch (err) {
   console.warn("Gagal membaca metadata Git:", err.message);
 }
 
 app.locals.gitInfo = gitInfo;
-
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -72,7 +79,10 @@ const getActualPeriodBounds = async (periodMonthStr) => {
   }
 
   // Start date: 16th of previous month, shifted forward to the first non-holiday/non-weekend
-  let startMoment = moment(`${startYear}-${String(startMonth).padStart(2, "0")}-16`, "YYYY-MM-DD");
+  let startMoment = moment(
+    `${startYear}-${String(startMonth).padStart(2, "0")}-16`,
+    "YYYY-MM-DD",
+  );
   while (true) {
     const check = await isHoliday(startMoment.format("YYYY-MM-DD"));
     if (!check.isHoliday) {
@@ -82,7 +92,10 @@ const getActualPeriodBounds = async (periodMonthStr) => {
   }
 
   // End date: 15th of current month, shifted backward to the first non-holiday/non-weekend
-  let endMoment = moment(`${year}-${String(month).padStart(2, "0")}-15`, "YYYY-MM-DD");
+  let endMoment = moment(
+    `${year}-${String(month).padStart(2, "0")}-15`,
+    "YYYY-MM-DD",
+  );
   while (true) {
     const check = await isHoliday(endMoment.format("YYYY-MM-DD"));
     if (!check.isHoliday) {
@@ -95,13 +108,14 @@ const getActualPeriodBounds = async (periodMonthStr) => {
     startDate: startMoment.format("YYYY-MM-DD"),
     endDate: endMoment.format("YYYY-MM-DD"),
     startMoment,
-    endMoment
+    endMoment,
   };
 };
 
 // Helper to get formatted Indonesian range string for a given period month (YYYY-MM)
 const getPeriodRangeString = async (periodMonthStr) => {
-  const { startMoment, endMoment } = await getActualPeriodBounds(periodMonthStr);
+  const { startMoment, endMoment } =
+    await getActualPeriodBounds(periodMonthStr);
   return `${startMoment.locale("id").format("D MMMM")} – ${endMoment.locale("id").format("D MMMM YYYY")}`;
 };
 
@@ -115,7 +129,9 @@ const saveBase64Image = (base64Str, recordId) => {
   }
 
   // Match data URI pattern
-  const matches = base64Str.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+  const matches = base64Str.match(
+    /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/,
+  );
   let ext = "jpg"; // default extension
   let base64Data = base64Str;
 
@@ -139,6 +155,16 @@ const saveBase64Image = (base64Str, recordId) => {
 
   fs.writeFileSync(filepath, buffer);
   return `/uploads/${filename}`;
+};
+
+// Helper to calculate check-out time from check-in time and minutes
+const calculateEndTime = (startStr, minutesToAdd) => {
+  if (!startStr) return "";
+  const [h, m] = startStr.split(":").map(Number);
+  const totalMins = h * 60 + m + minutesToAdd;
+  const newH = Math.floor(totalMins / 60) % 24;
+  const newM = totalMins % 60;
+  return `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
 };
 
 const monthNames = [
@@ -227,7 +253,7 @@ app.get("/api/check-presensi", async (req, res) => {
   if (!tanggal) return res.json({ status: "none" });
 
   try {
-    if (suratTugas !== 'true') {
+    if (suratTugas !== "true") {
       const check = await isHoliday(tanggal);
       if (check.isHoliday) {
         return res.json({ status: "holiday", holidayName: check.name });
@@ -249,7 +275,7 @@ app.get("/api/check-presensi", async (req, res) => {
             jamPulang: row.jamPulang,
           });
         return res.json({ status: "sudah_masuk", jamMasuk: row.jamMasuk });
-      }
+      },
     );
   } catch (e) {
     console.error(e);
@@ -261,7 +287,7 @@ app.get("/api/check-presensi", async (req, res) => {
 app.post("/presensi-masuk", async (req, res) => {
   const { karyawanId, tanggal, suratTugas } = req.body;
 
-  if (suratTugas !== 'true') {
+  if (suratTugas !== "true") {
     const check = await isHoliday(tanggal);
     if (check.isHoliday) {
       return res.redirect("/?error=holiday");
@@ -278,7 +304,10 @@ app.post("/presensi-masuk", async (req, res) => {
     "INSERT INTO presensi (karyawanId, tanggal, jamMasuk, jamPulang, pekerjaan, createdAt, updatedAt, hari, totalJam, foto) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, NULL, NULL)",
     [karyawanId, tanggal, jamMasuk, createdAt, createdAt, hari],
     (err) => {
-      if (err) { console.error(err); return res.status(500).send("Error saving data"); }
+      if (err) {
+        console.error(err);
+        return res.status(500).send("Error saving data");
+      }
       res.redirect("/?success=masuk");
     },
   );
@@ -288,7 +317,7 @@ app.post("/presensi-masuk", async (req, res) => {
 app.post("/presensi-pulang", async (req, res) => {
   const { karyawanId, tanggal, pekerjaan, foto, suratTugas } = req.body;
 
-  if (suratTugas !== 'true') {
+  if (suratTugas !== "true") {
     const check = await isHoliday(tanggal);
     if (check.isHoliday) {
       return res.redirect("/?error=holiday");
@@ -305,12 +334,21 @@ app.post("/presensi-pulang", async (req, res) => {
     "SELECT * FROM presensi WHERE karyawanId = ? AND tanggal = ? AND jamPulang IS NULL ORDER BY id DESC LIMIT 1",
     [karyawanId, tanggal],
     (err, existing) => {
-      if (err) { console.error(err); return res.status(500).send("Error"); }
+      if (err) {
+        console.error(err);
+        return res.status(500).send("Error");
+      }
       if (!existing) {
         // Check if already checked out
-        db.get("SELECT id FROM presensi WHERE karyawanId = ? AND tanggal = ? AND jamPulang IS NOT NULL LIMIT 1", [karyawanId, tanggal], (e, row) => {
-          return res.redirect(row ? "/?error=sudah_pulang" : "/?error=notfound");
-        });
+        db.get(
+          "SELECT id FROM presensi WHERE karyawanId = ? AND tanggal = ? AND jamPulang IS NOT NULL LIMIT 1",
+          [karyawanId, tanggal],
+          (e, row) => {
+            return res.redirect(
+              row ? "/?error=sudah_pulang" : "/?error=notfound",
+            );
+          },
+        );
         return;
       }
 
@@ -335,7 +373,7 @@ app.post("/presensi-pulang", async (req, res) => {
       if (foto) {
         try {
           // Delete old photo if it exists
-          if (existing.foto && existing.foto.startsWith('/uploads/')) {
+          if (existing.foto && existing.foto.startsWith("/uploads/")) {
             const oldFilepath = path.join(__dirname, existing.foto);
             if (fs.existsSync(oldFilepath)) {
               fs.unlinkSync(oldFilepath);
@@ -349,21 +387,39 @@ app.post("/presensi-pulang", async (req, res) => {
 
       db.run(
         "UPDATE presensi SET jamPulang = ?, pekerjaan = ?, foto = ?, totalJam = ?, updatedAt = ? WHERE id = ?",
-        [jamPulang, pekerjaan || "", fotoPath || existing.foto || null, totalJamStr.trim(), updatedAt, existing.id],
+        [
+          jamPulang,
+          pekerjaan || "",
+          fotoPath || existing.foto || null,
+          totalJamStr.trim(),
+          updatedAt,
+          existing.id,
+        ],
         (err) => {
-          if (err) { console.error(err); return res.status(500).send("Error"); }
+          if (err) {
+            console.error(err);
+            return res.status(500).send("Error");
+          }
 
           if (isOvertime) {
             const excessMins = totalMins - 480;
             db.run(
               "INSERT INTO overtime (karyawanId, presensiId, tanggal, durasiMenit, sisaMenit, keterangan, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'Lembur otomatis (kelebihan jam kerja harian)', ?, ?)",
-              [karyawanId, existing.id, tanggal, excessMins, excessMins, updatedAt, updatedAt],
+              [
+                karyawanId,
+                existing.id,
+                tanggal,
+                excessMins,
+                excessMins,
+                updatedAt,
+                updatedAt,
+              ],
               (errOt) => {
                 if (errOt) {
                   console.error("Gagal mencatat overtime otomatis:", errOt);
                 }
                 res.redirect("/?success=pulang");
-              }
+              },
             );
           } else {
             res.redirect("/?success=pulang");
@@ -423,10 +479,10 @@ app.get("/daftar-kehadiran", async (req, res) => {
       try {
         const filteredRows = rows; // Remove holiday filtering because Surat Tugas can be on holidays
 
-
         const presensi = filteredRows.map((r) => ({
           ...r,
-          formattedHari: r.hari || moment(r.tanggal).locale("id").format("dddd"),
+          formattedHari:
+            r.hari || moment(r.tanggal).locale("id").format("dddd"),
           formattedDate: moment(r.tanggal).locale("id").format("DD MMM YYYY"),
           totalJamStr: r.totalJam || "",
         }));
@@ -456,7 +512,6 @@ app.get("/daftar-kehadiran", async (req, res) => {
     console.error(err);
     res.status(500).send("Internal Server Error");
   }
-
 });
 
 // Route: Edit Data
@@ -479,7 +534,7 @@ app.post("/edit", (req, res) => {
     const totalMins = hA * 60 + mA - (hM * 60 + mM);
 
     const isOvertime = totalMins > 480;
-    const excessMins = isOvertime ? (totalMins - 480) : 0;
+    const excessMins = isOvertime ? totalMins - 480 : 0;
     const baseMins = isOvertime ? 480 : totalMins;
 
     // Total displayed duration includes menitTambahan
@@ -504,49 +559,79 @@ app.post("/edit", (req, res) => {
         }
 
         // Adjust or create overtime record
-        db.get("SELECT * FROM overtime WHERE presensiId = ?", [id], (errOt, ot) => {
-          if (errOt) console.error(errOt);
+        db.get(
+          "SELECT * FROM overtime WHERE presensiId = ?",
+          [id],
+          (errOt, ot) => {
+            if (errOt) console.error(errOt);
 
-          if (ot) {
-            if (excessMins > 0) {
-              // Update existing overtime record
-              const diff = excessMins - ot.durasiMenit;
-              const newSisa = Math.max(0, ot.sisaMenit + diff); // adjust sisaMenit by the difference
-              db.run(
-                "UPDATE overtime SET tanggal = ?, durasiMenit = ?, sisaMenit = ?, updatedAt = ? WHERE id = ?",
-                [tanggal, excessMins, newSisa, updatedAt, ot.id],
-                (errUpd) => {
-                  if (errUpd) console.error("Error updating overtime:", errUpd);
-                  res.redirect(`${returnUrl || "/daftar-kehadiran"}?success=edited`);
-                }
-              );
+            if (ot) {
+              if (excessMins > 0) {
+                // Update existing overtime record
+                const diff = excessMins - ot.durasiMenit;
+                const newSisa = Math.max(0, ot.sisaMenit + diff); // adjust sisaMenit by the difference
+                db.run(
+                  "UPDATE overtime SET tanggal = ?, durasiMenit = ?, sisaMenit = ?, updatedAt = ? WHERE id = ?",
+                  [tanggal, excessMins, newSisa, updatedAt, ot.id],
+                  (errUpd) => {
+                    if (errUpd)
+                      console.error("Error updating overtime:", errUpd);
+                    res.redirect(
+                      `${returnUrl || "/daftar-kehadiran"}?success=edited`,
+                    );
+                  },
+                );
+              } else {
+                // Excess is 0 now. Delete overtime record and transfers
+                db.run(
+                  "DELETE FROM overtime_transfer WHERE overtimeId = ?",
+                  [ot.id],
+                  (errDelT) => {
+                    if (errDelT) console.error(errDelT);
+                    db.run(
+                      "DELETE FROM overtime WHERE id = ?",
+                      [ot.id],
+                      (errDel) => {
+                        if (errDel) console.error(errDel);
+                        res.redirect(
+                          `${returnUrl || "/daftar-kehadiran"}?success=edited`,
+                        );
+                      },
+                    );
+                  },
+                );
+              }
             } else {
-              // Excess is 0 now. Delete overtime record and transfers
-              db.run("DELETE FROM overtime_transfer WHERE overtimeId = ?", [ot.id], (errDelT) => {
-                if (errDelT) console.error(errDelT);
-                db.run("DELETE FROM overtime WHERE id = ?", [ot.id], (errDel) => {
-                  if (errDel) console.error(errDel);
-                  res.redirect(`${returnUrl || "/daftar-kehadiran"}?success=edited`);
-                });
-              });
+              if (excessMins > 0) {
+                // Create new overtime record
+                db.run(
+                  "INSERT INTO overtime (karyawanId, presensiId, tanggal, durasiMenit, sisaMenit, keterangan, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'Lembur otomatis (kelebihan jam kerja harian dari edit)', ?, ?)",
+                  [
+                    karyawanId,
+                    id,
+                    tanggal,
+                    excessMins,
+                    excessMins,
+                    updatedAt,
+                    updatedAt,
+                  ],
+                  (errIns) => {
+                    if (errIns)
+                      console.error("Error inserting overtime:", errIns);
+                    res.redirect(
+                      `${returnUrl || "/daftar-kehadiran"}?success=edited`,
+                    );
+                  },
+                );
+              } else {
+                res.redirect(
+                  `${returnUrl || "/daftar-kehadiran"}?success=edited`,
+                );
+              }
             }
-          } else {
-            if (excessMins > 0) {
-              // Create new overtime record
-              db.run(
-                "INSERT INTO overtime (karyawanId, presensiId, tanggal, durasiMenit, sisaMenit, keterangan, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'Lembur otomatis (kelebihan jam kerja harian dari edit)', ?, ?)",
-                [karyawanId, id, tanggal, excessMins, excessMins, updatedAt, updatedAt],
-                (errIns) => {
-                  if (errIns) console.error("Error inserting overtime:", errIns);
-                  res.redirect(`${returnUrl || "/daftar-kehadiran"}?success=edited`);
-                }
-              );
-            } else {
-              res.redirect(`${returnUrl || "/daftar-kehadiran"}?success=edited`);
-            }
-          }
-        });
-      }
+          },
+        );
+      },
     );
   });
 });
@@ -565,21 +650,28 @@ app.post("/delete", (req, res) => {
         try {
           fs.unlinkSync(filepath);
         } catch (unlinkErr) {
-          console.error("Gagal menghapus file foto dari disk:", unlinkErr.message);
+          console.error(
+            "Gagal menghapus file foto dari disk:",
+            unlinkErr.message,
+          );
         }
       }
     }
 
-    db.run("DELETE FROM overtime_transfer WHERE presensiId = ? OR overtimeId IN (SELECT id FROM overtime WHERE presensiId = ?)", [id, id], (err1) => {
-      if (err1) console.error("Error deleting transfers:", err1);
-      db.run("DELETE FROM overtime WHERE presensiId = ?", [id], (err2) => {
-        if (err2) console.error("Error deleting overtime:", err2);
-        db.run("DELETE FROM presensi WHERE id = ?", [id], (err) => {
-          if (err) console.error(err);
-          res.redirect(`${returnUrl || "/daftar-kehadiran"}?success=deleted`);
+    db.run(
+      "DELETE FROM overtime_transfer WHERE presensiId = ? OR overtimeId IN (SELECT id FROM overtime WHERE presensiId = ?)",
+      [id, id],
+      (err1) => {
+        if (err1) console.error("Error deleting transfers:", err1);
+        db.run("DELETE FROM overtime WHERE presensiId = ?", [id], (err2) => {
+          if (err2) console.error("Error deleting overtime:", err2);
+          db.run("DELETE FROM presensi WHERE id = ?", [id], (err) => {
+            if (err) console.error(err);
+            res.redirect(`${returnUrl || "/daftar-kehadiran"}?success=deleted`);
+          });
         });
-      });
-    });
+      },
+    );
   });
 });
 
@@ -619,7 +711,7 @@ app.get("/riwayat-bulanan", async (req, res) => {
             monthName: `${monthNames[parseInt(month, 10) - 1]} ${year}`,
             formattedRange,
           };
-        })
+        }),
     );
 
     res.render("riwayat-bulanan", { groupedData });
@@ -679,7 +771,7 @@ app.get("/detail-bulanan", async (req, res) => {
     console.error(err);
     res.status(500).send("Internal Server Error");
   }
-});// Route: Export PDF (Print A4)
+}); // Route: Export PDF (Print A4)
 app.get("/export-pdf", async (req, res) => {
   try {
     const filterNama = req.query.filterNama || "";
@@ -692,7 +784,9 @@ app.get("/export-pdf", async (req, res) => {
       return res.status(400).send("Parameter filterNama wajib diisi");
     }
     if (!startDateParam && !endDateParam && !monthStr) {
-      return res.status(400).send("Parameter startDate/endDate atau month wajib diisi");
+      return res
+        .status(400)
+        .send("Parameter startDate/endDate atau month wajib diisi");
     }
 
     const karyawanList = await getKaryawan();
@@ -728,28 +822,40 @@ app.get("/export-pdf", async (req, res) => {
         const filteredRows = rows;
 
         let totalMinutes = 0;
-        
-        const presensi = await Promise.all(filteredRows.map(async (r) => {
-          const [hM, mM] = r.jamMasuk.split(":").map(Number);
-          const [hA, mA] = r.jamPulang.split(":").map(Number);
-          
-          const pukulStr = `${r.jamMasuk.replace(":", ".")} s/d ${r.jamPulang.replace(":", ".")}`;
-          const check = await isHoliday(r.tanggal);
 
-          return {
-            ...r,
-            formattedDateWithDay: moment(r.tanggal)
-              .locale("id")
-              .format("dddd, D MMMM YYYY"),
-            pukulStr,
-            totalJam: r.totalJam || "",
-            isSuratTugas: check.isHoliday,
-            mins: hA * 60 + mA - (hM * 60 + mM)
-          };
-        }));
+        const presensi = await Promise.all(
+          filteredRows.map(async (r) => {
+            const [hM, mM] = r.jamMasuk.split(":").map(Number);
+            const [hA, mA] = r.jamPulang.split(":").map(Number);
 
-        presensi.forEach(p => {
-          totalMinutes += p.mins;
+            const pukulStr = `${r.jamMasuk.replace(":", ".")} s/d ${r.jamPulang.replace(":", ".")}`;
+            const check = await isHoliday(r.tanggal);
+
+            return {
+              ...r,
+              formattedDateWithDay: moment(r.tanggal)
+                .locale("id")
+                .format("dddd, D MMMM YYYY"),
+              pukulStr,
+              totalJam: r.totalJam || "",
+              isSuratTugas: check.isHoliday,
+              mins: hA * 60 + mA - (hM * 60 + mM),
+            };
+          }),
+        );
+
+        presensi.forEach((p) => {
+          const totalJamStr = p.totalJam || "";
+          const hourMatch = totalJamStr.match(/(\d+)\s*Jam/i);
+          const minMatch = totalJamStr.match(/(\d+)\s*Menit/i);
+          let minutes = 0;
+          if (hourMatch) {
+            minutes += parseInt(hourMatch[1], 10) * 60;
+          }
+          if (minMatch) {
+            minutes += parseInt(minMatch[1], 10);
+          }
+          totalMinutes += minutes;
         });
 
         const totalHours = Math.floor(totalMinutes / 60);
@@ -801,130 +907,213 @@ app.get("/overtime", async (req, res) => {
     }
 
     // Stats (all-time, unfiltered)
-    db.all("SELECT durasiMenit, sisaMenit FROM overtime", (errStats, otStats) => {
-      if (errStats) console.error(errStats);
-      let totalMenit = 0;
-      let totalSisa = 0;
-      if (otStats) {
-        otStats.forEach(o => {
-          totalMenit += o.durasiMenit;
-          totalSisa += o.sisaMenit;
-        });
-      }
-      const totalTerpakai = totalMenit - totalSisa;
-      const stats = {
-        totalMenit, totalSisa, totalTerpakai,
-        totalJamGenerated: (totalMenit / 60).toFixed(1),
-        totalJamSisa: (totalSisa / 60).toFixed(1),
-        totalJamTerpakai: (totalTerpakai / 60).toFixed(1)
-      };
+    db.all(
+      "SELECT durasiMenit, sisaMenit FROM overtime",
+      (errStats, otStats) => {
+        if (errStats) console.error(errStats);
+        let totalMenit = 0;
+        let totalSisa = 0;
+        if (otStats) {
+          otStats.forEach((o) => {
+            totalMenit += o.durasiMenit;
+            totalSisa += o.sisaMenit;
+          });
+        }
+        const totalTerpakai = totalMenit - totalSisa;
+        const stats = {
+          totalMenit,
+          totalSisa,
+          totalTerpakai,
+          totalJamGenerated: (totalMenit / 60).toFixed(1),
+          totalJamSisa: (totalSisa / 60).toFixed(1),
+          totalJamTerpakai: (totalTerpakai / 60).toFixed(1),
+        };
 
-      // Overtime records – filtered by nama and date range
-      let otQuery = "SELECT o.*, k.nama FROM overtime o JOIN karyawan k ON o.karyawanId = k.id WHERE 1=1";
-      const otParams = [];
-      if (filterNama !== "all") {
-        otQuery += " AND o.karyawanId = ?";
-        otParams.push(filterNama);
-      }
-      if (filterTanggalMulai) {
-        otQuery += " AND o.tanggal >= ?";
-        otParams.push(filterTanggalMulai);
-      }
-      if (filterTanggalSelesai) {
-        otQuery += " AND o.tanggal <= ?";
-        otParams.push(filterTanggalSelesai);
-      }
-      otQuery += " ORDER BY o.tanggal DESC, o.id DESC";
+        // Overtime records – filtered by nama and date range
+        let otQuery =
+          "SELECT o.*, k.nama FROM overtime o JOIN karyawan k ON o.karyawanId = k.id WHERE 1=1";
+        const otParams = [];
+        if (filterNama !== "all") {
+          otQuery += " AND o.karyawanId = ?";
+          otParams.push(filterNama);
+        }
+        if (filterTanggalMulai) {
+          otQuery += " AND o.tanggal >= ?";
+          otParams.push(filterTanggalMulai);
+        }
+        if (filterTanggalSelesai) {
+          otQuery += " AND o.tanggal <= ?";
+          otParams.push(filterTanggalSelesai);
+        }
+        otQuery += " ORDER BY o.tanggal DESC, o.id DESC";
 
-      db.all(otQuery, otParams, (errRecords, overtimeRecords) => {
-        if (errRecords) console.error(errRecords);
+        db.all(otQuery, otParams, (errRecords, overtimeRecords) => {
+          if (errRecords) console.error(errRecords);
 
-        // Under-hours presences (for transfer modal dropdown – always unfiltered by date)
-        db.all(
-          "SELECT p.*, k.nama FROM presensi p JOIN karyawan k ON p.karyawanId = k.id WHERE p.jamMasuk IS NOT NULL AND p.jamPulang IS NOT NULL AND p.jamPulang != '' ORDER BY p.tanggal DESC, p.id DESC",
-          async (errPres, allPres) => {
-            if (errPres) console.error(errPres);
+          // Under-hours presences (for transfer modal dropdown – always unfiltered by date)
+          db.all(
+            "SELECT p.*, k.nama FROM presensi p JOIN karyawan k ON p.karyawanId = k.id WHERE p.jamMasuk IS NOT NULL AND p.jamPulang IS NOT NULL AND p.jamPulang != '' ORDER BY p.tanggal DESC, p.id DESC",
+            async (errPres, allPres) => {
+              if (errPres) console.error(errPres);
 
-            const underHoursPresences = [];
-            if (allPres) {
-              for (const p of allPres) {
-                const [hM, mM] = p.jamMasuk.split(":").map(Number);
-                const [hA, mA] = p.jamPulang.split(":").map(Number);
-                const totalMins = hA * 60 + mA - (hM * 60 + mM);
-                const currentWorked = totalMins + (p.menitTambahan || 0);
-                if (currentWorked < 480) {
-                  const check = await isHoliday(p.tanggal);
-                  if (!check.isHoliday) {
-                    underHoursPresences.push({
-                      ...p,
-                      totalMins,
-                      formattedDate: moment(p.tanggal).locale("id").format("DD MMM YYYY"),
-                      formattedHari: p.hari || moment(p.tanggal).locale("id").format("dddd"),
-                    });
+              const underHoursPresences = [];
+              if (allPres) {
+                for (const p of allPres) {
+                  const [hM, mM] = p.jamMasuk.split(":").map(Number);
+                  const [hA, mA] = p.jamPulang.split(":").map(Number);
+                  const totalMins = hA * 60 + mA - (hM * 60 + mM);
+                  const currentWorked = totalMins + (p.menitTambahan || 0);
+                  if (currentWorked < 480) {
+                    const check = await isHoliday(p.tanggal);
+                    if (!check.isHoliday) {
+                      underHoursPresences.push({
+                        ...p,
+                        totalMins,
+                        formattedDate: moment(p.tanggal)
+                          .locale("id")
+                          .format("DD MMM YYYY"),
+                        formattedHari:
+                          p.hari ||
+                          moment(p.tanggal).locale("id").format("dddd"),
+                      });
+                    }
                   }
                 }
               }
-            }
 
-            // Transfer history – filtered by nama + target presensi date range
-            let histQuery = `SELECT t.*, k.nama as namaKaryawan, p.tanggal as tanggalTarget,
-              p.totalJam as totalJamTarget, o.tanggal as tanggalSumber
-              FROM overtime_transfer t
-              JOIN karyawan k ON t.karyawanId = k.id
-              JOIN presensi p ON t.presensiId = p.id
-              JOIN overtime o ON t.overtimeId = o.id
-              WHERE 1=1`;
-            const histParams = [];
-            if (filterNama !== "all") {
-              histQuery += " AND t.karyawanId = ?";
-              histParams.push(filterNama);
-            }
-            if (filterTanggalMulai) {
-              histQuery += " AND p.tanggal >= ?";
-              histParams.push(filterTanggalMulai);
-            }
-            if (filterTanggalSelesai) {
-              histQuery += " AND p.tanggal <= ?";
-              histParams.push(filterTanggalSelesai);
-            }
-            histQuery += " ORDER BY t.createdAt DESC";
+              // Get unique months from overtime records
+              const uniqueMonths = new Set();
+              if (overtimeRecords) {
+                overtimeRecords.forEach(r => {
+                  if (r.tanggal) {
+                    uniqueMonths.add(r.tanggal.substring(0, 7)); // "YYYY-MM"
+                  }
+                });
+              }
+              // Always include current month
+              uniqueMonths.add(moment().format("YYYY-MM"));
 
-            db.all(histQuery, histParams, (errHist, transferHistory) => {
-              if (errHist) console.error(errHist);
+              db.all("SELECT karyawanId, tanggal FROM presensi", async (errAllPres, allAttendance) => {
+                if (errAllPres) console.error(errAllPres);
 
-              res.render("overtime", {
-                path: "/overtime",
-                stats,
-                overtimeRecords: overtimeRecords || [],
-                underHoursPresences,
-                transferHistory: transferHistory || [],
-                karyawanList,
-                moment,
-                filterNama,
-                filterTanggalMulai,
-                filterTanggalSelesai,
-                pdfStartDate: filterTanggalMulai || "",
-                pdfEndDate: filterTanggalSelesai || "",
-                success: req.query.success === "transferred"
-                  ? "Saldo lembur berhasil dialokasikan!"
-                  : req.query.success === "edited"
-                    ? "Saldo lembur berhasil diperbarui!"
-                    : req.query.success === "deleted"
-                      ? "Data lembur berhasil dihapus!"
-                      : undefined,
-                error: req.query.error === "invalid_transfer"
-                  ? "Jumlah transfer tidak valid atau melebihi sisa saldo lembur."
-                  : req.query.error === "target_exceeded"
-                    ? "Jumlah jam target tidak boleh melebihi batas 8 jam kerja."
-                    : req.query.error === "db"
-                      ? "Terjadi kesalahan pada database."
-                      : undefined
+                const attendanceMap = {};
+                if (allAttendance) {
+                  allAttendance.forEach(a => {
+                    if (!attendanceMap[a.karyawanId]) {
+                      attendanceMap[a.karyawanId] = new Set();
+                    }
+                    attendanceMap[a.karyawanId].add(a.tanggal);
+                  });
+                }
+
+                const absentDatesList = [];
+                const holidayCache = {};
+
+                for (const monthStr of uniqueMonths) {
+                  const startMoment = moment(monthStr + "-01", "YYYY-MM-DD");
+                  const endMoment = moment(startMoment).endOf("month");
+
+                  const datesInMonth = [];
+                  let curr = moment(startMoment);
+                  while (curr.isBefore(endMoment) || curr.isSame(endMoment)) {
+                    datesInMonth.push(curr.format("YYYY-MM-DD"));
+                    curr.add(1, "days");
+                  }
+
+                  for (const date of datesInMonth) {
+                    const d = new Date(date);
+                    const day = d.getDay();
+                    if (day === 0 || day === 6) continue;
+
+                    let isLibur = holidayCache[date];
+                    if (isLibur === undefined) {
+                      const check = await isHoliday(date);
+                      isLibur = check.isHoliday;
+                      holidayCache[date] = isLibur;
+                    }
+                    if (isLibur) continue;
+
+                    for (const k of karyawanList) {
+                      const attended = attendanceMap[k.id] && attendanceMap[k.id].has(date);
+                      if (!attended) {
+                        absentDatesList.push({
+                          karyawanId: k.id,
+                          tanggal: date,
+                          formattedDate: moment(date).locale("id").format("DD MMM YYYY"),
+                          formattedHari: moment(date).locale("id").format("dddd"),
+                          totalMins: 0,
+                          menitTambahan: 0,
+                          isAbsent: true
+                        });
+                      }
+                    }
+                  }
+                }
+
+                // Transfer history – filtered by nama + target presensi date range
+                let histQuery = `SELECT t.*, k.nama as namaKaryawan, p.tanggal as tanggalTarget,
+                p.totalJam as totalJamTarget, o.tanggal as tanggalSumber
+                FROM overtime_transfer t
+                JOIN karyawan k ON t.karyawanId = k.id
+                JOIN presensi p ON t.presensiId = p.id
+                JOIN overtime o ON t.overtimeId = o.id
+                WHERE 1=1`;
+                const histParams = [];
+                if (filterNama !== "all") {
+                  histQuery += " AND t.karyawanId = ?";
+                  histParams.push(filterNama);
+                }
+                if (filterTanggalMulai) {
+                  histQuery += " AND p.tanggal >= ?";
+                  histParams.push(filterTanggalMulai);
+                }
+                if (filterTanggalSelesai) {
+                  histQuery += " AND p.tanggal <= ?";
+                  histParams.push(filterTanggalSelesai);
+                }
+                histQuery += " ORDER BY t.createdAt DESC";
+
+                db.all(histQuery, histParams, (errHist, transferHistory) => {
+                  if (errHist) console.error(errHist);
+
+                  res.render("overtime", {
+                    path: "/overtime",
+                    stats,
+                    overtimeRecords: overtimeRecords || [],
+                    underHoursPresences,
+                    absentDatesList,
+                    transferHistory: transferHistory || [],
+                    karyawanList,
+                    moment,
+                    filterNama,
+                    filterTanggalMulai,
+                    filterTanggalSelesai,
+                    pdfStartDate: filterTanggalMulai || "",
+                    pdfEndDate: filterTanggalSelesai || "",
+                    success:
+                      req.query.success === "transferred"
+                        ? "Saldo lembur berhasil dialokasikan!"
+                        : req.query.success === "edited"
+                          ? "Saldo lembur berhasil diperbarui!"
+                          : req.query.success === "deleted"
+                            ? "Data lembur berhasil dihapus!"
+                            : undefined,
+                    error:
+                      req.query.error === "invalid_transfer"
+                        ? "Jumlah transfer tidak valid atau melebihi sisa saldo lembur."
+                        : req.query.error === "target_exceeded"
+                          ? "Jumlah jam target tidak boleh melebihi batas 8 jam kerja."
+                          : req.query.error === "db"
+                            ? "Terjadi kesalahan pada database."
+                            : undefined,
+                  });
+                });
               });
-            });
-          }
-        );
-      });
-    });
+            },
+          );
+        });
+      },
+    );
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal Server Error");
@@ -951,86 +1140,92 @@ app.get("/overtime/pdf", async (req, res) => {
       filterTanggalSelesai = filterTanggalSelesai || "";
     }
 
-    db.all("SELECT durasiMenit, sisaMenit FROM overtime", (errStats, otStats) => {
-      if (errStats) console.error(errStats);
-      let totalMenit = 0;
-      let totalSisa = 0;
-      if (otStats) {
-        otStats.forEach(o => {
-          totalMenit += o.durasiMenit;
-          totalSisa += o.sisaMenit;
-        });
-      }
-      const totalTerpakai = totalMenit - totalSisa;
-      const stats = {
-        totalMenit,
-        totalSisa,
-        totalTerpakai,
-        totalJamGenerated: (totalMenit / 60).toFixed(1),
-        totalJamSisa: (totalSisa / 60).toFixed(1),
-        totalJamTerpakai: (totalTerpakai / 60).toFixed(1)
-      };
+    db.all(
+      "SELECT durasiMenit, sisaMenit FROM overtime",
+      (errStats, otStats) => {
+        if (errStats) console.error(errStats);
+        let totalMenit = 0;
+        let totalSisa = 0;
+        if (otStats) {
+          otStats.forEach((o) => {
+            totalMenit += o.durasiMenit;
+            totalSisa += o.sisaMenit;
+          });
+        }
+        const totalTerpakai = totalMenit - totalSisa;
+        const stats = {
+          totalMenit,
+          totalSisa,
+          totalTerpakai,
+          totalJamGenerated: (totalMenit / 60).toFixed(1),
+          totalJamSisa: (totalSisa / 60).toFixed(1),
+          totalJamTerpakai: (totalTerpakai / 60).toFixed(1),
+        };
 
-      // Build overtime query with optional name filter
-      let otQuery = "SELECT o.*, k.nama FROM overtime o JOIN karyawan k ON o.karyawanId = k.id";
-      const otParams = [];
-      if (filterNama !== "all") {
-        otQuery += " WHERE o.karyawanId = ?";
-        otParams.push(filterNama);
-      }
-      otQuery += " ORDER BY o.tanggal DESC, o.id DESC";
+        // Build overtime query with optional name filter
+        let otQuery =
+          "SELECT o.*, k.nama FROM overtime o JOIN karyawan k ON o.karyawanId = k.id";
+        const otParams = [];
+        if (filterNama !== "all") {
+          otQuery += " WHERE o.karyawanId = ?";
+          otParams.push(filterNama);
+        }
+        otQuery += " ORDER BY o.tanggal DESC, o.id DESC";
 
-      db.all(otQuery, otParams, (errRecords, overtimeRecords) => {
-        if (errRecords) console.error(errRecords);
+        db.all(otQuery, otParams, (errRecords, overtimeRecords) => {
+          if (errRecords) console.error(errRecords);
 
-        // Build transfer history query with optional filters
-        let histQuery = `SELECT t.*, k.nama as namaKaryawan, p.tanggal as tanggalTarget,
+          // Build transfer history query with optional filters
+          let histQuery = `SELECT t.*, k.nama as namaKaryawan, p.tanggal as tanggalTarget,
           p.totalJam as totalJamTarget, o.tanggal as tanggalSumber
           FROM overtime_transfer t
           JOIN karyawan k ON t.karyawanId = k.id
           JOIN presensi p ON t.presensiId = p.id
           JOIN overtime o ON t.overtimeId = o.id
           WHERE 1=1`;
-        const histParams = [];
+          const histParams = [];
 
-        if (filterNama !== "all") {
-          histQuery += " AND t.karyawanId = ?";
-          histParams.push(filterNama);
-        }
-        if (filterTanggalMulai) {
-          histQuery += " AND p.tanggal >= ?";
-          histParams.push(filterTanggalMulai);
-        }
-        if (filterTanggalSelesai) {
-          histQuery += " AND p.tanggal <= ?";
-          histParams.push(filterTanggalSelesai);
-        }
-        histQuery += " ORDER BY t.createdAt DESC";
-
-        db.all(histQuery, histParams, (errHist, transferHistory) => {
-          if (errHist) console.error(errHist);
-
-          // Resolve filterNama to a name string
-          let filterNamaLabel = "Semua Karyawan";
           if (filterNama !== "all") {
-            const found = karyawanList.find(k => String(k.id) === String(filterNama));
-            if (found) filterNamaLabel = found.nama;
+            histQuery += " AND t.karyawanId = ?";
+            histParams.push(filterNama);
           }
+          if (filterTanggalMulai) {
+            histQuery += " AND p.tanggal >= ?";
+            histParams.push(filterTanggalMulai);
+          }
+          if (filterTanggalSelesai) {
+            histQuery += " AND p.tanggal <= ?";
+            histParams.push(filterTanggalSelesai);
+          }
+          histQuery += " ORDER BY t.createdAt DESC";
 
-          res.render("overtime-pdf", {
-            stats,
-            overtimeRecords: overtimeRecords || [],
-            transferHistory: transferHistory || [],
-            karyawanList,
-            moment,
-            filterNama,
-            filterNamaLabel,
-            filterTanggalMulai,
-            filterTanggalSelesai
+          db.all(histQuery, histParams, (errHist, transferHistory) => {
+            if (errHist) console.error(errHist);
+
+            // Resolve filterNama to a name string
+            let filterNamaLabel = "Semua Karyawan";
+            if (filterNama !== "all") {
+              const found = karyawanList.find(
+                (k) => String(k.id) === String(filterNama),
+              );
+              if (found) filterNamaLabel = found.nama;
+            }
+
+            res.render("overtime-pdf", {
+              stats,
+              overtimeRecords: overtimeRecords || [],
+              transferHistory: transferHistory || [],
+              karyawanList,
+              moment,
+              filterNama,
+              filterNamaLabel,
+              filterTanggalMulai,
+              filterTanggalSelesai,
+            });
           });
         });
-      });
-    });
+      },
+    );
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal Server Error");
@@ -1039,13 +1234,24 @@ app.get("/overtime/pdf", async (req, res) => {
 
 // Route: Transfer Overtime to Presence Record
 app.post("/overtime/transfer", (req, res) => {
-  const { overtimeId, presensiId, durasiMenitTransfer } = req.body;
+  const { overtimeId, presensiId, absentDateId, alokasikanHariCuti, durasiMenitTransfer, pekerjaan, foto } = req.body;
+  const isAbsentTransfer = alokasikanHariCuti === "true";
+  const targetId = isAbsentTransfer ? absentDateId : presensiId;
   const transferMins = parseInt(durasiMenitTransfer, 10);
   const nowStr = new Date().toISOString();
   const todayDateStr = moment().format("YYYY-MM-DD");
 
-  if (!overtimeId || !presensiId || isNaN(transferMins) || transferMins <= 0) {
+  if (!overtimeId || !targetId || isNaN(transferMins) || transferMins <= 0) {
     return res.redirect("/overtime?error=invalid_transfer");
+  }
+
+  if (isAbsentTransfer) {
+    if (transferMins > 240) {
+      return res.redirect("/overtime?error=invalid_transfer");
+    }
+    if (!pekerjaan || !pekerjaan.trim() || !foto) {
+      return res.redirect("/overtime?error=invalid_transfer");
+    }
   }
 
   // Fetch source overtime
@@ -1059,24 +1265,20 @@ app.post("/overtime/transfer", (req, res) => {
       return res.redirect("/overtime?error=invalid_transfer");
     }
 
-    // Fetch target presence
-    db.get("SELECT * FROM presensi WHERE id = ?", [presensiId], (errPres, target) => {
-      if (errPres || !target) {
-        console.error(errPres);
-        return res.redirect("/overtime?error=db");
-      }
-
+    const proceedWithTarget = (target) => {
       if (target.karyawanId !== ot.karyawanId) {
         return res.redirect("/overtime?error=invalid_transfer");
       }
 
       // Calculate current total
+      const isAbsentTarget = target.jamMasuk === "08:30";
       const [hM, mM] = target.jamMasuk.split(":").map(Number);
       const [hA, mA] = target.jamPulang.split(":").map(Number);
-      const baseMins = hA * 60 + mA - (hM * 60 + mM);
+      const baseMins = isAbsentTarget ? 0 : (hA * 60 + mA - (hM * 60 + mM));
       const currentMenitTambahan = target.menitTambahan || 0;
 
-      if (baseMins + currentMenitTambahan + transferMins > 480) {
+      const maxLimit = (isAbsentTransfer || isAbsentTarget) ? 240 : 480;
+      if (baseMins + currentMenitTambahan + transferMins > maxLimit) {
         return res.redirect("/overtime?error=target_exceeded");
       }
 
@@ -1084,7 +1286,7 @@ app.post("/overtime/transfer", (req, res) => {
       const newMenitTambahan = currentMenitTambahan + transferMins;
 
       // Calculate new totalJam string
-      const newDisplayMins = Math.min(480, baseMins + newMenitTambahan);
+      const newDisplayMins = Math.min(maxLimit, baseMins + newMenitTambahan);
       let totalJamStr = "";
       if (newDisplayMins > 0) {
         const h = Math.floor(newDisplayMins / 60);
@@ -1098,26 +1300,197 @@ app.post("/overtime/transfer", (req, res) => {
       // Perform updates
       db.serialize(() => {
         // 1. Update overtime sisaMenit
-        db.run("UPDATE overtime SET sisaMenit = ?, updatedAt = ? WHERE id = ?", [newSisa, nowStr, ot.id]);
+        db.run(
+          "UPDATE overtime SET sisaMenit = ?, updatedAt = ? WHERE id = ?",
+          [newSisa, nowStr, ot.id],
+        );
 
-        // 2. Update target presensi menitTambahan & totalJam
-        db.run("UPDATE presensi SET menitTambahan = ?, totalJam = ?, updatedAt = ? WHERE id = ?", [newMenitTambahan, totalJam, nowStr, target.id]);
+        // 2. Update target presensi menitTambahan, totalJam & jamMasuk, jamPulang
+        if (isAbsentTransfer || isAbsentTarget) {
+          const jamMasuk = "08:30";
+          const jamPulang = calculateEndTime(jamMasuk, newMenitTambahan);
+          db.run(
+            "UPDATE presensi SET menitTambahan = ?, totalJam = ?, jamMasuk = ?, jamPulang = ?, updatedAt = ? WHERE id = ?",
+            [newMenitTambahan, totalJam, jamMasuk, jamPulang, nowStr, target.id],
+          );
+        } else {
+          db.run(
+            "UPDATE presensi SET menitTambahan = ?, totalJam = ?, updatedAt = ? WHERE id = ?",
+            [newMenitTambahan, totalJam, nowStr, target.id],
+          );
+        }
 
         // 3. Insert into overtime_transfer
         const ket = `Alokasi lembur tanggal ${moment(ot.tanggal).format("DD/MM/YYYY")} ke presensi tanggal ${moment(target.tanggal).format("DD/MM/YYYY")}`;
         db.run(
           "INSERT INTO overtime_transfer (karyawanId, overtimeId, presensiId, tanggalTransfer, durasiMenit, keterangan, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [ot.karyawanId, ot.id, target.id, todayDateStr, transferMins, ket, nowStr],
+          [
+            ot.karyawanId,
+            ot.id,
+            target.id,
+            todayDateStr,
+            transferMins,
+            ket,
+            nowStr,
+          ],
           (errFinal) => {
             if (errFinal) {
               console.error(errFinal);
               return res.redirect("/overtime?error=db");
             }
             res.redirect("/overtime?success=transferred");
-          }
+          },
         );
       });
-    });
+    };
+
+    if (typeof targetId === "string" && targetId.startsWith("new_date:")) {
+      const targetDate = targetId.substring("new_date:".length);
+      // Check if presence already exists (safeguard)
+      db.get(
+        "SELECT * FROM presensi WHERE karyawanId = ? AND tanggal = ?",
+        [ot.karyawanId, targetDate],
+        (errCheck, existingTarget) => {
+          if (errCheck) {
+            console.error(errCheck);
+            return res.redirect("/overtime?error=db");
+          }
+          if (existingTarget) {
+            if (isAbsentTransfer) {
+              // Update photo and description if provided and it's an absent transfer
+              let savedPhotoPath = null;
+              try {
+                if (foto) {
+                  savedPhotoPath = saveBase64Image(foto, existingTarget.id);
+                }
+              } catch (imgErr) {
+                console.error("Gagal menyimpan foto:", imgErr);
+              }
+
+              const updateFields = [];
+              const updateParams = [];
+              if (savedPhotoPath) {
+                updateFields.push("foto = ?");
+                updateParams.push(savedPhotoPath);
+              }
+              if (pekerjaan && pekerjaan.trim()) {
+                updateFields.push("pekerjaan = ?");
+                updateParams.push(pekerjaan.trim());
+              }
+
+              if (updateFields.length > 0) {
+                updateParams.push(existingTarget.id);
+                db.run(
+                  `UPDATE presensi SET ${updateFields.join(", ")} WHERE id = ?`,
+                  updateParams,
+                  (errUpdPres) => {
+                    if (errUpdPres) console.error(errUpdPres);
+                    db.get(
+                      "SELECT * FROM presensi WHERE id = ?",
+                      [existingTarget.id],
+                      (errGet, updatedTarget) => {
+                        if (errGet || !updatedTarget) {
+                          proceedWithTarget(existingTarget);
+                        } else {
+                          proceedWithTarget(updatedTarget);
+                        }
+                      }
+                    );
+                  }
+                );
+              } else {
+                proceedWithTarget(existingTarget);
+              }
+            } else {
+              proceedWithTarget(existingTarget);
+            }
+          } else {
+            // Create a new presence record
+            const dayName = moment(targetDate).locale("id").format("dddd");
+            const newPekerjaan = isAbsentTransfer && pekerjaan ? pekerjaan.trim() : "Alokasi lembur";
+            const initJamMasuk = isAbsentTransfer ? "08:30" : "08:00";
+            const initJamPulang = isAbsentTransfer ? "08:30" : "08:00";
+            db.run(
+              "INSERT INTO presensi (karyawanId, tanggal, jamMasuk, jamPulang, pekerjaan, createdAt, updatedAt, hari, totalJam, menitTambahan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [
+                ot.karyawanId,
+                targetDate,
+                initJamMasuk,
+                initJamPulang,
+                newPekerjaan,
+                nowStr,
+                nowStr,
+                dayName,
+                "0 Menit",
+                0,
+              ],
+              function (errInsert) {
+                if (errInsert) {
+                  console.error(errInsert);
+                  return res.redirect("/overtime?error=db");
+                }
+                const newPresId = this.lastID;
+
+                let savedPhotoPath = null;
+                try {
+                  if (isAbsentTransfer && foto) {
+                    savedPhotoPath = saveBase64Image(foto, newPresId);
+                  }
+                } catch (imgErr) {
+                  console.error("Gagal menyimpan foto:", imgErr);
+                }
+
+                if (savedPhotoPath) {
+                  db.run(
+                    "UPDATE presensi SET foto = ? WHERE id = ?",
+                    [savedPhotoPath, newPresId],
+                    (errPhoto) => {
+                      if (errPhoto) console.error(errPhoto);
+                      db.get(
+                        "SELECT * FROM presensi WHERE id = ?",
+                        [newPresId],
+                        (errGet, newTarget) => {
+                          if (errGet || !newTarget) {
+                            console.error(errGet);
+                            return res.redirect("/overtime?error=db");
+                          }
+                          proceedWithTarget(newTarget);
+                        },
+                      );
+                    }
+                  );
+                } else {
+                  db.get(
+                    "SELECT * FROM presensi WHERE id = ?",
+                    [newPresId],
+                    (errGet, newTarget) => {
+                      if (errGet || !newTarget) {
+                        console.error(errGet);
+                        return res.redirect("/overtime?error=db");
+                      }
+                      proceedWithTarget(newTarget);
+                    },
+                  );
+                }
+              },
+            );
+          }
+        },
+      );
+    } else {
+      // Fetch target presence normally
+      db.get(
+        "SELECT * FROM presensi WHERE id = ?",
+        [targetId],
+        (errPres, target) => {
+          if (errPres || !target) {
+            console.error(errPres);
+            return res.redirect("/overtime?error=db");
+          }
+          proceedWithTarget(target);
+        },
+      );
+    }
   });
 });
 
@@ -1140,13 +1513,17 @@ app.post("/overtime/edit", (req, res) => {
       return res.redirect("/overtime?error=invalid_transfer");
     }
 
-    db.run("UPDATE overtime SET sisaMenit = ?, updatedAt = ? WHERE id = ?", [sisa, updatedAt, id], (errUpd) => {
-      if (errUpd) {
-        console.error(errUpd);
-        return res.redirect("/overtime?error=db");
-      }
-      res.redirect("/overtime?success=edited");
-    });
+    db.run(
+      "UPDATE overtime SET sisaMenit = ?, updatedAt = ? WHERE id = ?",
+      [sisa, updatedAt, id],
+      (errUpd) => {
+        if (errUpd) {
+          console.error(errUpd);
+          return res.redirect("/overtime?error=db");
+        }
+        res.redirect("/overtime?success=edited");
+      },
+    );
   });
 });
 
@@ -1159,55 +1536,92 @@ app.post("/overtime/delete", (req, res) => {
   }
 
   // Get transfers first to revert target presences
-  db.all("SELECT * FROM overtime_transfer WHERE overtimeId = ?", [id], (errTrans, transfers) => {
-    if (errTrans) console.error(errTrans);
+  db.all(
+    "SELECT * FROM overtime_transfer WHERE overtimeId = ?",
+    [id],
+    (errTrans, transfers) => {
+      if (errTrans) console.error(errTrans);
 
-    const revertPromises = [];
-    if (transfers && transfers.length > 0) {
-      transfers.forEach(t => {
-        const p = new Promise((resolve) => {
-          db.get("SELECT * FROM presensi WHERE id = ?", [t.presensiId], (errPres, target) => {
-            if (target) {
-              const [hM, mM] = target.jamMasuk.split(":").map(Number);
-              const [hA, mA] = target.jamPulang.split(":").map(Number);
-              const baseMins = hA * 60 + mA - (hM * 60 + mM);
-              const newMenitTambahan = Math.max(0, (target.menitTambahan || 0) - t.durasiMenit);
+      const revertPromises = [];
+      if (transfers && transfers.length > 0) {
+        transfers.forEach((t) => {
+          const p = new Promise((resolve) => {
+            db.get(
+              "SELECT * FROM presensi WHERE id = ?",
+              [t.presensiId],
+              (errPres, target) => {
+                if (target) {
+                  const isAbsentTarget = target.jamMasuk === "08:30";
+                  const [hM, mM] = target.jamMasuk.split(":").map(Number);
+                  const [hA, mA] = target.jamPulang.split(":").map(Number);
+                  const baseMins = isAbsentTarget ? 0 : (hA * 60 + mA - (hM * 60 + mM));
+                  const newMenitTambahan = Math.max(
+                    0,
+                    (target.menitTambahan || 0) - t.durasiMenit,
+                  );
 
-              const newDisplayMins = Math.min(480, baseMins + newMenitTambahan);
-              let totalJamStr = "";
-              if (newDisplayMins > 0) {
-                const h = Math.floor(newDisplayMins / 60);
-                const m = newDisplayMins % 60;
-                if (h > 0) totalJamStr += `${h} Jam `;
-                if (m > 0) totalJamStr += `${m} Menit`;
-              }
-              if (!totalJamStr) totalJamStr = "0 Menit";
-              const totalJam = totalJamStr.trim();
+                  const maxLimit = isAbsentTarget ? 240 : 480;
+                  const newDisplayMins = Math.min(
+                    maxLimit,
+                    baseMins + newMenitTambahan,
+                  );
+                  let totalJamStr = "";
+                  if (newDisplayMins > 0) {
+                    const h = Math.floor(newDisplayMins / 60);
+                    const m = newDisplayMins % 60;
+                    if (h > 0) totalJamStr += `${h} Jam `;
+                    if (m > 0) totalJamStr += `${m} Menit`;
+                  }
+                  if (!totalJamStr) totalJamStr = "0 Menit";
+                  const totalJam = totalJamStr.trim();
 
-              db.run(
-                "UPDATE presensi SET menitTambahan = ?, totalJam = ? WHERE id = ?",
-                [newMenitTambahan, totalJam, target.id],
-                () => resolve()
-              );
-            } else {
-              resolve();
-            }
+                  if (baseMins === 0 && newMenitTambahan === 0) {
+                    db.run(
+                      "DELETE FROM presensi WHERE id = ?",
+                      [target.id],
+                      () => resolve(),
+                    );
+                  } else {
+                    if (isAbsentTarget) {
+                      const jamPulang = calculateEndTime("08:30", newMenitTambahan);
+                      db.run(
+                        "UPDATE presensi SET menitTambahan = ?, totalJam = ?, jamPulang = ? WHERE id = ?",
+                        [newMenitTambahan, totalJam, jamPulang, target.id],
+                        () => resolve(),
+                      );
+                    } else {
+                      db.run(
+                        "UPDATE presensi SET menitTambahan = ?, totalJam = ? WHERE id = ?",
+                        [newMenitTambahan, totalJam, target.id],
+                        () => resolve(),
+                      );
+                    }
+                  }
+                } else {
+                  resolve();
+                }
+              },
+            );
           });
+          revertPromises.push(p);
         });
-        revertPromises.push(p);
-      });
-    }
+      }
 
-    Promise.all(revertPromises).then(() => {
-      db.run("DELETE FROM overtime_transfer WHERE overtimeId = ?", [id], (errDelT) => {
-        if (errDelT) console.error(errDelT);
-        db.run("DELETE FROM overtime WHERE id = ?", [id], (errDel) => {
-          if (errDel) console.error(errDel);
-          res.redirect("/overtime?success=deleted");
-        });
+      Promise.all(revertPromises).then(() => {
+        db.run(
+          "DELETE FROM overtime_transfer WHERE overtimeId = ?",
+          [id],
+          (errDelT) => {
+            if (errDelT) console.error(errDelT);
+            db.run("DELETE FROM overtime WHERE id = ?", [id], (errDel) => {
+              if (errDel) console.error(errDel);
+              res.redirect("/overtime?success=deleted");
+            });
+          },
+        );
       });
-    });
-  });
+    },
+  );
 });
 
 // --- STUDENT STAFF (KARYAWAN) CRUD ---
@@ -1218,12 +1632,22 @@ app.get("/student-staff", async (req, res) => {
     res.render("student-staff", {
       karyawanList,
       path: "/student-staff",
-      success_msg: req.query.success === 'added' ? 'Student Staff berhasil ditambahkan.' :
-                   req.query.success === 'edited' ? 'Student Staff berhasil diperbarui.' :
-                   req.query.success === 'deleted' ? 'Student Staff berhasil dihapus.' : null,
-      error_msg: req.query.error === 'add_failed' ? 'Gagal menambahkan Student Staff.' :
-                 req.query.error === 'edit_failed' ? 'Gagal memperbarui Student Staff.' :
-                 req.query.error === 'delete_failed' ? 'Gagal menghapus Student Staff.' : null
+      success_msg:
+        req.query.success === "added"
+          ? "Student Staff berhasil ditambahkan."
+          : req.query.success === "edited"
+            ? "Student Staff berhasil diperbarui."
+            : req.query.success === "deleted"
+              ? "Student Staff berhasil dihapus."
+              : null,
+      error_msg:
+        req.query.error === "add_failed"
+          ? "Gagal menambahkan Student Staff."
+          : req.query.error === "edit_failed"
+            ? "Gagal memperbarui Student Staff."
+            : req.query.error === "delete_failed"
+              ? "Gagal menghapus Student Staff."
+              : null,
     });
   } catch (err) {
     console.error(err);
@@ -1234,25 +1658,34 @@ app.get("/student-staff", async (req, res) => {
 app.post("/student-staff/add", (req, res) => {
   const { nama, nim } = req.body;
   if (!nama || !nim) return res.redirect("/student-staff?error=add_failed");
-  db.run("INSERT INTO karyawan (nama, nim) VALUES (?, ?)", [nama, nim], (err) => {
-    if (err) {
-      console.error(err);
-      return res.redirect("/student-staff?error=add_failed");
-    }
-    res.redirect("/student-staff?success=added");
-  });
+  db.run(
+    "INSERT INTO karyawan (nama, nim) VALUES (?, ?)",
+    [nama, nim],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.redirect("/student-staff?error=add_failed");
+      }
+      res.redirect("/student-staff?success=added");
+    },
+  );
 });
 
 app.post("/student-staff/edit", (req, res) => {
   const { id, nama, nim } = req.body;
-  if (!id || !nama || !nim) return res.redirect("/student-staff?error=edit_failed");
-  db.run("UPDATE karyawan SET nama = ?, nim = ? WHERE id = ?", [nama, nim, id], (err) => {
-    if (err) {
-      console.error(err);
-      return res.redirect("/student-staff?error=edit_failed");
-    }
-    res.redirect("/student-staff?success=edited");
-  });
+  if (!id || !nama || !nim)
+    return res.redirect("/student-staff?error=edit_failed");
+  db.run(
+    "UPDATE karyawan SET nama = ?, nim = ? WHERE id = ?",
+    [nama, nim, id],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.redirect("/student-staff?error=edit_failed");
+      }
+      res.redirect("/student-staff?success=edited");
+    },
+  );
 });
 
 app.post("/student-staff/delete", (req, res) => {
@@ -1320,7 +1753,9 @@ const checkWeeklyBackup = async () => {
     if (shouldBackup) {
       console.log("[Auto Backup] Memulai backup mingguan otomatis...");
       await runBackup();
-      console.log("[Auto Backup] Backup mingguan otomatis berhasil diselesaikan.");
+      console.log(
+        "[Auto Backup] Backup mingguan otomatis berhasil diselesaikan.",
+      );
     }
   } catch (err) {
     console.error("[Auto Backup] Gagal menjalankan backup otomatis:", err);
@@ -1332,4 +1767,3 @@ setTimeout(checkWeeklyBackup, 5000);
 
 // Lakukan pengecekan berkala setiap 1 jam sekali (3.600.000 ms)
 setInterval(checkWeeklyBackup, 3600000);
-
