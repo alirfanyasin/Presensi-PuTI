@@ -118,6 +118,7 @@ class MySQLWrapper {
       };
       await addKaryawanColIfNotExist('type', "VARCHAR(100) DEFAULT NULL");
       await addKaryawanColIfNotExist('role', "VARCHAR(100) DEFAULT NULL");
+      await addKaryawanColIfNotExist('face_descriptor', "LONGTEXT DEFAULT NULL");
 
       // Migration: Drop nim column from karyawan if it still exists
       await new Promise((resolve) => {

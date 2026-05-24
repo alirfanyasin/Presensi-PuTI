@@ -15,19 +15,75 @@
                         <div class="bg-card rounded-2xl border border-border p-5 sm:p-8 card-hover shadow-sm">
                             <form action="/presensi-masuk" method="POST" class="space-y-5 sm:space-y-6"
                                 id="presensiForm">
-                                <!-- Nama Field -->
+                                <!-- Nama Field / Face Recognition Scanner -->
                                 <div class="form-group">
-                                    <label for="karyawanId" class="block text-sm font-semibold text-fg mb-2">Nama
-                                        Student Staff</label>
-                                    <select id="karyawanId" name="karyawanId" required
-                                        class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors">
-                                        <option value="" disabled selected>Pilih nama Anda</option>
-                                        <% karyawanList.forEach(k=> { %>
-                                            <option value="<%= k.id %>">
-                                                <%= k.nama %>
-                                            </option>
+                                    <label class="block text-sm font-semibold text-fg mb-2">Verifikasi Identitas (Face Recognition)</label>
+                                    
+                                    <!-- Hidden input for selected karyawanId -->
+                                    <input type="hidden" id="karyawanId" name="karyawanId" required>
+
+                                    <!-- Face Recognition Scanner Block -->
+                                    <div id="faceScannerBlock" class="space-y-4">
+                                        <!-- Camera Selector -->
+                                        <div id="cameraSelectContainer" class="mb-3 hidden animate-fadeInUp">
+                                            <label class="block text-xs font-semibold text-muted mb-1.5 uppercase tracking-wider">Kamera Aktif / Webcam</label>
+                                            <select id="cameraSelect" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="relative overflow-hidden rounded-2xl border border-border bg-inputBg aspect-video max-w-md mx-auto flex flex-col items-center justify-center transition-all duration-300" id="faceScanContainer">
+                                            <video id="faceScanVideo" autoplay muted playsinline class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
+                                            <canvas id="faceScanCanvas" class="absolute inset-0 w-full h-full pointer-events-none" style="transform: scaleX(-1);"></canvas>
+                                            
+                                            <!-- Loader Overlay -->
+                                            <div id="faceScanLoader" class="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-white p-4 text-center z-10">
+                                                <svg class="w-10 h-10 animate-spin text-accent mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/>
+                                                </svg>
+                                                <p class="text-sm font-medium" id="faceLoaderText">Memuat modul pemindai wajah...</p>
+                                            </div>
+                                            
+                                            <!-- Photo capture overlay preview for check-out -->
+                                            <img id="faceRegPhotoPreview" class="hidden absolute inset-0 w-full h-full object-cover z-20" alt="Captured Selfie">
+                                        </div>
+
+                                        <!-- Recognized User Card (Hidden by default) -->
+                                        <div id="recognizedUserCard" class="hidden flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-2xl animate-fadeInUp">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-12 h-12 bg-accent text-white rounded-full flex items-center justify-center font-bold text-lg" id="recognizedAvatar">
+                                                    U
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs text-green-600 font-semibold uppercase tracking-wider">Identitas Terverifikasi</p>
+                                                    <h4 class="font-bold text-fg text-base" id="recognizedName">Nama User</h4>
+                                                </div>
+                                            </div>
+                                            <span class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-lg">Cocok</span>
+                                        </div>
+
+                                        <div id="faceScanStatus" class="text-center text-xs font-semibold text-muted py-1 bg-inputBg/50 rounded-lg">
+                                            Memulai...
+                                        </div>
+                                    </div>
+
+                                    <!-- Manual Select Dropdown Block (Hidden by default) -->
+                                    <div id="manualSelectBlock" class="hidden animate-fadeInUp">
+                                        <select id="karyawanIdManual" class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors">
+                                            <option value="" disabled selected>Pilih nama Anda secara manual</option>
+                                            <% karyawanList.forEach(k=> { %>
+                                                <option value="<%= k.id %>">
+                                                    <%= k.nama %>
+                                                </option>
                                             <% }) %>
-                                    </select>
+                                        </select>
+                                    </div>
+
+                                    <!-- Toggle Button -->
+                                    <div class="flex justify-center mt-2.5">
+                                        <button type="button" id="toggleManualBtn" class="text-xs font-semibold text-accent hover:text-accentHover underline transition-colors">
+                                            Pilih Nama Secara Manual
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <!-- Tanggal Field -->
@@ -117,8 +173,7 @@
 
                                 <!-- Foto Bukti Kehadiran (hanya Pulang) -->
                                 <div id="fotoSection" class="hidden">
-                                    <div
-                                        class="form-group border border-border/60 bg-accentLighter/10 rounded-2xl p-4 sm:p-5">
+                                    <div class="form-group border border-border/60 bg-accentLighter/10 rounded-2xl p-4 sm:p-5">
                                         <label class="block text-sm font-semibold text-fg mb-2 flex items-center gap-2">
                                             <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
@@ -129,56 +184,24 @@
                                             </svg>
                                             Foto Bukti Kehadiran <span class="text-accent text-xs">(wajib)</span>
                                         </label>
-                                        <p class="text-xs text-muted mb-4">Ambil foto selfie sebagai bukti kehadiran
-                                            pulang Anda.</p>
-                                        <div class="relative overflow-hidden rounded-xl border border-border bg-inputBg aspect-video max-w-md mx-auto flex flex-col items-center justify-center transition-all duration-300"
-                                            id="cameraContainer">
-                                            <div id="cameraPlaceholder"
-                                                class="flex flex-col items-center justify-center p-6 text-center z-10 w-full h-full">
-                                                <div
-                                                    class="w-14 h-14 bg-accentLight/60 rounded-full flex items-center justify-center mb-3">
-                                                    <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    </svg>
-                                                </div>
-                                                <button type="button" id="startCameraBtn"
-                                                    class="px-5 py-2.5 bg-accent text-white text-xs font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press">Aktifkan
-                                                    Kamera</button>
-                                            </div>
-                                            <video id="video" autoplay playsinline
-                                                class="hidden w-full h-full object-cover"
-                                                style="transform: scaleX(-1);"></video>
-                                            <img id="photoPreview" class="hidden w-full h-full object-cover"
-                                                alt="Pratinjau foto bukti">
-                                            <canvas id="canvas" class="hidden"></canvas>
-                                            <div id="cameraControls"
-                                                class="absolute bottom-4 left-0 right-0 flex justify-center gap-3 hidden z-20">
-                                                <button type="button" id="captureBtn"
-                                                    class="w-12 h-12 bg-white text-accent rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-4 border-accent focus:outline-none"
-                                                    title="Ambil Foto">
-                                                    <div class="w-6 h-6 bg-accent rounded-full"></div>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div id="postCaptureControls" class="flex justify-center gap-3 mt-4 hidden">
-                                            <button type="button" id="retakeBtn"
-                                                class="inline-flex items-center gap-1.5 px-4 py-2 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22" />
-                                                </svg>
+                                        <p class="text-xs text-muted mb-3" id="fotoSectionDesc">Ambil foto selfie menggunakan kamera di atas sebagai bukti kehadiran pulang Anda.</p>
+                                        
+                                        <!-- Selfie Camera Controls (captures from top camera) -->
+                                        <div id="selfieControls" class="flex flex-col items-center gap-3">
+                                            <button type="button" id="captureSelfieBtn"
+                                                class="px-5 py-2.5 bg-accent text-white text-xs font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press flex items-center gap-1.5 shadow">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                Ambil Foto Bukti
+                                            </button>
+                                            
+                                            <button type="button" id="retakeSelfieBtn" class="hidden px-5 py-2.5 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border flex items-center gap-1.5">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/></svg>
                                                 Foto Ulang
                                             </button>
                                         </div>
 
-                                        <div id="suratTugasUploadContainer" class="hidden mt-4">
+                                        <!-- Surat Tugas Upload Block (only for Surat Tugas) -->
+                                        <div id="suratTugasUploadContainer" class="hidden mt-2">
                                             <div class="flex items-center justify-center w-full">
                                                 <label for="suratTugasUploadInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
                                                     <div class="flex flex-col items-center justify-center pt-5 pb-6">
@@ -192,8 +215,7 @@
                                         </div>
 
                                         <input type="hidden" name="foto" id="fotoInput">
-                                        <input type="file" accept="image/*" capture="user" id="cameraFallbackInput"
-                                            class="hidden">
+                                        <input type="file" accept="image/*" capture="user" id="cameraFallbackInput" class="hidden">
                                     </div>
                                 </div>
 
@@ -322,569 +344,811 @@
                     </div>
                     <script>setTimeout(() => document.getElementById('toastError').classList.remove('show'), 5000);</script>
                     <% } %>
-
-                        <script>
-                            // --- AUTO STATUS DETECTION ---
-                            const presensiForm = document.getElementById('presensiForm');
-                            const karyawanSelect = document.getElementById('karyawanId');
-                            const tanggalInput = document.getElementById('tanggal');
-                            const hariContainer = document.getElementById('hariContainer');
-                            const displayHari = document.getElementById('displayHari');
-                            const waktuMasukInfo = document.getElementById('waktuMasukInfo');
-                            const waktuPulangInfo = document.getElementById('waktuPulangInfo');
-                            const pekerjaanSection = document.getElementById('pekerjaanSection');
-                            const fotoSection = document.getElementById('fotoSection');
-                            const pekerjaanTextarea = document.getElementById('pekerjaan');
-                            const charCount = document.getElementById('charCount');
-                            const statusInfo = document.getElementById('statusInfo');
-                            const statusLoading = document.getElementById('statusLoading');
-                            const statusBadge = document.getElementById('statusBadge');
-                            const submitBtn = document.getElementById('submitBtn');
-                            const hariNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-                            let currentStatus = 'none'; // 'none' | 'sudah_masuk' | 'sudah_pulang'
-
-                            // Live clock
-                            function updateClock() {
-                                const now = new Date();
-                                const pad = n => String(n).padStart(2, '0');
-                                const t = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-                                const el1 = document.getElementById('clockDisplay');
-                                const el2 = document.getElementById('clockDisplayPulang');
-                                if (el1) el1.textContent = t;
-                                if (el2) el2.textContent = t;
-                            }
-                            setInterval(updateClock, 1000);
-                            updateClock();
-
-                            if (pekerjaanTextarea) {
-                                pekerjaanTextarea.addEventListener('input', function () {
-                                    const length = this.value.length;
-                                    if (charCount) charCount.textContent = length;
-                                    if (charCount) charCount.classList.toggle('text-red-500', length > 500);
-                                });
-                            }
-
-                            function calculateHari() {
-                                if (tanggalInput.value) {
-                                    const d = new Date(tanggalInput.value);
-                                    if (!isNaN(d.getTime())) {
-                                        displayHari.value = hariNames[d.getDay()];
-                                        hariContainer.classList.remove('hidden');
-                                    } else { hariContainer.classList.add('hidden'); }
-                                } else { hariContainer.classList.add('hidden'); }
-                            }
-
-                            function showHolidayMode(holidayName) {
-                                currentStatus = 'holiday';
-                                waktuMasukInfo.classList.add('hidden');
-                                waktuPulangInfo.classList.add('hidden');
-                                pekerjaanSection.classList.add('hidden');
-                                fotoSection.classList.add('hidden');
-                                const displayMsg = holidayName ? `Hari ini Libur Nasional: <strong>${holidayName}</strong>` : `Hari ini Libur Akhir Pekan (Sabtu/Minggu)`;
-                                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl">
-                <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block animate-pulse"></span>
-                <span class="text-sm font-semibold text-red-700">${displayMsg} — Presensi tidak diizinkan</span>
-            </div>`;
-                                statusBadge.classList.remove('hidden');
-                                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Presensi Ditutup'; }
-                            }
-
-                            function showMasukMode() {
-                                currentStatus = 'none';
-                                presensiForm.action = '/presensi-masuk';
-                                waktuMasukInfo.classList.remove('hidden');
-                                waktuPulangInfo.classList.add('hidden');
-                                pekerjaanSection.classList.add('hidden');
-                                fotoSection.classList.add('hidden');
-                                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl">
-                <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
-                <span class="text-sm font-semibold text-green-700">Belum Presensi Masuk hari ini — silakan lanjutkan</span>
-            </div>`;
-                                statusBadge.classList.remove('hidden');
-                                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Simpan Presensi Masuk'; }
-                            }
-
-                            function showPulangMode(jamMasuk) {
-                                currentStatus = 'sudah_masuk';
-                                presensiForm.action = '/presensi-pulang';
-                                waktuMasukInfo.classList.add('hidden');
-                                waktuPulangInfo.classList.remove('hidden');
-                                pekerjaanSection.classList.remove('hidden');
-                                fotoSection.classList.remove('hidden');
-
-                                const isSuratTugas = document.getElementById('suratTugasCheck') && document.getElementById('suratTugasCheck').checked;
-                                if (isSuratTugas) {
-                                    document.getElementById('cameraContainer').classList.add('hidden');
-                                    document.getElementById('postCaptureControls').classList.add('hidden');
-                                    document.getElementById('suratTugasUploadContainer').classList.remove('hidden');
-                                    const pText = document.querySelector('#fotoSection p.text-muted');
-                                    if(pText) pText.textContent = 'Unggah foto sebagai bukti kehadiran pulang Surat Tugas Anda.';
-                                } else {
-                                    document.getElementById('cameraContainer').classList.remove('hidden');
-                                    document.getElementById('suratTugasUploadContainer').classList.add('hidden');
-                                    const pText = document.querySelector('#fotoSection p.text-muted');
-                                    if(pText) pText.textContent = 'Ambil foto selfie sebagai bukti kehadiran pulang Anda.';
-                                }
-
-                                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
-                <span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span>
-                <span class="text-sm font-semibold text-orange-700">Sudah Masuk pukul <strong>${jamMasuk}</strong> — silakan Presensi Pulang</span>
-            </div>`;
-                                statusBadge.classList.remove('hidden');
-                                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Simpan Presensi Pulang'; }
-                            }
-
-                            function showSudahPulangMode(jamMasuk, jamPulang) {
-                                currentStatus = 'sudah_pulang';
-                                waktuMasukInfo.classList.add('hidden');
-                                waktuPulangInfo.classList.add('hidden');
-                                pekerjaanSection.classList.add('hidden');
-                                fotoSection.classList.add('hidden');
-                                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl">
-                <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
-                <span class="text-sm font-semibold text-blue-700">Presensi hari ini selesai — Masuk ${jamMasuk} · Pulang ${jamPulang}</span>
-            </div>`;
-                                statusBadge.classList.remove('hidden');
-                                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Presensi Hari Ini Selesai'; }
-                            }
-
-                            function resetFormSections() {
-                                waktuMasukInfo.classList.add('hidden');
-                                waktuPulangInfo.classList.add('hidden');
-                                pekerjaanSection.classList.add('hidden');
-                                fotoSection.classList.add('hidden');
-                                statusBadge.classList.add('hidden');
-                                statusInfo.classList.add('hidden');
-                                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
-                            }
-
-                            async function checkStatus() {
-                                const karyawanId = karyawanSelect.value;
-                                const tanggal = tanggalInput.value;
-                                if (!tanggal) { resetFormSections(); return; }
-
-                                const suratTugasCheck = document.getElementById('suratTugasCheck');
-                                const isSuratTugas = suratTugasCheck && suratTugasCheck.checked;
-
-                                let isHolidayDay = false;
-                                let currentHolidayName = '';
-
-                                // Check holiday first
-                                try {
-                                    const holidayRes = await fetch(`/api/check-presensi?tanggal=${tanggal}`);
-                                    const holidayData = await holidayRes.json();
-                                    if (holidayData.status === 'holiday') {
-                                        isHolidayDay = true;
-                                        currentHolidayName = holidayData.holidayName;
-                                        const stSection = document.getElementById('suratTugasSection');
-                                        if (stSection) stSection.classList.remove('hidden');
-                                        
-                                        if (!isSuratTugas) {
-                                            statusInfo.classList.remove('hidden');
-                                            statusLoading.classList.add('hidden');
-                                            showHolidayMode(holidayData.holidayName);
-                                            karyawanSelect.disabled = true;
-                                            return;
-                                        } else {
-                                            karyawanSelect.disabled = false;
-                                        }
-                                    } else {
-                                        const stSection = document.getElementById('suratTugasSection');
-                                        if (stSection) stSection.classList.add('hidden');
-                                        karyawanSelect.disabled = false;
-                                    }
-                                } catch (e) {
-                                    console.error("Gagal memeriksa hari libur:", e);
-                                }
-
-                                if (!karyawanId) { 
-                                    resetFormSections(); 
-                                    if (isHolidayDay && isSuratTugas) {
-                                        statusInfo.classList.remove('hidden');
-                                        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 border border-yellow-200 rounded-xl">
-                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block animate-pulse"></span>
-                <span class="text-sm font-semibold text-yellow-700">Mode Surat Tugas Aktif — Silakan pilih nama Anda</span>
-            </div>`;
-                                        statusBadge.classList.remove('hidden');
-                                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
-                                    }
-                                    return; 
-                                }
-
-                                statusInfo.classList.remove('hidden');
-                                statusLoading.classList.remove('hidden');
-                                statusBadge.classList.add('hidden');
-
-                                try {
-                                    const res = await fetch(`/api/check-presensi?karyawanId=${karyawanId}&tanggal=${tanggal}&suratTugas=${isSuratTugas}`);
-                                    const data = await res.json();
-                                    statusLoading.classList.add('hidden');
-                                    if (data.status === 'holiday') {
-                                        showHolidayMode(data.holidayName);
-                                    } else if (data.status === 'none') {
-                                        showMasukMode();
-                                    } else if (data.status === 'sudah_masuk') {
-                                        showPulangMode(data.jamMasuk);
-                                    } else if (data.status === 'sudah_pulang') {
-                                        showSudahPulangMode(data.jamMasuk, data.jamPulang);
-                                    }
-                                } catch (e) {
-                                    statusLoading.classList.add('hidden');
-                                    showMasukMode();
-                                }
-                            }
-
-                            karyawanSelect.addEventListener('change', checkStatus);
-                            tanggalInput.addEventListener('change', () => { calculateHari(); checkStatus(); });
-                            
-                            const stCheck = document.getElementById('suratTugasCheck');
-                            if (stCheck) stCheck.addEventListener('change', checkStatus);
-
-                            calculateHari();
-                            checkStatus();
-
-                            // Submit validation
-                            if (presensiForm) {
-                                presensiForm.addEventListener('submit', function (e) {
-                                    // Blokir jika sudah pulang
-                                    if (currentStatus === 'sudah_pulang') {
-                                        e.preventDefault();
-                                        showAlertModal(
-                                            'Presensi Sudah Selesai',
-                                            'Anda sudah melakukan Presensi Masuk dan Presensi Pulang hari ini.\nSilakan kembali lagi besok!',
-                                            'info'
-                                        );
-                                        return;
-                                    }
-                                    const isPulang = presensiForm.action.includes('/presensi-pulang');
-                                    if (isPulang) {
-                                        const pekVal = pekerjaanTextarea ? pekerjaanTextarea.value.trim() : '';
-                                        const fotoVal = document.getElementById('fotoInput') ? document.getElementById('fotoInput').value : '';
-                                        if (!pekVal) {
-                                            e.preventDefault();
-                                            showAlertModal('Deskripsi Pekerjaan Kosong', 'Mohon isi deskripsi pekerjaan sebelum menyimpan Presensi Pulang.', 'warning');
-                                            return;
-                                        }
-                                        if (!fotoVal) {
-                                            e.preventDefault();
-                                            showAlertModal('Foto Belum Diambil', 'Mohon ambil foto selfie sebagai bukti kehadiran sebelum menyimpan Presensi Pulang.', 'warning');
-                                            return;
-                                        }
-                                    }
-                                    stopCamera();
-                                });
-                            }
-
-                            // --- CAMERA INTEGRATION CODE ---
-                            const startCameraBtn = document.getElementById('startCameraBtn');
-                            const captureBtn = document.getElementById('captureBtn');
-                            const retakeBtn = document.getElementById('retakeBtn');
-                            const video = document.getElementById('video');
-                            const canvas = document.getElementById('canvas');
-                            const photoPreview = document.getElementById('photoPreview');
-                            const fotoInput = document.getElementById('fotoInput');
-                            const cameraPlaceholder = document.getElementById('cameraPlaceholder');
-                            const cameraControls = document.getElementById('cameraControls');
-                            const postCaptureControls = document.getElementById('postCaptureControls');
-                            const cameraContainer = document.getElementById('cameraContainer');
-                            const cameraFallbackInput = document.getElementById('cameraFallbackInput');
-
-                            // Check if webcam camera is supported & in secure context
-                            const isSecure = window.isSecureContext || (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-                            const canUseWebcam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && isSecure;
-
-                            if (!canUseWebcam) {
-                                // Update UI/button for hybrid fallback (mobile native camera)
-                                if (startCameraBtn) {
-                                    startCameraBtn.innerHTML = `
-                    <svg class="w-4 h-4 mr-1.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Buka Kamera HP
-                `;
-                                }
-                                const descText = document.querySelector('#cameraPlaceholder + p') || document.querySelector('.form-group p.text-muted');
-                                if (descText) {
-                                    descText.textContent = 'Klik tombol di bawah untuk mengambil foto selfie/kehadiran langsung menggunakan kamera HP Anda.';
-                                }
-                            }
-
-                            let cameraStream = null;
-
-                            async function startCamera() {
-                                if (!canUseWebcam) {
-                                    // Non-secure context / Safari or Chrome on iOS sandbox -> Fallback to native system camera
-                                    if (cameraFallbackInput) {
-                                        cameraFallbackInput.click();
-                                    }
-                                    return;
-                                }
-
-                                try {
-                                    // Clear any existing stream
-                                    stopCamera();
-
-                                    cameraStream = await navigator.mediaDevices.getUserMedia({
-                                        video: {
-                                            facingMode: 'user',
-                                            width: { ideal: 640 },
-                                            height: { ideal: 480 }
-                                        },
-                                        audio: false
-                                    });
-
-                                    video.srcObject = cameraStream;
-                                    video.classList.remove('hidden');
-                                    cameraPlaceholder.classList.add('hidden');
-                                    photoPreview.classList.add('hidden');
-                                    cameraControls.classList.remove('hidden');
-                                    postCaptureControls.classList.add('hidden');
-
-                                    // Clear the hidden input
-                                    fotoInput.value = '';
-                                } catch (error) {
-                                    console.error('Camera access error:', error);
-
-                                    // Fallback automatically if browser webcam fails
-                                    if (cameraFallbackInput) {
-                                        cameraFallbackInput.click();
-                                    }
-                                }
-                            }
-
-                            function stopCamera() {
-                                if (cameraStream) {
-                                    cameraStream.getTracks().forEach(track => track.stop());
-                                    cameraStream = null;
-                                }
-                            }
-
-                            if (startCameraBtn) {
-                                startCameraBtn.addEventListener('click', startCamera);
-                            }
-
-                            if (cameraFallbackInput) {
-                                cameraFallbackInput.addEventListener('change', function (e) {
-                                    const file = e.target.files[0];
-                                    if (!file) return;
-
-                                    const reader = new FileReader();
-                                    reader.onload = function (event) {
-                                        const img = new Image();
-                                        img.onload = function () {
-                                            // Draw to canvas to compress & standardize dimensions
-                                            const maxW = 640;
-                                            const maxH = 480;
-                                            let w = img.width;
-                                            let h = img.height;
-
-                                            if (w > maxW || h > maxH) {
-                                                const ratio = Math.min(maxW / w, maxH / h);
-                                                w = Math.round(w * ratio);
-                                                h = Math.round(h * ratio);
-                                            }
-
-                                            canvas.width = w;
-                                            canvas.height = h;
-                                            const ctx = canvas.getContext('2d');
-
-                                            // Scale and draw normally (static photo does not need mirroring)
-                                            ctx.drawImage(img, 0, 0, w, h);
-
-                                            // Compress & ensure it is very light (well below 150KB)
-                                            let quality = 0.6;
-                                            let dataUrl = canvas.toDataURL('image/jpeg', quality);
-                                            while (dataUrl.length * 0.75 > 150 * 1024 && quality > 0.1) {
-                                                quality -= 0.1;
-                                                dataUrl = canvas.toDataURL('image/jpeg', quality);
-                                            }
-                                            fotoInput.value = dataUrl;
-
-                                            // Show preview
-                                            photoPreview.src = dataUrl;
-                                            photoPreview.classList.remove('hidden');
-
-                                            cameraPlaceholder.classList.add('hidden');
-                                            video.classList.add('hidden');
-                                            cameraControls.classList.add('hidden');
-                                            postCaptureControls.classList.remove('hidden');
-                                        };
-                                        img.src = event.target.result;
-                                    };
-                                    reader.readAsDataURL(file);
-                                });
-                            }
-
-                            const suratTugasUploadInput = document.getElementById('suratTugasUploadInput');
-                            const suratTugasPreview = document.getElementById('suratTugasPreview');
-                            
-                            if (suratTugasUploadInput) {
-                                suratTugasUploadInput.addEventListener('change', function(e) {
-                                    const file = e.target.files[0];
-                                    if (!file) return;
-
-                                    const reader = new FileReader();
-                                    reader.onload = function(event) {
-                                        const img = new Image();
-                                        img.onload = function() {
-                                            const maxW = 640;
-                                            const maxH = 480;
-                                            let w = img.width;
-                                            let h = img.height;
-
-                                            if (w > maxW || h > maxH) {
-                                                const ratio = Math.min(maxW / w, maxH / h);
-                                                w = Math.round(w * ratio);
-                                                h = Math.round(h * ratio);
-                                            }
-
-                                            canvas.width = w;
-                                            canvas.height = h;
-                                            const ctx = canvas.getContext('2d');
-                                            ctx.drawImage(img, 0, 0, w, h);
-
-                                            let quality = 0.6;
-                                            let dataUrl = canvas.toDataURL('image/jpeg', quality);
-                                            while (dataUrl.length * 0.75 > 150000 && quality > 0.1) {
-                                                quality -= 0.1;
-                                                dataUrl = canvas.toDataURL('image/jpeg', quality);
-                                            }
-                                            
-                                            suratTugasPreview.src = dataUrl;
-                                            suratTugasPreview.classList.remove('hidden');
-                                            fotoInput.value = dataUrl;
-                                        };
-                                        img.src = event.target.result;
-                                    };
-                                    reader.readAsDataURL(file);
-                                });
-                            }
-
-                            if (captureBtn) {
-                                captureBtn.addEventListener('click', function () {
-                                    if (!video.srcObject) return;
-
-                                    // Match canvas dimensions to video
-                                    canvas.width = video.videoWidth || 640;
-                                    canvas.height = video.videoHeight || 480;
-
-                                    const ctx = canvas.getContext('2d');
-                                    // Mirror image for front camera selfie feel
-                                    ctx.translate(canvas.width, 0);
-                                    ctx.scale(-1, 1);
-
-                                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                                    // Compress & ensure it is very light (well below 150KB)
-                                    let quality = 0.6;
-                                    let dataUrl = canvas.toDataURL('image/jpeg', quality);
-                                    while (dataUrl.length * 0.75 > 150 * 1024 && quality > 0.1) {
-                                        quality -= 0.1;
-                                        dataUrl = canvas.toDataURL('image/jpeg', quality);
-                                    }
-                                    fotoInput.value = dataUrl;
-
-                                    // Show preview
-                                    photoPreview.src = dataUrl;
-                                    photoPreview.classList.remove('hidden');
-
-                                    // Hide video & controls
-                                    video.classList.add('hidden');
-                                    cameraControls.classList.add('hidden');
-                                    postCaptureControls.classList.remove('hidden');
-
-                                    // Turn off camera stream
-                                    stopCamera();
-                                });
-                            }
-
-                            if (retakeBtn) {
-                                retakeBtn.addEventListener('click', function () {
-                                    fotoInput.value = '';
-                                    photoPreview.classList.add('hidden');
-                                    photoPreview.src = '';
-                                    if (cameraFallbackInput) {
-                                        cameraFallbackInput.value = '';
-                                    }
-                                    startCamera();
-                                });
-                            }
-
-                            // (stopCamera is called in submit handler above)
-                        </script>
-
-                        <!-- Custom Alert Modal -->
-                        <div id="alertModal"
-                            class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
-                            <div id="alertModalContent"
-                                class="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl transform scale-95 transition-transform duration-200">
-                                <div class="flex flex-col items-center text-center gap-4">
-                                    <!-- Icon -->
-                                    <div id="alertModalIcon"
-                                        class="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0">
-                                    </div>
-                                    <!-- Text -->
-                                    <div>
-                                        <h3 id="alertModalTitle" class="font-display text-lg font-bold text-fg mb-1">
-                                        </h3>
-                                        <p id="alertModalMessage"
-                                            class="text-sm text-muted whitespace-pre-line leading-relaxed"></p>
-                                    </div>
-                                    <!-- Button -->
-                                    <button type="button" onclick="closeAlertModal()" id="alertModalBtn"
-                                        class="w-full px-6 py-2.5 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press text-sm">
-                                        Mengerti
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <script>
-                            const alertModal = document.getElementById('alertModal');
-                            const alertModalContent = document.getElementById('alertModalContent');
-
-                            function showAlertModal(title, message, type = 'info') {
-                                const iconEl = document.getElementById('alertModalIcon');
-                                const titleEl = document.getElementById('alertModalTitle');
-                                const msgEl = document.getElementById('alertModalMessage');
-                                const btnEl = document.getElementById('alertModalBtn');
-
-                                titleEl.textContent = title;
-                                msgEl.textContent = message;
-
-                                const configs = {
-                                    info: {
-                                        bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
-                                        icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-                                    },
-                                    warning: {
-                                        bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
-                                        icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`
-                                    },
-                                    error: {
-                                        bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
-                                        icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-                                    }
-                                };
-                                const cfg = configs[type] || configs.info;
-                                iconEl.className = `w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${cfg.bg} ${cfg.iconColor}`;
-                                iconEl.innerHTML = cfg.icon;
-                                btnEl.className = `w-full px-6 py-2.5 text-white font-semibold rounded-xl transition-colors btn-press text-sm ${cfg.btnClass}`;
-
-                                alertModal.classList.remove('hidden');
-                                setTimeout(() => {
-                                    alertModal.classList.remove('opacity-0');
-                                    alertModalContent.classList.remove('scale-95');
-                                }, 10);
-                            }
-
-                            function closeAlertModal() {
-                                alertModal.classList.add('opacity-0');
-                                alertModalContent.classList.add('scale-95');
-                                setTimeout(() => alertModal.classList.add('hidden'), 200);
-                            }
-
-                            // Tutup modal jika klik backdrop
-                            alertModal.addEventListener('click', function (e) {
-                                if (e.target === alertModal) closeAlertModal();
-                            });
-                        </script>
+<!-- face-api.js Library from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+<script>
+    // --- AUTO STATUS DETECTION & GENERAL FORM LOGIC ---
+    const presensiForm = document.getElementById('presensiForm');
+    const karyawanIdInput = document.getElementById('karyawanId'); // hidden input
+    const karyawanIdManual = document.getElementById('karyawanIdManual'); // manual dropdown
+    const tanggalInput = document.getElementById('tanggal');
+    const hariContainer = document.getElementById('hariContainer');
+    const displayHari = document.getElementById('displayHari');
+    const waktuMasukInfo = document.getElementById('waktuMasukInfo');
+    const waktuPulangInfo = document.getElementById('waktuPulangInfo');
+    const pekerjaanSection = document.getElementById('pekerjaanSection');
+    const fotoSection = document.getElementById('fotoSection');
+    const pekerjaanTextarea = document.getElementById('pekerjaan');
+    const charCount = document.getElementById('charCount');
+    const statusInfo = document.getElementById('statusInfo');
+    const statusLoading = document.getElementById('statusLoading');
+    const statusBadge = document.getElementById('statusBadge');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Face Recognition UI elements
+    const faceScannerBlock = document.getElementById('faceScannerBlock');
+    const faceScanVideo = document.getElementById('faceScanVideo');
+    const faceScanCanvas = document.getElementById('faceScanCanvas');
+    const faceScanLoader = document.getElementById('faceScanLoader');
+    const faceLoaderText = document.getElementById('faceLoaderText');
+    const faceScanStatus = document.getElementById('faceScanStatus');
+    const recognizedUserCard = document.getElementById('recognizedUserCard');
+    const recognizedAvatar = document.getElementById('recognizedAvatar');
+    const recognizedName = document.getElementById('recognizedName');
+    const faceRegPhotoPreview = document.getElementById('faceRegPhotoPreview');
+    
+    // Toggle manual selection
+    const manualSelectBlock = document.getElementById('manualSelectBlock');
+    const toggleManualBtn = document.getElementById('toggleManualBtn');
+    
+    // Selfie controls
+    const captureSelfieBtn = document.getElementById('captureSelfieBtn');
+    const retakeSelfieBtn = document.getElementById('retakeSelfieBtn');
+    const fotoInput = document.getElementById('fotoInput');
+    const cameraFallbackInput = document.getElementById('cameraFallbackInput');
+    
+    const hariNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    let currentStatus = 'none'; // 'none' | 'sudah_masuk' | 'sudah_pulang' | 'holiday'
+    
+    // Camera and Face recognition variables
+    let cameraStream = null;
+    let faceMatcher = null;
+    let registeredFaces = [];
+    let scanInterval = null;
+    let isModelsLoaded = false;
+    let isManualMode = false;
+    let recognizedUser = null;
+
+    // Check secure context for camera
+    const isSecure = window.isSecureContext || (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const canUseWebcam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && isSecure;
+
+    // Live clock
+    function updateClock() {
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const t = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        const el1 = document.getElementById('clockDisplay');
+        const el2 = document.getElementById('clockDisplayPulang');
+        if (el1) el1.textContent = t;
+        if (el2) el2.textContent = t;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    if (pekerjaanTextarea) {
+        pekerjaanTextarea.addEventListener('input', function () {
+            const length = this.value.length;
+            if (charCount) charCount.textContent = length;
+            if (charCount) charCount.classList.toggle('text-red-500', length > 500);
+        });
+    }
+
+    function calculateHari() {
+        if (tanggalInput.value) {
+            const d = new Date(tanggalInput.value);
+            if (!isNaN(d.getTime())) {
+                displayHari.value = hariNames[d.getDay()];
+                hariContainer.classList.remove('hidden');
+            } else { hariContainer.classList.add('hidden'); }
+        } else { hariContainer.classList.add('hidden'); }
+    }
+
+    function showHolidayMode(holidayName) {
+        currentStatus = 'holiday';
+        waktuMasukInfo.classList.add('hidden');
+        waktuPulangInfo.classList.add('hidden');
+        pekerjaanSection.classList.add('hidden');
+        fotoSection.classList.add('hidden');
+        const displayMsg = holidayName ? `Hari ini Libur Nasional: <strong>${holidayName}</strong>` : `Hari ini Libur Akhir Pekan (Sabtu/Minggu)`;
+        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block animate-pulse"></span>
+            <span class="text-sm font-semibold text-red-700">${displayMsg} — Presensi tidak diizinkan</span>
+        </div>`;
+        statusBadge.classList.remove('hidden');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Presensi Ditutup'; }
+    }
+
+    function showMasukMode() {
+        currentStatus = 'none';
+        presensiForm.action = '/presensi-masuk';
+        waktuMasukInfo.classList.remove('hidden');
+        waktuPulangInfo.classList.add('hidden');
+        pekerjaanSection.classList.add('hidden');
+        fotoSection.classList.add('hidden');
+        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl">
+            <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+            <span class="text-sm font-semibold text-green-700">Belum Presensi Masuk hari ini — silakan lanjutkan</span>
+        </div>`;
+        statusBadge.classList.remove('hidden');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Simpan Presensi Masuk'; }
+        
+        // Hide photo preview and reset input if any
+        faceRegPhotoPreview.classList.add('hidden');
+        faceRegPhotoPreview.src = '';
+        fotoInput.value = '';
+    }
+
+    function showPulangMode(jamMasuk) {
+        currentStatus = 'sudah_masuk';
+        presensiForm.action = '/presensi-pulang';
+        waktuMasukInfo.classList.add('hidden');
+        waktuPulangInfo.classList.remove('hidden');
+        pekerjaanSection.classList.remove('hidden');
+        fotoSection.classList.remove('hidden');
+
+        const isSuratTugas = document.getElementById('suratTugasCheck') && document.getElementById('suratTugasCheck').checked;
+        if (isSuratTugas) {
+            document.getElementById('selfieControls').classList.add('hidden');
+            document.getElementById('suratTugasUploadContainer').classList.remove('hidden');
+            const pText = document.getElementById('fotoSectionDesc');
+            if(pText) pText.textContent = 'Unggah foto sebagai bukti kehadiran pulang Surat Tugas Anda.';
+        } else {
+            document.getElementById('selfieControls').classList.remove('hidden');
+            document.getElementById('suratTugasUploadContainer').classList.add('hidden');
+            const pText = document.getElementById('fotoSectionDesc');
+            if(pText) pText.textContent = 'Ambil foto selfie menggunakan kamera di atas sebagai bukti kehadiran pulang Anda.';
+        }
+
+        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
+            <span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span>
+            <span class="text-sm font-semibold text-orange-700">Sudah Masuk pukul <strong>${jamMasuk}</strong> — silakan Presensi Pulang</span>
+        </div>`;
+        statusBadge.classList.remove('hidden');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Simpan Presensi Pulang'; }
+    }
+
+    function showSudahPulangMode(jamMasuk, jamPulang) {
+        currentStatus = 'sudah_pulang';
+        waktuMasukInfo.classList.add('hidden');
+        waktuPulangInfo.classList.add('hidden');
+        pekerjaanSection.classList.add('hidden');
+        fotoSection.classList.add('hidden');
+        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+            <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+            <span class="text-sm font-semibold text-blue-700">Presensi hari ini selesai — Masuk ${jamMasuk} · Pulang ${jamPulang}</span>
+        </div>`;
+        statusBadge.classList.remove('hidden');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Presensi Hari Ini Selesai'; }
+    }
+
+    function resetFormSections() {
+        waktuMasukInfo.classList.add('hidden');
+        waktuPulangInfo.classList.add('hidden');
+        pekerjaanSection.classList.add('hidden');
+        fotoSection.classList.add('hidden');
+        statusBadge.classList.add('hidden');
+        statusInfo.classList.add('hidden');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
+    }
+
+    async function checkStatus() {
+        const karyawanId = karyawanIdInput.value;
+        const tanggal = tanggalInput.value;
+        if (!tanggal) { resetFormSections(); return; }
+
+        const suratTugasCheck = document.getElementById('suratTugasCheck');
+        const isSuratTugas = suratTugasCheck && suratTugasCheck.checked;
+
+        let isHolidayDay = false;
+        let currentHolidayName = '';
+
+        // Check holiday first
+        try {
+            const holidayRes = await fetch(`/api/check-presensi?tanggal=${tanggal}`);
+            const holidayData = await holidayRes.json();
+            if (holidayData.status === 'holiday') {
+                isHolidayDay = true;
+                currentHolidayName = holidayData.holidayName;
+                const stSection = document.getElementById('suratTugasSection');
+                if (stSection) stSection.classList.remove('hidden');
+                
+                if (!isSuratTugas) {
+                    statusInfo.classList.remove('hidden');
+                    statusLoading.classList.add('hidden');
+                    showHolidayMode(holidayData.holidayName);
+                    return;
+                }
+            } else {
+                const stSection = document.getElementById('suratTugasSection');
+                if (stSection) stSection.classList.add('hidden');
+            }
+        } catch (e) {
+            console.error("Gagal memeriksa hari libur:", e);
+        }
+
+        if (!karyawanId) { 
+            resetFormSections(); 
+            if (isHolidayDay && isSuratTugas) {
+                statusInfo.classList.remove('hidden');
+                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 border border-yellow-200 rounded-xl">
+                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block animate-pulse"></span>
+                    <span class="text-sm font-semibold text-yellow-700">Mode Surat Tugas Aktif — Silakan verifikasi identitas Anda</span>
+                </div>`;
+                statusBadge.classList.remove('hidden');
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
+            }
+            return; 
+        }
+
+        statusInfo.classList.remove('hidden');
+        statusLoading.classList.remove('hidden');
+        statusBadge.classList.add('hidden');
+
+        try {
+            const res = await fetch(`/api/check-presensi?karyawanId=${karyawanId}&tanggal=${tanggal}&suratTugas=${isSuratTugas}`);
+            const data = await res.json();
+            statusLoading.classList.add('hidden');
+            if (data.status === 'holiday') {
+                showHolidayMode(data.holidayName);
+            } else if (data.status === 'none') {
+                showMasukMode();
+            } else if (data.status === 'sudah_masuk') {
+                showPulangMode(data.jamMasuk);
+            } else if (data.status === 'sudah_pulang') {
+                showSudahPulangMode(data.jamMasuk, data.jamPulang);
+            }
+        } catch (e) {
+            statusLoading.classList.add('hidden');
+            showMasukMode();
+        }
+    }
+
+    tanggalInput.addEventListener('change', () => { calculateHari(); checkStatus(); });
+    
+    const stCheck = document.getElementById('suratTugasCheck');
+    if (stCheck) stCheck.addEventListener('change', checkStatus);
+
+    calculateHari();
+    checkStatus();
+
+    // Submit validation
+    if (presensiForm) {
+        presensiForm.addEventListener('submit', function (e) {
+            if (currentStatus === 'sudah_pulang') {
+                e.preventDefault();
+                showAlertModal(
+                    'Presensi Sudah Selesai',
+                    'Anda sudah melakukan Presensi Masuk dan Presensi Pulang hari ini.\nSilakan kembali lagi besok!',
+                    'info'
+                );
+                return;
+            }
+            const isPulang = presensiForm.action.includes('/presensi-pulang');
+            if (isPulang) {
+                const pekVal = pekerjaanTextarea ? pekerjaanTextarea.value.trim() : '';
+                const fotoVal = fotoInput ? fotoInput.value : '';
+                if (!pekVal) {
+                    e.preventDefault();
+                    showAlertModal('Deskripsi Pekerjaan Kosong', 'Mohon isi deskripsi pekerjaan sebelum menyimpan Presensi Pulang.', 'warning');
+                    return;
+                }
+                if (!fotoVal) {
+                    e.preventDefault();
+                    showAlertModal('Foto Belum Diambil', 'Mohon ambil foto selfie sebagai bukti kehadiran sebelum menyimpan Presensi Pulang.', 'warning');
+                    return;
+                }
+            }
+            stopCamera();
+        });
+    }
+
+    // --- FACE RECOGNITION SCANNING CODE ---
+    async function loadFaceModels() {
+        if (isModelsLoaded) return;
+        faceLoaderText.textContent = 'Memuat modul kecerdasan buatan (AI)...';
+        await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+        await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+        await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+        isModelsLoaded = true;
+    }
+
+    async function loadRegisteredFaces() {
+        try {
+            const res = await fetch('/api/karyawan/faces');
+            registeredFaces = await res.json();
+            
+            if (registeredFaces.length === 0) {
+                console.warn('Belum ada data wajah yang didaftarkan.');
+                return;
+            }
+            
+            // Map JSON descriptors to LabeledFaceDescriptors
+            const labeledDescriptors = registeredFaces.map(f => {
+                const descriptor = new Float32Array(f.descriptor);
+                return new faceapi.LabeledFaceDescriptors(String(f.id), [descriptor]);
+            });
+            
+            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55); // distance threshold (0.55 is safe)
+        } catch (e) {
+            console.error('Gagal mengambil data wajah terdaftar:', e);
+        }
+    }
+
+    async function startCamera(deviceId = null) {
+        if (!canUseWebcam) {
+            // Non-secure context or no camera available -> Fallback to manual selection immediately
+            enableManualMode();
+            return;
+        }
+
+        try {
+            stopScanning();
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            faceScanVideo.srcObject = null;
+
+            const videoConstraints = deviceId 
+                ? { deviceId: { exact: deviceId }, width: 640, height: 480 }
+                : { facingMode: 'user', width: 640, height: 480 };
+
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: videoConstraints,
+                audio: false
+            });
+            faceScanVideo.srcObject = cameraStream;
+            
+            faceScanVideo.onloadedmetadata = async () => {
+                faceScanLoader.classList.add('hidden');
+                if (!isManualMode) {
+                    startScanning();
+                }
+                await updateCameraList();
+            };
+        } catch (error) {
+            console.error('Camera access error:', error);
+            let errMsg = 'Gagal mengakses kamera. ';
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                errMsg += 'Browser memblokir akses karena website diakses secara tidak aman (HTTP). Gunakan localhost atau HTTPS.';
+            } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                errMsg += 'Izin kamera ditolak/diblokir oleh browser. Silakan klik ikon gembok di sebelah URL bar browser untuk mengizinkan kamera.';
+            } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                errMsg += 'Tidak ada perangkat kamera yang terdeteksi. Hubungkan webcam terlebih dahulu.';
+            } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                errMsg += 'Kamera sedang digunakan oleh aplikasi lain (seperti Zoom, OBS, atau tab browser lain).';
+            } else {
+                errMsg += `Error: ${error.name || error.message || error}`;
+            }
+            showAlertModal('Kamera Tidak Dapat Diakses', errMsg + '\n\nSistem dialihkan ke Mode Pemilihan Manual.', 'error');
+            enableManualMode();
+        }
+    }
+
+    async function updateCameraList() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            
+            const cameraSelectContainer = document.getElementById('cameraSelectContainer');
+            const cameraSelect = document.getElementById('cameraSelect');
+
+            if (videoDevices.length > 1) {
+                cameraSelectContainer.classList.remove('hidden');
+                cameraSelect.innerHTML = '';
+                
+                const activeTrack = cameraStream ? cameraStream.getVideoTracks()[0] : null;
+                const activeSettings = activeTrack ? activeTrack.getSettings() : null;
+                const activeDeviceId = activeSettings ? activeSettings.deviceId : null;
+
+                videoDevices.forEach((device, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = device.deviceId;
+                    opt.textContent = device.label || `Kamera ${index + 1}`;
+                    if (device.deviceId === activeDeviceId) {
+                        opt.selected = true;
+                    }
+                    cameraSelect.appendChild(opt);
+                });
+
+                cameraSelect.onchange = async () => {
+                    const selectedId = cameraSelect.value;
+                    await startCamera(selectedId);
+                };
+            } else {
+                if (cameraSelectContainer) cameraSelectContainer.classList.add('hidden');
+            }
+        } catch (e) {
+            console.warn('Gagal membaca daftar kamera:', e);
+        }
+    }
+
+    function stopCamera() {
+        stopScanning();
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        faceScanVideo.srcObject = null;
+        
+        const cameraSelectContainer = document.getElementById('cameraSelectContainer');
+        if (cameraSelectContainer) cameraSelectContainer.classList.add('hidden');
+    }
+
+    function startScanning() {
+        if (scanInterval) clearInterval(scanInterval);
+        
+        faceScanStatus.textContent = 'Mencari wajah Anda...';
+        
+        scanInterval = setInterval(async () => {
+            if (!cameraStream || isManualMode || recognizedUser) return;
+            
+            const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
+            const detection = await faceapi.detectSingleFace(faceScanVideo, options)
+                                         .withFaceLandmarks()
+                                         .withFaceDescriptor();
+            
+            const ctx = faceScanCanvas.getContext('2d');
+            const displaySize = { width: faceScanVideo.videoWidth, height: faceScanVideo.videoHeight };
+            faceapi.matchDimensions(faceScanCanvas, displaySize);
+            ctx.clearRect(0, 0, faceScanCanvas.width, faceScanCanvas.height);
+            
+            if (detection) {
+                // Draw detection bounding box
+                const resized = faceapi.resizeResults(detection, displaySize);
+                faceapi.draw.drawDetections(faceScanCanvas, resized);
+                
+                if (faceMatcher) {
+                    const match = faceMatcher.findBestMatch(detection.descriptor);
+                    if (match.label !== 'unknown') {
+                        const matchedId = parseInt(match.label, 10);
+                        const user = registeredFaces.find(f => f.id === matchedId);
+                        if (user) {
+                            // Match confirmed!
+                            recognizedUser = user;
+                            verifyUser(user);
+                        }
+                    } else {
+                        faceScanStatus.innerHTML = '<span class="text-accent">Wajah tidak dikenali. Silakan coba lagi.</span>';
+                    }
+                } else {
+                    faceScanStatus.innerHTML = '<span class="text-orange-500">Kamera aktif, namun database wajah kosong.</span>';
+                }
+            } else {
+                faceScanStatus.textContent = 'Mencari wajah Anda... Posisikan wajah di tengah kamera';
+            }
+        }, 300);
+    }
+
+    function stopScanning() {
+        if (scanInterval) {
+            clearInterval(scanInterval);
+            scanInterval = null;
+        }
+    }
+
+    function verifyUser(user) {
+        stopScanning();
+        
+        // Update form values
+        karyawanIdInput.value = user.id;
+        
+        // Update Recognized Card UI
+        recognizedName.textContent = user.nama;
+        recognizedAvatar.textContent = user.nama.split(/\s+/).slice(0, 2).map(n => n[0]).join('').toUpperCase();
+        
+        recognizedUserCard.classList.remove('hidden');
+        faceScanStatus.innerHTML = `<span class="text-green-600 font-semibold">Halo, ${user.nama}! Pemindaian sukses.</span>`;
+        
+        // Change border color to green
+        document.getElementById('faceScanContainer').classList.remove('border-border');
+        document.getElementById('faceScanContainer').classList.add('border-success');
+        
+        // Trigger status validation for this karyawan
+        checkStatus();
+    }
+
+    function resetVerification() {
+        recognizedUser = null;
+        karyawanIdInput.value = '';
+        recognizedUserCard.classList.add('hidden');
+        
+        document.getElementById('faceScanContainer').classList.remove('border-success');
+        document.getElementById('faceScanContainer').classList.add('border-border');
+        
+        resetFormSections();
+        
+        if (!isManualMode) {
+            startScanning();
+        }
+    }
+
+    // --- MANUAL TOGGLE MECHANICS ---
+    function enableManualMode() {
+        isManualMode = true;
+        stopScanning();
+        
+        faceScannerBlock.classList.add('hidden');
+        manualSelectBlock.classList.remove('hidden');
+        toggleManualBtn.textContent = 'Gunakan Pemindai Wajah';
+        
+        // Transfer dropdown select values to our form
+        karyawanIdInput.value = karyawanIdManual.value;
+        checkStatus();
+    }
+
+    function disableManualMode() {
+        isManualMode = false;
+        
+        faceScannerBlock.classList.remove('hidden');
+        manualSelectBlock.classList.add('hidden');
+        toggleManualBtn.textContent = 'Pilih Nama Secara Manual';
+        
+        resetVerification();
+        startCamera();
+    }
+
+    toggleManualBtn.addEventListener('click', () => {
+        if (isManualMode) {
+            disableManualMode();
+        } else {
+            enableManualMode();
+        }
+    });
+
+    karyawanIdManual.addEventListener('change', () => {
+        karyawanIdInput.value = karyawanIdManual.value;
+        checkStatus();
+        
+        // If in Pulang mode and manual mode is active, make sure camera is started (for selfie)
+        if (currentStatus === 'sudah_masuk' && !cameraStream && canUseWebcam) {
+            startCamera();
+        }
+    });
+
+    // --- PHOTO CAPTURE & SELFIE LOGIC (unified stream) ---
+    if (captureSelfieBtn) {
+        captureSelfieBtn.addEventListener('click', function() {
+            if (!cameraStream) {
+                // If webcam fails or not available, use native fallback input
+                if (cameraFallbackInput) cameraFallbackInput.click();
+                return;
+            }
+            
+            // Capture from faceScanVideo
+            const snapCanvas = document.createElement('canvas');
+            snapCanvas.width = faceScanVideo.videoWidth || 640;
+            snapCanvas.height = faceScanVideo.videoHeight || 480;
+            
+            const ctx = snapCanvas.getContext('2d');
+            // Mirror image to match the video view
+            ctx.translate(snapCanvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(faceScanVideo, 0, 0, snapCanvas.width, snapCanvas.height);
+            
+            // Compress image to fit payload limits
+            let quality = 0.6;
+            let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+            while (dataUrl.length * 0.75 > 150 * 1024 && quality > 0.1) {
+                quality -= 0.1;
+                dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+            }
+            
+            // Set input hidden value
+            fotoInput.value = dataUrl;
+            
+            // Show preview overlay inside top scanner block
+            faceRegPhotoPreview.src = dataUrl;
+            faceRegPhotoPreview.classList.remove('hidden');
+            
+            // Toggle controls
+            captureSelfieBtn.classList.add('hidden');
+            retakeSelfieBtn.classList.remove('hidden');
+            
+            faceScanStatus.innerHTML = '<span class="text-green-600 font-semibold">✓ Foto bukti berhasil diambil</span>';
+        });
+    }
+
+    if (retakeSelfieBtn) {
+        retakeSelfieBtn.addEventListener('click', function() {
+            fotoInput.value = '';
+            faceRegPhotoPreview.classList.add('hidden');
+            faceRegPhotoPreview.src = '';
+            if (cameraFallbackInput) cameraFallbackInput.value = '';
+            
+            // Toggle controls
+            captureSelfieBtn.classList.remove('hidden');
+            retakeSelfieBtn.classList.add('hidden');
+            
+            if (!isManualMode && recognizedUser) {
+                faceScanStatus.innerHTML = `<span class="text-green-600 font-semibold">Halo, ${recognizedUser.nama}! Silakan ambil foto bukti.</span>`;
+            } else {
+                faceScanStatus.textContent = 'Kamera aktif. Silakan ambil foto bukti.';
+            }
+        });
+    }
+
+    // Native file input fallback logic for mobile native camera
+    if (cameraFallbackInput) {
+        cameraFallbackInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    const snapCanvas = document.createElement('canvas');
+                    const maxW = 640;
+                    const maxH = 480;
+                    let w = img.width;
+                    let h = img.height;
+
+                    if (w > maxW || h > maxH) {
+                        const ratio = Math.min(maxW / w, maxH / h);
+                        w = Math.round(w * ratio);
+                        h = Math.round(h * ratio);
+                    }
+
+                    snapCanvas.width = w;
+                    snapCanvas.height = h;
+                    const ctx = snapCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    let quality = 0.6;
+                    let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                    while (dataUrl.length * 0.75 > 150 * 1024 && quality > 0.1) {
+                        quality -= 0.1;
+                        dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                    }
+                    fotoInput.value = dataUrl;
+
+                    faceRegPhotoPreview.src = dataUrl;
+                    faceRegPhotoPreview.classList.remove('hidden');
+
+                    captureSelfieBtn.classList.add('hidden');
+                    retakeSelfieBtn.classList.remove('hidden');
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Surat Tugas image upload logic
+    const suratTugasUploadInput = document.getElementById('suratTugasUploadInput');
+    const suratTugasPreview = document.getElementById('suratTugasPreview');
+    
+    if (suratTugasUploadInput) {
+        suratTugasUploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const snapCanvas = document.createElement('canvas');
+                    const maxW = 640;
+                    const maxH = 480;
+                    let w = img.width;
+                    let h = img.height;
+
+                    if (w > maxW || h > maxH) {
+                        const ratio = Math.min(maxW / w, maxH / h);
+                        w = Math.round(w * ratio);
+                        h = Math.round(h * ratio);
+                    }
+
+                    snapCanvas.width = w;
+                    snapCanvas.height = h;
+                    const ctx = snapCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    let quality = 0.6;
+                    let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                    while (dataUrl.length * 0.75 > 150000 && quality > 0.1) {
+                        quality -= 0.1;
+                        dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                    }
+                    
+                    suratTugasPreview.src = dataUrl;
+                    suratTugasPreview.classList.remove('hidden');
+                    fotoInput.value = dataUrl;
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // --- INITIALIZATION ---
+    async function initPresensi() {
+        if (!canUseWebcam) {
+            enableManualMode();
+            return;
+        }
+
+        try {
+            await loadFaceModels();
+            await loadRegisteredFaces();
+            await startCamera();
+        } catch (e) {
+            console.error('Gagal memuat inisialisasi Face Recognition:', e);
+            showAlertModal('Gagal Menginisialisasi AI', 'Gagal memuat modul Face Recognition: ' + e.message + '\n\nSistem dialihkan ke Mode Pemilihan Manual.', 'error');
+            enableManualMode();
+        }
+    }
+
+    // Run when DOM elements are fully loaded
+    window.addEventListener('DOMContentLoaded', initPresensi);
+</script>
+
+<!-- Custom Alert Modal -->
+<div id="alertModal"
+    class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+    <div id="alertModalContent"
+        class="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl transform scale-95 transition-transform duration-200">
+        <div class="flex flex-col items-center text-center gap-4">
+            <!-- Icon -->
+            <div id="alertModalIcon"
+                class="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0">
+            </div>
+            <!-- Text -->
+            <div>
+                <h3 id="alertModalTitle" class="font-display text-lg font-bold text-fg mb-1">
+                </h3>
+                <p id="alertModalMessage"
+                    class="text-sm text-muted whitespace-pre-line leading-relaxed"></p>
+            </div>
+            <!-- Button -->
+            <button type="button" onclick="closeAlertModal()" id="alertModalBtn"
+                class="w-full px-6 py-2.5 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press text-sm">
+                Mengerti
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const alertModal = document.getElementById('alertModal');
+    const alertModalContent = document.getElementById('alertModalContent');
+
+    function showAlertModal(title, message, type = 'info') {
+        const iconEl = document.getElementById('alertModalIcon');
+        const titleEl = document.getElementById('alertModalTitle');
+        const msgEl = document.getElementById('alertModalMessage');
+        const btnEl = document.getElementById('alertModalBtn');
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+
+        const configs = {
+            info: {
+                bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+            },
+            warning: {
+                bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`
+            },
+            error: {
+                bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+            }
+        };
+        const cfg = configs[type] || configs.info;
+        iconEl.className = `w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${cfg.bg} ${cfg.iconColor}`;
+        iconEl.innerHTML = cfg.icon;
+        btnEl.className = `w-full px-6 py-2.5 text-white font-semibold rounded-xl transition-colors btn-press text-sm ${cfg.btnClass}`;
+
+        alertModal.classList.remove('hidden');
+        setTimeout(() => {
+            alertModal.classList.remove('opacity-0');
+            alertModalContent.classList.remove('scale-95');
+        }, 10);
+    }
+
+    function closeAlertModal() {
+        alertModal.classList.add('opacity-0');
+        alertModalContent.classList.add('scale-95');
+        setTimeout(() => alertModal.classList.add('hidden'), 200);
+    }
+
+    alertModal.addEventListener('click', function (e) {
+        if (e.target === alertModal) closeAlertModal();
+    });
+</script>
 <%- include('partials/footer') %>

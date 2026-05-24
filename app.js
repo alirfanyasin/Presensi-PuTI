@@ -1828,6 +1828,49 @@ app.post("/student-staff/delete", (req, res) => {
   });
 });
 
+// --- FACE API ROUTES ---
+app.post("/api/karyawan/:id/register-face", (req, res) => {
+  const { id } = req.params;
+  const { descriptor } = req.body;
+  if (!id || !descriptor) {
+    return res.status(400).json({ error: "Missing ID or descriptor" });
+  }
+  const descriptorStr = JSON.stringify(descriptor);
+  db.run("UPDATE karyawan SET face_descriptor = ? WHERE id = ?", [descriptorStr, id], (err) => {
+    if (err) {
+      console.error("Gagal mendaftarkan wajah:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json({ success: true, message: "Wajah berhasil didaftarkan!" });
+  });
+});
+
+app.get("/api/karyawan/faces", (req, res) => {
+  db.all("SELECT id, nama, face_descriptor FROM karyawan WHERE face_descriptor IS NOT NULL AND (type IS NULL OR type != 'Staf')", (err, rows) => {
+    if (err) {
+      console.error("Gagal memuat data wajah:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    const facesList = rows.map(r => ({
+      id: r.id,
+      nama: r.nama,
+      descriptor: JSON.parse(r.face_descriptor)
+    }));
+    res.json(facesList);
+  });
+});
+
+app.post("/api/karyawan/:id/delete-face", (req, res) => {
+  const { id } = req.params;
+  db.run("UPDATE karyawan SET face_descriptor = NULL WHERE id = ?", [id], (err) => {
+    if (err) {
+      console.error("Gagal menghapus data wajah:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json({ success: true, message: "Data wajah berhasil dihapus." });
+  });
+});
+
 // --- TASK MANAGEMENT CRUD ---
 
 app.get("/task-management", async (req, res) => {
@@ -2349,9 +2392,27 @@ app.post("/task-management/delete", (req, res) => {
   });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+const keyPath = path.join(__dirname, "key.pem");
+const certPath = path.join(__dirname, "cert.pem");
+let server;
+let isHttps = false;
+
+if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+  const https = require("https");
+  const options = {
+    key: fs.readFileSync(keyPath),
+    cert: fs.readFileSync(certPath),
+  };
+  server = https.createServer(options, app);
+  isHttps = true;
+} else {
+  server = app;
+}
+
+server.listen(PORT, "0.0.0.0", () => {
+  const protocol = isHttps ? "https" : "http";
   console.log(`==================================================`);
-  console.log(`Server running locally: http://localhost:${PORT}`);
+  console.log(`Server running locally: ${protocol}://localhost:${PORT}`);
 
   // Deteksi IP Address lokal di jaringan
   const os = require("os");
@@ -2363,7 +2424,7 @@ app.listen(PORT, "0.0.0.0", () => {
       // Ambil IPv4 yang bukan loopback/internal (127.0.0.1)
       if ((iface.family === "IPv4" || iface.family === 4) && !iface.internal) {
         console.log(
-          `Access on your local network: http://${iface.address}:${PORT}`,
+          `Access on your local network: ${protocol}://${iface.address}:${PORT}`,
         );
         hasNetworkAddress = true;
       }
@@ -2374,6 +2435,11 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log(
       "No active network adapter found (WiFi/Ethernet). Connect to a network to access from other devices.",
     );
+  }
+  if (isHttps) {
+    console.log("SSL Mode: Active (HTTPS)");
+  } else {
+    console.log("SSL Mode: Inactive (HTTP). To use HTTPS locally, place 'key.pem' and 'cert.pem' in project root.");
   }
   console.log(`==================================================`);
 });
