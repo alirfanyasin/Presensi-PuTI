@@ -1,293 +1,320 @@
-<%- include('partials/header', { title: 'Task Management' }) %>
+<%- include('partials/header', { title: 'Task Management - Service Desk' }) %>
 <%- include('partials/nav', { path: '/task-management' }) %>
 
-<% 
-  const getInitials = (name) => {
-    if (!name) return "";
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<style>
+    /* Additional styles for Kanban and Animations */
+    .kanban-col {
+        min-height: 500px;
+        transition: background-color 0.2s ease;
     }
-    return parts[0].substring(0, 2).toUpperCase();
-  };
-%>
+    .task-card {
+        cursor: grab;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .task-card:active {
+        cursor: grabbing;
+    }
+    .sortable-ghost {
+        opacity: 0.4;
+        background-color: #f3f4f6;
+    }
+    
+    /* Workspace Tab active state */
+    .workspace-tab.active {
+        background-color: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+    
+    .view-toggle.active {
+        background-color: var(--accent);
+        color: white;
+    }
+    
+    /* Avatar active state for checkboxes */
+    .avatar-cb:checked + div {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.3);
+    }
+
+    /* Lightbox */
+    #lightbox {
+        backdrop-filter: blur(4px);
+    }
+
+    /* Context Menu */
+    #contextMenu {
+        animation: ctxFadeIn 0.12s ease;
+        min-width: 160px;
+    }
+    @keyframes ctxFadeIn {
+        from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+        to   { opacity: 1; transform: scale(1)   translateY(0); }
+    }
+    .ctx-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.12s;
+        border-radius: 6px;
+    }
+    .ctx-item:hover { background: var(--inputBg); }
+    .ctx-item.danger { color: #ef4444; }
+    .ctx-item.danger:hover { background: #fef2f2; }
+</style>
 
 <main class="flex-grow w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
     <!-- Page Header -->
     <div class="mb-6 sm:mb-8 animate-fadeInUp flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-1">Task Management</h2>
+            <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-1">Service Desk</h2>
             <p class="text-xs sm:text-sm text-muted">Kelola dan delegasikan tugas Student Staff secara terorganisir</p>
         </div>
-        <button onclick="openAddModal()" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm inline-flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-            Tambah Task
-        </button>
+        <div class="flex gap-2 flex-wrap">
+            <button onclick="openWsModal()" class="px-4 py-2.5 bg-inputBg text-fg font-medium rounded-xl hover:bg-border transition-colors text-sm border border-border shadow-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Kelola Workspace
+            </button>
+            <button onclick="openAddModal()" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm inline-flex items-center gap-2 shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                Tambah Tiket
+            </button>
+        </div>
     </div>
 
-    <% if (typeof success_msg !== 'undefined' && success_msg) { %>
-        <div class="mb-6 bg-success/20 text-success border border-success/30 px-4 py-3 rounded-xl animate-fadeInUp font-semibold text-sm">
-            <%= success_msg %>
+    <!-- Metrics Dashboard Panel -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-fadeInUp">
+        <div class="bg-card border border-border rounded-2xl p-4 shadow-sm flex flex-col">
+            <span class="text-muted text-xs font-bold uppercase tracking-wider mb-1">Total Tiket</span>
+            <span class="text-2xl font-bold text-fg" id="metricTotal">0</span>
         </div>
-    <% } %>
-    <% if (typeof error_msg !== 'undefined' && error_msg) { %>
-        <div class="mb-6 bg-red-500/20 text-red-500 border border-red-500/30 px-4 py-3 rounded-xl animate-fadeInUp font-semibold text-sm">
-            <%= error_msg %>
+        <div class="bg-card border border-border rounded-2xl p-4 shadow-sm flex flex-col">
+            <span class="text-amber-600 text-xs font-bold uppercase tracking-wider mb-1">Todo</span>
+            <span class="text-2xl font-bold text-fg" id="metricTodo">0</span>
         </div>
-    <% } %>
+        <div class="bg-card border border-border rounded-2xl p-4 shadow-sm flex flex-col">
+            <span class="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">On Progress</span>
+            <span class="text-2xl font-bold text-fg" id="metricProgress">0</span>
+        </div>
+        <div class="bg-card border border-border rounded-2xl p-4 shadow-sm flex flex-col relative overflow-hidden">
+            <span class="text-green-600 text-xs font-bold uppercase tracking-wider mb-1">Selesai</span>
+            <div class="flex items-end justify-between">
+                <span class="text-2xl font-bold text-fg" id="metricDone">0</span>
+                <span class="text-sm font-bold text-green-500" id="metricDoneRate">0%</span>
+            </div>
+            <!-- Progress bar bg -->
+            <div class="absolute bottom-0 left-0 h-1 bg-green-500 transition-all duration-500" id="metricDoneBar" style="width: 0%"></div>
+        </div>
+    </div>
 
-    <!-- Filter & Search Bar -->
-    <div class="bg-card rounded-2xl border border-border p-4 sm:p-5 mb-6 animate-fadeInUp stagger-1 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-sm">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-grow">
-            <!-- Search by Name/Task -->
-            <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted">
+    <!-- Controls Row: Workspaces & View Toggle -->
+    <div class="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center mb-6 animate-fadeInUp">
+        <!-- Workspace Tabs -->
+        <div class="flex overflow-x-auto hide-scrollbar w-full xl:w-auto gap-2 pb-2 xl:pb-0" id="workspaceTabs">
+            <% if(workspaces && workspaces.length > 0) { %>
+                <% workspaces.forEach((ws, idx) => { %>
+                    <button onclick="setWorkspace('<%= ws.nama %>')" class="workspace-tab whitespace-nowrap px-4 py-2 rounded-xl border border-border bg-card text-fg font-medium text-sm transition-colors" data-ws="<%= ws.nama %>"><%= ws.nama %></button>
+                <% }) %>
+            <% } %>
+        </div>
+
+        <!-- View Toggle & Search -->
+        <div class="flex w-full xl:w-auto gap-3 items-center flex-wrap xl:flex-nowrap">
+            <div class="relative flex-grow xl:flex-grow-0 xl:w-64">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </span>
-                <input type="text" id="searchFilter" oninput="applyFilters()" class="w-full pl-10 pr-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Cari tugas atau staff...">
+                <input type="text" id="searchInput" oninput="applyFilters()" class="w-full pl-9 pr-4 py-2 bg-card border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Cari tiket...">
             </div>
-
-            <!-- Filter by Status -->
-            <div class="relative">
-                <select id="statusFilter" onchange="applyFilters()" class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
-                    <option value="">Semua Status</option>
-                    <option value="Todo">Todo</option>
-                    <option value="On Progress">On Progress</option>
-                    <option value="Done">Done</option>
-                </select>
-                <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-muted">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </span>
-            </div>
-
-            <!-- Filter by Start Date -->
-            <div class="relative flex items-center">
-                <input type="date" id="dateFilter" onchange="applyFilters()" class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
-                <!-- Clear date button -->
-                <button onclick="clearDateFilter()" class="absolute right-3 text-muted hover:text-fg focus:outline-none hidden" id="clearDateBtn">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <div class="flex bg-card border border-border rounded-xl overflow-hidden shadow-sm flex-shrink-0">
+                <button onclick="setViewMode('list')" id="btnViewList" class="view-toggle px-4 py-2 text-sm font-medium text-fg hover:bg-inputBg transition-colors border-r border-border flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    List
+                </button>
+                <button onclick="setViewMode('kanban')" id="btnViewKanban" class="view-toggle px-4 py-2 text-sm font-medium text-fg hover:bg-inputBg transition-colors flex items-center gap-2 active">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                    Kanban
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Desktop Table Section -->
-    <div class="hidden md:block bg-card rounded-2xl border border-border overflow-hidden animate-fadeInUp stagger-1 shadow-sm mb-6">
-        <div class="table-container overflow-x-auto">
-            <table class="w-full min-w-[800px]">
-                <thead class="bg-accentLighter border-b border-border">
-                    <tr>
-                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">No</th>
-                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Kode</th>
-                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tugas</th>
-                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tanggal Mulai</th>
-                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Deadline</th>
-                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Status</th>
-                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Assignee</th>
-                        <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    <% if (tasks && tasks.length === 0) { %>
-                        <tr>
-                            <td colspan="8" class="py-10 text-center">
-                                <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                </svg>
-                                <p class="text-muted text-sm">Belum ada tugas terdaftar.</p>
-                            </td>
-                        </tr>
-                    <% } else if (tasks) { %>
-                        <% tasks.forEach((t, i) => { %>
-                            <tr class="task-row hover:bg-accentLighter/30 transition-colors" data-id="<%= t.id %>" data-task="<%= t.task %>" data-code="<%= t.code || '' %>" data-status="<%= t.status %>" data-date="<%= t.tanggal %>" data-assignees="<%= t.assignees || '' %>">
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted font-medium task-index"><%= i + 1 %></td>
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-bold text-accent font-mono"><%= t.code || '-' %></td>
-                                <td class="px-4 sm:px-6 py-4 text-sm text-fg font-semibold max-w-xs">
-                                    <span style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all;"><%= t.task %></span>
-                                </td>
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg"><%= t.tanggal %></td>
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg font-medium text-accent"><%= t.deadline %></td>
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
-                                    <% if (t.status === 'Todo') { %>
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                                            Todo
-                                        </span>
-                                    <% } else if (t.status === 'On Progress') { %>
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
-                                            On Progress
-                                        </span>
-                                    <% } else if (t.status === 'Done') { %>
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
-                                            Done
-                                        </span>
-                                    <% } %>
-                                </td>
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center -space-x-2">
-                                        <% if (t.assignees) { %>
-                                            <% t.assignees.split(', ').forEach(name => { %>
-                                                <div class="w-8 h-8 rounded-full bg-accentLight border-2 border-card flex items-center justify-center text-[10px] font-bold text-accent cursor-pointer transition-transform hover:scale-110 hover:z-10" title="<%= name %>">
-                                                    <%= getInitials(name) %>
-                                                </div>
-                                            <% }) %>
-                                        <% } else { %>
-                                            <span class="text-xs text-muted">Belum di-assign</span>
-                                        <% } %>
-                                    </div>
-                                </td>
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-center">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <button onclick="openDetail(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="text-muted hover:text-accent transition-colors p-1.5 rounded hover:bg-accentLight/20" title="Detail">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        </button>
-                                        <button onclick="openEdit(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="text-muted hover:text-indigo-600 transition-colors p-1.5 rounded hover:bg-indigo-50" title="Edit">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        </button>
-                                        <button onclick="openDelete(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="text-muted hover:text-red-500 transition-colors p-1.5 rounded hover:bg-red-50" title="Hapus">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        <% }) %>
-                    <% } %>
-                    <!-- Empty State for filtered desktop results -->
-                    <tr id="desktopEmptyState" class="hidden">
-                        <td colspan="8" class="py-10 text-center">
-                            <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                            </svg>
-                            <p class="text-muted text-sm">Tidak ada tugas yang sesuai dengan filter.</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Mobile Card Section -->
-    <div class="md:hidden space-y-4 animate-fadeInUp stagger-1 mb-6">
-        <% if (tasks && tasks.length === 0) { %>
-            <div class="bg-card rounded-2xl border border-border p-8 text-center shadow-sm">
-                <p class="text-muted text-sm">Belum ada tugas terdaftar.</p>
-            </div>
-        <% } else if (tasks) { %>
-            <% tasks.forEach(t => { %>
-                <div class="task-card bg-card rounded-2xl border border-border p-5 shadow-sm space-y-4" data-id="<%= t.id %>" data-task="<%= t.task %>" data-code="<%= t.code || '' %>" data-status="<%= t.status %>" data-date="<%= t.tanggal %>" data-assignees="<%= t.assignees || '' %>">
-                    <div class="flex justify-between items-start">
-                        <div class="space-y-1.5 pr-2">
-                            <span class="inline-flex font-mono text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-lg"><%= t.code || '-' %></span>
-                            <h4 class="font-bold text-fg text-base" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all;"><%= t.task %></h4>
-                            <div class="flex flex-wrap gap-1.5 text-xs text-muted">
-                                <span>Mulai: <strong class="text-fg"><%= t.tanggal %></strong></span>
-                                <span>·</span>
-                                <span>Deadline: <strong class="text-accent"><%= t.deadline %></strong></span>
-                            </div>
-                        </div>
-                        <div class="flex-shrink-0">
-                            <% if (t.status === 'Todo') { %>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                                    Todo
-                                </span>
-                            <% } else if (t.status === 'On Progress') { %>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                                    On Progress
-                                </span>
-                            <% } else if (t.status === 'Done') { %>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">
-                                    Done
-                                </span>
-                            <% } %>
-                        </div>
+    <!-- MAIN RENDER AREA -->
+    
+    <!-- KANBAN BOARD VIEW -->
+    <div id="viewKanban" class="animate-fadeInUp">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Todo Column -->
+            <div class="flex flex-col bg-card/50 border border-border rounded-2xl p-4 kanban-col" data-status="Todo">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-border">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                        <h3 class="font-bold text-fg">Todo</h3>
                     </div>
-
-                    <% if (t.foto) { %>
-                        <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-border cursor-pointer group" onclick="showTaskPhoto('<%= t.foto %>', '<%= t.task %>')">
-                            <img class="w-full h-full object-cover" src="<%= t.foto %>" alt="Lampiran Foto Tugas">
-                            <div class="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span class="px-3 py-1.5 bg-white/20 backdrop-blur-md text-white text-[10px] font-semibold rounded-lg border border-white/30">Lihat Fullscreen</span>
-                            </div>
-                        </div>
-                    <% } %>
-
-                    <div class="bg-inputBg/40 border border-border/60 rounded-xl p-3">
-                        <span class="block text-[10px] uppercase font-bold tracking-wider text-muted mb-1">Assignee</span>
-                        <div class="flex items-center -space-x-2">
-                            <% if (t.assignees) { %>
-                                <% t.assignees.split(', ').forEach(name => { %>
-                                    <div class="w-8 h-8 rounded-full bg-accentLight border-2 border-card flex items-center justify-center text-[10px] font-bold text-accent cursor-pointer" title="<%= name %>">
-                                        <%= getInitials(name) %>
-                                    </div>
-                                <% }) %>
-                            <% } else { %>
-                                <span class="text-xs text-muted">Belum di-assign</span>
-                            <% } %>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-                        <button onclick="openDetail(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="flex items-center gap-1 px-3 py-1.5 bg-inputBg text-muted text-xs font-semibold rounded-lg hover:bg-border transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                            Detail
-                        </button>
-                        <button onclick="openEdit(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="flex items-center gap-1 px-3 py-1.5 bg-inputBg text-muted text-xs font-semibold rounded-lg hover:bg-border transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            Edit
-                        </button>
-                        <button onclick="openDelete(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="flex items-center gap-1 px-3 py-1.5 bg-accent/10 text-accent text-xs font-semibold rounded-lg hover:bg-accentLight transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            Hapus
-                        </button>
-                    </div>
+                    <span class="bg-inputBg text-muted text-xs font-bold px-2 py-1 rounded-lg" id="countTodo">0</span>
                 </div>
-            <% }) %>
-        <% } %>
-    </div>
-
-    <!-- Empty State for filtered mobile results -->
-    <div id="mobileEmptyState" class="hidden md:hidden bg-card rounded-2xl border border-border p-8 text-center shadow-sm mb-6 animate-fadeInUp">
-        <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
-        <p class="text-muted text-sm">Tidak ada tugas yang sesuai dengan filter.</p>
-    </div>
-
-    <!-- Pagination Controls -->
-    <div id="paginationContainer" class="flex items-center justify-between mt-6 px-4 py-3 bg-card border border-border rounded-2xl shadow-sm animate-fadeInUp">
-        <div class="flex flex-1 justify-between sm:hidden">
-            <button id="prevMobileBtn" class="relative inline-flex items-center rounded-xl border border-border bg-inputBg px-4 py-2 text-sm font-medium text-fg hover:bg-border transition-colors">Previous</button>
-            <button id="nextMobileBtn" class="relative ml-3 inline-flex items-center rounded-xl border border-border bg-inputBg px-4 py-2 text-sm font-medium text-fg hover:bg-border transition-colors">Next</button>
-        </div>
-        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-                <p class="text-sm text-muted">
-                    Menampilkan <span class="font-bold text-fg" id="pageStart">1</span> - <span class="font-bold text-fg" id="pageEnd">10</span> dari <span class="font-bold text-fg" id="totalCount">0</span> data
-                </p>
+                <div class="flex flex-col gap-3 min-h-[100px]" id="colTodo"></div>
             </div>
-            <div>
-                <nav class="isolate inline-flex -space-x-px rounded-xl shadow-sm bg-inputBg border border-border p-1 gap-1" aria-label="Pagination" id="pageNumbersContainer">
-                    <!-- Dynamic page numbers -->
-                </nav>
+
+            <!-- On Progress Column -->
+            <div class="flex flex-col bg-card/50 border border-border rounded-2xl p-4 kanban-col" data-status="On Progress">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-border">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <h3 class="font-bold text-fg">On Progress</h3>
+                    </div>
+                    <span class="bg-inputBg text-muted text-xs font-bold px-2 py-1 rounded-lg" id="countProgress">0</span>
+                </div>
+                <div class="flex flex-col gap-3 min-h-[100px]" id="colProgress"></div>
+            </div>
+
+            <!-- Done Column -->
+            <div class="flex flex-col bg-card/50 border border-border rounded-2xl p-4 kanban-col" data-status="Done">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-border">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <h3 class="font-bold text-fg">Done</h3>
+                    </div>
+                    <span class="bg-inputBg text-muted text-xs font-bold px-2 py-1 rounded-lg" id="countDone">0</span>
+                </div>
+                <div class="flex flex-col gap-3 min-h-[100px]" id="colDone"></div>
             </div>
         </div>
     </div>
+
+    <!-- LIST VIEW -->
+    <div id="viewList" class="hidden animate-fadeInUp">
+        <div class="bg-card rounded-2xl border border-border overflow-hidden shadow-sm mb-6">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[1000px]">
+                    <thead class="bg-accentLighter border-b border-border">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tiket</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Workspace</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Pemohon</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Deadline</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Prioritas</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Assignee</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border" id="listTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex items-center justify-between px-6 py-3 bg-card border-t border-border">
+                <div class="text-sm text-muted">
+                    Menampilkan <span class="font-bold text-fg" id="pageStart">0</span> - <span class="font-bold text-fg" id="pageEnd">0</span> dari <span class="font-bold text-fg" id="totalCount">0</span> data
+                </div>
+                <div class="flex gap-2" id="paginationControls"></div>
+            </div>
+        </div>
+    </div>
+
 </main>
+
+<!-- Kelola Workspace Modal -->
+<div id="wsModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-card rounded-2xl p-6 max-w-lg w-full shadow-xl transform scale-95 transition-transform duration-300" id="wsModalContent">
+        <div class="flex items-center justify-between mb-4 border-b border-border pb-4">
+            <h3 class="font-display text-xl font-bold text-fg">Kelola Workspace</h3>
+            <button type="button" onclick="closeWsModal()" class="text-muted hover:text-fg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        
+        <div class="max-h-60 overflow-y-auto mb-6 pr-2">
+            <% if(workspaces && workspaces.length > 0) { %>
+                <ul class="space-y-2">
+                <% workspaces.forEach(ws => { %>
+                    <li class="flex items-center justify-between p-3 bg-inputBg border border-border rounded-xl">
+                        <span class="text-sm font-semibold text-fg"><%= ws.nama %></span>
+                        <% if(ws.nama !== 'General') { %>
+                        <form action="/workspaces/delete" method="POST" class="inline" onsubmit="return confirm('Hapus workspace ini? Tiket di dalamnya akan dipindah ke General.');">
+                            <input type="hidden" name="id" value="<%= ws.id %>">
+                            <button type="submit" class="text-red-500 hover:text-red-600 p-1 bg-white rounded shadow-sm border border-border hover:bg-red-50">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </form>
+                        <% } %>
+                    </li>
+                <% }) %>
+                </ul>
+            <% } else { %>
+                <p class="text-sm text-muted">Belum ada workspace.</p>
+            <% } %>
+        </div>
+
+        <form action="/workspaces/add" method="POST" class="border-t border-border pt-4">
+            <label class="block text-sm font-semibold text-fg mb-2">Tambah Workspace Baru</label>
+            <div class="flex gap-2">
+                <input type="text" name="nama" required class="flex-grow px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent text-sm" placeholder="Nama workspace...">
+                <button type="submit" class="px-4 py-2 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm">Tambah</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Add Modal -->
 <div id="addModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
-    <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto" id="addModalContent">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="font-display text-xl font-bold text-fg">Tambah Task</h3>
+    <div class="bg-card rounded-2xl p-6 max-w-2xl w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto" id="addModalContent">
+        <div class="flex items-center justify-between mb-6 border-b border-border pb-4">
+            <h3 class="font-display text-xl font-bold text-fg">Tambah Tiket Service Desk</h3>
             <button type="button" onclick="closeAddModal()" class="text-muted hover:text-fg transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
         <form action="/task-management/add" method="POST" class="space-y-4">
-            <div>
-                <label class="block text-sm font-semibold text-fg mb-2">Tugas / Task</label>
-                <textarea name="task" required rows="3" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm resize-none" placeholder="Nama atau deskripsi tugas"></textarea>
-            </div>
+            
             <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Workspace</label>
+                    <select name="workspace" id="addWorkspaceSelect" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <% if(workspaces && workspaces.length > 0) { %>
+                            <% workspaces.forEach(ws => { %>
+                                <option value="<%= ws.nama %>"><%= ws.nama %></option>
+                            <% }) %>
+                        <% } %>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Pemohon / Requester</label>
+                    <input type="text" name="requester" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Nama dosen/mahasiswa">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Tugas / Masalah</label>
+                <textarea name="task" required rows="3" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm resize-none" placeholder="Deskripsikan masalah atau tugas secara detail..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Prioritas</label>
+                    <select name="priority" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="Low">Rendah (Low)</option>
+                        <option value="Medium">Sedang (Medium)</option>
+                        <option value="High">Tinggi (High)</option>
+                        <option value="Critical">Kritis (Critical)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Sumber Laporan</label>
+                    <select name="source" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="Sistem">Sistem / Web</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Langsung">Datang Langsung</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 border-t border-border pt-4">
                 <div>
                     <label class="block text-sm font-semibold text-fg mb-2">Tanggal Mulai</label>
                     <input type="date" name="tanggal" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
@@ -297,49 +324,49 @@
                     <input type="date" name="deadline" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-fg mb-2">Status</label>
-                <select name="status" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
-                    <option value="Todo" selected>Todo</option>
-                    <option value="On Progress">On Progress</option>
-                    <option value="Done">Done</option>
-                </select>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Status</label>
+                    <select name="status" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="Todo" selected>Todo</option>
+                        <option value="On Progress">On Progress</option>
+                        <option value="Done">Done</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Lampiran (Foto)</label>
+                    <input type="file" id="addFotoInput" accept="image/*" class="w-full text-sm text-fg file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-accentLight file:text-accent hover:file:bg-accent/20 cursor-pointer">
+                    <input type="hidden" name="foto" id="addFotoBase64">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Lampiran Link</label>
+                    <input type="url" name="link" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="https://...">
+                </div>
             </div>
+            
             <div>
-                <label class="block text-sm font-semibold text-fg mb-2">Assign Student Staff</label>
-                <div class="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto p-3 bg-inputBg border border-border rounded-xl hide-scrollbar">
-                    <% if (karyawanList && karyawanList.length === 0) { %>
-                        <p class="text-xs text-muted text-center py-2">Belum ada student staff. Tambah terlebih dahulu.</p>
-                    <% } else if (karyawanList) { %>
+                <label class="block text-sm font-semibold text-fg mb-2 mt-4">Assign Student Staff</label>
+                <div class="flex flex-wrap gap-3 max-h-36 overflow-y-auto p-3 bg-inputBg border border-border rounded-xl hide-scrollbar">
+                    <% if (karyawanList && karyawanList.length > 0) { %>
                         <% karyawanList.forEach(k => { %>
-                            <label class="flex items-center gap-3 p-2 hover:bg-card/75 rounded-lg cursor-pointer transition-colors text-sm font-medium text-fg">
-                                <input type="checkbox" name="assignees" value="<%= k.id %>" class="w-4 h-4 text-accent border-border rounded focus:ring-accent">
-                                <div class="w-8 h-8 rounded-full bg-accentLight flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">
-                                    <%= getInitials(k.nama) %>
+                            <label class="cursor-pointer relative group flex items-center justify-center">
+                                <input type="checkbox" name="assignees" value="<%= k.id %>" class="hidden avatar-cb">
+                                <div class="w-10 h-10 rounded-full bg-accentLight text-accent flex items-center justify-center text-sm font-bold border-2 border-transparent transition-all shadow-sm" title="<%= k.nama %>">
+                                    <%= k.nama.split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase() %>
                                 </div>
-                                <span class="truncate"><%= k.nama %></span>
+                                <div class="absolute bottom-full mb-2 hidden group-hover:block whitespace-nowrap bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-10"><%= k.nama %></div>
                             </label>
                         <% }) %>
+                    <% } else { %>
+                        <p class="text-xs text-muted text-center py-2 w-full">Belum ada student staff.</p>
                     <% } %>
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-fg mb-2">Foto Lampiran (Opsional)</label>
-                <div class="flex items-center justify-center w-full">
-                    <label for="taskImageInput" class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
-                        <div class="flex flex-col items-center justify-center pt-2 pb-2 text-center">
-                            <svg class="w-6 h-6 mb-1 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                            <p class="text-xs text-muted font-semibold">Klik untuk unggah gambar</p>
-                        </div>
-                        <input id="taskImageInput" type="file" accept="image/*" class="hidden" />
-                    </label>
-                </div>
-                <img id="taskImagePreview" class="hidden w-full rounded-xl mt-3 aspect-video border border-border object-cover max-h-40" alt="Pratinjau Foto">
-                <input type="hidden" name="foto" id="taskFotoInput">
-            </div>
+            
             <div class="mt-6 pt-4 border-t border-border flex justify-end gap-3">
                 <button type="button" onclick="closeAddModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
-                <button type="submit" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm">Simpan</button>
+                <button type="submit" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm">Buat Tiket</button>
             </div>
         </form>
     </div>
@@ -347,20 +374,58 @@
 
 <!-- Edit Modal -->
 <div id="editModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
-    <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto" id="editModalContent">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="font-display text-xl font-bold text-fg">Edit Task</h3>
+    <div class="bg-card rounded-2xl p-6 max-w-2xl w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto" id="editModalContent">
+        <div class="flex items-center justify-between mb-6 border-b border-border pb-4">
+            <h3 class="font-display text-xl font-bold text-fg">Edit Tiket</h3>
             <button type="button" onclick="closeEditModal()" class="text-muted hover:text-fg transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
         <form action="/task-management/edit" method="POST" class="space-y-4">
             <input type="hidden" name="id" id="editId">
-            <div>
-                <label class="block text-sm font-semibold text-fg mb-2">Tugas / Task</label>
-                <textarea name="task" id="editTask" required rows="3" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm resize-none" placeholder="Nama atau deskripsi tugas"></textarea>
-            </div>
             <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Workspace</label>
+                    <select name="workspace" id="editWorkspace" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <% if(workspaces && workspaces.length > 0) { %>
+                            <% workspaces.forEach(ws => { %>
+                                <option value="<%= ws.nama %>"><%= ws.nama %></option>
+                            <% }) %>
+                        <% } %>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Pemohon / Requester</label>
+                    <input type="text" name="requester" id="editRequester" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Tugas / Masalah</label>
+                <textarea name="task" id="editTaskDesc" required rows="3" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm resize-none"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Prioritas</label>
+                    <select name="priority" id="editPriority" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="Low">Rendah (Low)</option>
+                        <option value="Medium">Sedang (Medium)</option>
+                        <option value="High">Tinggi (High)</option>
+                        <option value="Critical">Kritis (Critical)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Sumber Laporan</label>
+                    <select name="source" id="editSource" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="Sistem">Sistem / Web</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Langsung">Datang Langsung</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 border-t border-border pt-4">
                 <div>
                     <label class="block text-sm font-semibold text-fg mb-2">Tanggal Mulai</label>
                     <input type="date" name="tanggal" id="editTanggal" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
@@ -370,46 +435,44 @@
                     <input type="date" name="deadline" id="editDeadline" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-fg mb-2">Status</label>
-                <select name="status" id="editStatus" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
-                    <option value="Todo">Todo</option>
-                    <option value="On Progress">On Progress</option>
-                    <option value="Done">Done</option>
-                </select>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Status</label>
+                    <select name="status" id="editStatus" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="Todo">Todo</option>
+                        <option value="On Progress">On Progress</option>
+                        <option value="Done">Done</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Ganti Foto</label>
+                    <input type="file" id="editFotoInput" accept="image/*" class="w-full text-[11px] text-fg file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:font-semibold file:bg-accentLight file:text-accent cursor-pointer">
+                    <input type="hidden" name="foto" id="editFotoBase64">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Lampiran Link</label>
+                    <input type="url" name="link" id="editLink" class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="https://...">
+                </div>
             </div>
+            
             <div>
-                <label class="block text-sm font-semibold text-fg mb-2">Assign Student Staff</label>
-                <div class="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto p-3 bg-inputBg border border-border rounded-xl hide-scrollbar">
-                    <% if (karyawanList && karyawanList.length === 0) { %>
-                        <p class="text-xs text-muted text-center py-2">Belum ada student staff. Tambah terlebih dahulu.</p>
-                    <% } else if (karyawanList) { %>
+                <label class="block text-sm font-semibold text-fg mb-2 mt-4">Assign Student Staff</label>
+                <div class="flex flex-wrap gap-3 max-h-36 overflow-y-auto p-3 bg-inputBg border border-border rounded-xl hide-scrollbar" id="editAssigneesContainer">
+                    <% if (karyawanList && karyawanList.length > 0) { %>
                         <% karyawanList.forEach(k => { %>
-                            <label class="flex items-center gap-3 p-2 hover:bg-card/75 rounded-lg cursor-pointer transition-colors text-sm font-medium text-fg">
-                                <input type="checkbox" name="assignees" value="<%= k.id %>" class="edit-assignee-checkbox w-4 h-4 text-accent border-border rounded focus:ring-accent">
-                                <div class="w-8 h-8 rounded-full bg-accentLight flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">
-                                    <%= getInitials(k.nama) %>
+                            <label class="cursor-pointer relative group flex items-center justify-center">
+                                <input type="checkbox" name="assignees" value="<%= k.id %>" class="hidden avatar-cb edit-assignee-cb">
+                                <div class="w-10 h-10 rounded-full bg-accentLight text-accent flex items-center justify-center text-sm font-bold border-2 border-transparent transition-all shadow-sm" title="<%= k.nama %>">
+                                    <%= k.nama.split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase() %>
                                 </div>
-                                <span class="truncate"><%= k.nama %></span>
+                                <div class="absolute bottom-full mb-2 hidden group-hover:block whitespace-nowrap bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-10"><%= k.nama %></div>
                             </label>
                         <% }) %>
                     <% } %>
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-fg mb-2">Foto Lampiran (Opsional)</label>
-                <div class="flex items-center justify-center w-full">
-                    <label for="editTaskImageInput" class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
-                        <div class="flex flex-col items-center justify-center pt-2 pb-2 text-center">
-                            <svg class="w-6 h-6 mb-1 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                            <p class="text-xs text-muted font-semibold">Klik untuk unggah gambar baru</p>
-                        </div>
-                        <input id="editTaskImageInput" type="file" accept="image/*" class="hidden" />
-                    </label>
-                </div>
-                <img id="editTaskImagePreview" class="hidden w-full rounded-xl mt-3 aspect-video border border-border object-cover max-h-40" alt="Pratinjau Foto">
-                <input type="hidden" name="foto" id="editTaskFotoInput">
-            </div>
+            
             <div class="mt-6 pt-4 border-t border-border flex justify-end gap-3">
                 <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
                 <button type="submit" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm">Simpan Perubahan</button>
@@ -418,543 +481,676 @@
     </div>
 </div>
 
+<div id="detailModal" class="fixed inset-0 bg-black/50 z-[40] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto" onclick="closeDetailModal()">
+    <div class="bg-card rounded-2xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl transform scale-95 transition-transform duration-300 my-auto text-left" id="detailModalContent" onclick="event.stopPropagation()">
+        <!-- Content injected by JS -->
+    </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div id="lightbox" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center hidden opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
+    <button type="button" class="absolute top-4 right-4 text-white hover:text-gray-300 p-2" onclick="closeLightbox()">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <img id="lightboxImg" src="" alt="Zoomed Lampiran" class="max-w-[90%] max-h-[90%] object-contain rounded shadow-2xl transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+</div>
+
 <!-- Delete Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+<div id="deleteModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
     <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300" id="deleteModalContent">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-4 border-b border-border pb-4">
             <h3 class="font-display text-xl font-bold text-fg">Konfirmasi Hapus</h3>
             <button type="button" onclick="closeDeleteModal()" class="text-muted hover:text-fg transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <p class="text-sm text-muted mb-6 break-all">Apakah Anda yakin ingin menghapus task <span id="deleteTaskName" class="font-bold text-fg break-all"></span>?</p>
+        <p class="text-sm text-muted mb-6 break-all">Hapus tiket <span id="deleteTaskName" class="font-bold text-fg"></span>?</p>
         <form action="/task-management/delete" method="POST">
             <input type="hidden" name="id" id="deleteId">
-            <div class="flex justify-end gap-3">
-                <button type="button" onclick="closeDeleteModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
-                <button type="submit" class="px-5 py-2.5 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors text-sm">Ya, Hapus</button>
+            <div class="flex justify-end gap-3 border-t border-border pt-4">
+                <button type="button" onclick="closeDeleteModal()" class="px-5 py-2 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm shadow-sm">Ya, Hapus</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Fullscreen Photo Modal -->
-<style>
-    .animate-scaleUp {
-        animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-    @keyframes scaleUp {
-        from {
-            transform: scale(0.92) translateY(10px);
-            opacity: 0;
-        }
-        to {
-            transform: scale(1) translateY(0);
-            opacity: 1;
-        }
-    }
-</style>
-<div id="photoModal" class="fixed inset-0 bg-black/85 z-[100] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300" onclick="closePhotoModal()">
-    <div class="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center animate-scaleUp" onclick="event.stopPropagation()">
-        <button type="button" onclick="closePhotoModal()" class="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors bg-white/10 p-2 rounded-full backdrop-blur-sm focus:outline-none">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-        <img id="modalPhotoImg" class="max-w-full max-h-[85vh] object-contain rounded-2xl border border-white/10 shadow-2xl" src="" alt="Foto Lampiran Tugas">
-    </div>
-</div>
-
-<!-- Detail Modal -->
-<div id="detailModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto" onclick="closeDetailModal()">
-    <div class="bg-card rounded-2xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl transform scale-95 transition-transform duration-300 my-auto text-left" id="detailModalContent" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between pb-4 border-b border-border mb-6">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-accent/10 text-accent rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                </div>
-                <h3 class="font-display text-xl sm:text-2xl font-bold text-fg flex items-center gap-2">
-                    <span>Detail Tugas / Task</span>
-                    <span id="detailTaskCode" class="font-mono text-xs sm:text-sm font-bold text-white bg-accent px-2.5 py-0.5 rounded-lg"></span>
-                </h3>
-            </div>
-            <button type="button" onclick="closeDetailModal()" class="text-muted hover:text-fg transition-colors p-1.5 hover:bg-inputBg rounded-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Left side: Task description & Details -->
-            <div class="md:col-span-2 space-y-6">
-                <div>
-                    <h4 class="text-xs uppercase font-bold tracking-wider text-muted mb-2">Deskripsi Tugas</h4>
-                    <div class="bg-inputBg/40 border border-border/60 rounded-2xl p-4 sm:p-5 text-sm text-fg font-medium whitespace-pre-wrap break-all leading-relaxed max-h-[40vh] overflow-y-auto" id="detailTaskDescription"></div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-inputBg/40 border border-border/60 rounded-2xl p-4">
-                        <span class="block text-xs font-bold text-muted uppercase tracking-wider mb-1">Tanggal Mulai</span>
-                        <span class="text-sm font-semibold text-fg" id="detailStartDate"></span>
-                    </div>
-                    <div class="bg-inputBg/40 border border-border/60 rounded-2xl p-4">
-                        <span class="block text-xs font-bold text-accent uppercase tracking-wider mb-1">Deadline</span>
-                        <span class="text-sm font-bold text-accent" id="detailDeadline"></span>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 class="text-xs uppercase font-bold tracking-wider text-muted mb-2">Status Tugas</h4>
-                    <div id="detailStatusBadge" class="inline-flex"></div>
-                </div>
-            </div>
-
-            <!-- Right side: Assignees & Attachment -->
-            <div class="space-y-6">
-                <div>
-                    <h4 class="text-xs uppercase font-bold tracking-wider text-muted mb-3">Didelegasikan Kepada</h4>
-                    <div class="bg-inputBg/40 border border-border/60 rounded-2xl p-4 space-y-3 max-h-48 overflow-y-auto" id="detailAssigneeList">
-                        <!-- Dynamically filled -->
-                    </div>
-                </div>
-
-                <div id="detailAttachmentSection">
-                    <h4 class="text-xs uppercase font-bold tracking-wider text-muted mb-3">Foto Lampiran</h4>
-                    <div class="relative aspect-video rounded-2xl overflow-hidden border border-border cursor-pointer group" id="detailImageWrapper">
-                        <img id="detailImagePreview" class="w-full h-full object-cover" src="" alt="Lampiran Foto Tugas">
-                        <div class="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span class="px-3 py-1.5 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-xl border border-white/30">Lihat Fullscreen</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
+<!-- Scripts for SPA behavior -->
 <script>
-    // Safe modal openers using encoded attributes
-    function openDetail(btn) {
-        const data = JSON.parse(decodeURIComponent(btn.getAttribute('data-task')));
-        openDetailModal(data);
+    let allTasks = <%- JSON.stringify(tasks || []) %>;
+    
+    // Determine active workspace from localStorage or fallback to first workspace
+    const validWorkspaces = <%- JSON.stringify((workspaces || []).map(w => w.nama)) %>;
+    let currentWorkspace = localStorage.getItem('activeWorkspace');
+    if (!currentWorkspace || !validWorkspaces.includes(currentWorkspace)) {
+        currentWorkspace = validWorkspaces.length > 0 ? validWorkspaces[0] : 'General';
     }
 
-    function openEdit(btn) {
-        const data = JSON.parse(decodeURIComponent(btn.getAttribute('data-task')));
-        openEditModal(data);
-    }
-
-    function openDelete(btn) {
-        const data = JSON.parse(decodeURIComponent(btn.getAttribute('data-task')));
-        openDeleteModal(data);
-    }
-
-    // Helper function for initials
-    function getInitials(name) {
-        if (!name) return "";
-        const parts = name.trim().split(/\s+/);
-        if (parts.length >= 2) {
-            return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
-        }
-        return parts[0].substring(0, 2).toUpperCase();
-    }
-
-    // Detail Modal
-    const detailModal = document.getElementById('detailModal');
-    const detailModalContent = document.getElementById('detailModalContent');
-    function openDetailModal(data) {
-        document.getElementById('detailTaskCode').textContent = data.code || '-';
-        document.getElementById('detailTaskDescription').textContent = data.task;
-        document.getElementById('detailStartDate').textContent = data.tanggal;
-        document.getElementById('detailDeadline').textContent = data.deadline;
-        
-        const statusContainer = document.getElementById('detailStatusBadge');
-        statusContainer.innerHTML = '';
-        if (data.status === 'Todo') {
-            statusContainer.innerHTML = `<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Todo</span>`;
-        } else if (data.status === 'On Progress') {
-            statusContainer.innerHTML = `<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">On Progress</span>`;
-        } else if (data.status === 'Done') {
-            statusContainer.innerHTML = `<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Done</span>`;
-        }
-
-        const assigneeContainer = document.getElementById('detailAssigneeList');
-        assigneeContainer.innerHTML = '';
-        if (data.assignees) {
-            const names = data.assignees.split(', ');
-            names.forEach(name => {
-                const initials = getInitials(name);
-                const item = document.createElement('div');
-                item.className = 'flex items-center gap-3 p-1.5 hover:bg-card/40 rounded-xl transition-colors';
-                item.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-accentLight flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">
-                        ${initials}
-                    </div>
-                    <span class="text-sm font-semibold text-fg truncate">${name}</span>
-                `;
-                assigneeContainer.appendChild(item);
-            });
-        } else {
-            assigneeContainer.innerHTML = `<p class="text-xs text-muted py-2 text-center">Belum di-assign</p>`;
-        }
-
-        const attachmentSection = document.getElementById('detailAttachmentSection');
-        const imagePreview = document.getElementById('detailImagePreview');
-        const imageWrapper = document.getElementById('detailImageWrapper');
-        if (data.foto) {
-            attachmentSection.classList.remove('hidden');
-            imagePreview.src = data.foto;
-            imageWrapper.onclick = function() {
-                showTaskPhoto(data.foto, data.task);
-            };
-        } else {
-            attachmentSection.classList.add('hidden');
-            imagePreview.src = '';
-            imageWrapper.onclick = null;
-        }
-
-        detailModal.classList.remove('hidden');
-        setTimeout(() => {
-            detailModal.classList.remove('opacity-0');
-            detailModalContent.classList.remove('scale-95');
-        }, 10);
-    }
-
-    function closeDetailModal() {
-        detailModal.classList.add('opacity-0');
-        detailModalContent.classList.add('scale-95');
-        setTimeout(() => detailModal.classList.add('hidden'), 300);
-    }
-    // Add Modal
-    const addModal = document.getElementById('addModal');
-    const addModalContent = document.getElementById('addModalContent');
-    function openAddModal() {
-        addModal.classList.remove('hidden');
-        setTimeout(() => {
-            addModal.classList.remove('opacity-0');
-            addModalContent.classList.remove('scale-95');
-        }, 10);
-    }
-    function closeAddModal() {
-        addModal.classList.add('opacity-0');
-        addModalContent.classList.add('scale-95');
-        setTimeout(() => addModal.classList.add('hidden'), 300);
-    }
-
-    // Edit Modal
-    const editModal = document.getElementById('editModal');
-    const editModalContent = document.getElementById('editModalContent');
-    function openEditModal(data) {
-        document.getElementById('editId').value = data.id;
-        document.getElementById('editTask').value = data.task;
-        document.getElementById('editTanggal').value = data.tanggal;
-        document.getElementById('editDeadline').value = data.deadline;
-        document.getElementById('editStatus').value = data.status;
-        
-        // Clear checkboxes
-        const checkboxes = document.querySelectorAll('.edit-assignee-checkbox');
-        checkboxes.forEach(cb => cb.checked = false);
-
-        // Check assigned staff
-        if (data.assigneeIds && Array.isArray(data.assigneeIds)) {
-            data.assigneeIds.forEach(id => {
-                const cb = document.querySelector(`.edit-assignee-checkbox[value="${id}"]`);
-                if (cb) cb.checked = true;
-            });
-        }
-
-        // Image preview edit modal
-        const preview = document.getElementById('editTaskImagePreview');
-        const fotoInput = document.getElementById('editTaskFotoInput');
-        const fileInput = document.getElementById('editTaskImageInput');
-        fileInput.value = '';
-        if (data.foto) {
-            preview.src = data.foto;
-            preview.classList.remove('hidden');
-            fotoInput.value = data.foto;
-        } else {
-            preview.src = '';
-            preview.classList.add('hidden');
-            fotoInput.value = '';
-        }
-
-        editModal.classList.remove('hidden');
-        setTimeout(() => {
-            editModal.classList.remove('opacity-0');
-            editModalContent.classList.remove('scale-95');
-        }, 10);
-    }
-    function closeEditModal() {
-        editModal.classList.add('opacity-0');
-        editModalContent.classList.add('scale-95');
-        setTimeout(() => editModal.classList.add('hidden'), 300);
-    }
-
-    // Delete Modal
-    const deleteModal = document.getElementById('deleteModal');
-    const deleteModalContent = document.getElementById('deleteModalContent');
-    function openDeleteModal(data) {
-        document.getElementById('deleteId').value = data.id;
-        document.getElementById('deleteTaskName').textContent = data.task;
-        
-        deleteModal.classList.remove('hidden');
-        setTimeout(() => {
-            deleteModal.classList.remove('opacity-0');
-            deleteModalContent.classList.remove('scale-95');
-        }, 10);
-    }
-    function closeDeleteModal() {
-        deleteModal.classList.add('opacity-0');
-        deleteModalContent.classList.add('scale-95');
-        setTimeout(() => deleteModal.classList.add('hidden'), 300);
-    }
-
-    // FileReader and Compression handlers
+    let currentSearch = '';
+    let currentView = localStorage.getItem('activeView') || 'kanban';
+    let currentPage = 1;
+    let itemsPerPage = 10;
+    let sortableInstances = [];
+    
+    // Image Compression Helper (Canvas)
     function compressImage(file, callback) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1200;
-                const MAX_HEIGHT = 1200;
                 let width = img.width;
                 let height = img.height;
+                const maxDim = 800; // max width/height
 
                 if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
+                    if (width > maxDim) {
+                        height *= maxDim / width;
+                        width = maxDim;
                     }
                 } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
+                    if (height > maxDim) {
+                        width *= maxDim / height;
+                        height = maxDim;
                     }
                 }
-
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-
-                // Compress as JPEG with 0.7 quality
-                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                callback(compressedBase64);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // 60% quality jpeg
+                callback(dataUrl);
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
     }
 
-    function setupImageUpload(inputEl, hiddenInputEl, previewEl) {
-        inputEl.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                compressImage(file, function(compressedBase64) {
-                    hiddenInputEl.value = compressedBase64;
-                    previewEl.src = compressedBase64;
-                    previewEl.classList.remove('hidden');
-                });
-            }
+    // File Upload Handlers
+    document.getElementById('addFotoInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(file) compressImage(file, data => { document.getElementById('addFotoBase64').value = data; });
+    });
+
+    document.getElementById('editFotoInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(file) compressImage(file, data => { document.getElementById('editFotoBase64').value = data; });
+    });
+    
+    let audioContext;
+    async function playVoiceAnnouncement(text) {
+        try {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') await audioContext.resume();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        } catch (e) { console.error("Audio error:", e); }
+    }
+
+    function getInitials(name) {
+        if (!name) return "";
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+        return parts[0].substring(0, 2).toUpperCase();
+    }
+
+    function getPriorityHtml(priority) {
+        const map = {
+            'Low': 'bg-gray-100 text-gray-700',
+            'Medium': 'bg-blue-100 text-blue-700',
+            'High': 'bg-orange-100 text-orange-700',
+            'Critical': 'bg-red-100 text-red-700'
+        };
+        const c = map[priority] || map['Low'];
+        return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${c}">${priority || 'Low'}</span>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setWorkspace(currentWorkspace); // triggers renderDashboard
+        setViewMode(currentView);
+        setupSSE();
+    });
+
+    function getFilteredTasks() {
+        return allTasks.filter(t => {
+            const matchWs = (t.workspace || 'General') === currentWorkspace;
+            const matchSearch = currentSearch === '' || 
+                                t.task.toLowerCase().includes(currentSearch.toLowerCase()) || 
+                                (t.code || '').toLowerCase().includes(currentSearch.toLowerCase()) ||
+                                (t.requester || '').toLowerCase().includes(currentSearch.toLowerCase());
+            return matchWs && matchSearch;
         });
     }
 
-    setupImageUpload(
-        document.getElementById('taskImageInput'),
-        document.getElementById('taskFotoInput'),
-        document.getElementById('taskImagePreview')
-    );
+    function renderDashboard() {
+        const filtered = getFilteredTasks();
+        const todo = filtered.filter(t => t.status === 'Todo').length;
+        const prog = filtered.filter(t => t.status === 'On Progress').length;
+        const done = filtered.filter(t => t.status === 'Done').length;
+        const total = filtered.length;
+        const rate = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    setupImageUpload(
-        document.getElementById('editTaskImageInput'),
-        document.getElementById('editTaskFotoInput'),
-        document.getElementById('editTaskImagePreview')
-    );
+        document.getElementById('metricTotal').textContent = total;
+        document.getElementById('metricTodo').textContent = todo;
+        document.getElementById('metricProgress').textContent = prog;
+        document.getElementById('metricDone').textContent = done;
+        document.getElementById('metricDoneRate').textContent = rate + '%';
+        document.getElementById('metricDoneBar').style.width = rate + '%';
 
-    // Fullscreen photo modal
-    function showTaskPhoto(fotoUrl) {
-        if (!fotoUrl) return;
-        const photoModal = document.getElementById('photoModal');
-        const modalPhotoImg = document.getElementById('modalPhotoImg');
+        if (currentView === 'kanban') {
+            document.getElementById('viewKanban').classList.remove('hidden');
+            document.getElementById('viewList').classList.add('hidden');
+            renderKanban(filtered);
+        } else {
+            document.getElementById('viewKanban').classList.add('hidden');
+            document.getElementById('viewList').classList.remove('hidden');
+            renderList(filtered);
+        }
         
-        modalPhotoImg.src = fotoUrl;
-
-        photoModal.classList.remove('hidden');
-        setTimeout(() => {
-            photoModal.classList.remove('opacity-0');
-        }, 10);
+        // Update Add Form Workspace Default
+        document.getElementById('addWorkspaceSelect').value = currentWorkspace;
     }
 
-    function closePhotoModal() {
-        const photoModal = document.getElementById('photoModal');
-        const modalPhotoImg = document.getElementById('modalPhotoImg');
+    function renderKanban(tasks) {
+        const cols = {
+            'Todo': document.getElementById('colTodo'),
+            'On Progress': document.getElementById('colProgress'),
+            'Done': document.getElementById('colDone')
+        };
+        cols['Todo'].innerHTML = '';
+        cols['On Progress'].innerHTML = '';
+        cols['Done'].innerHTML = '';
         
-        photoModal.classList.add('opacity-0');
-        setTimeout(() => {
-            photoModal.classList.add('hidden');
-            modalPhotoImg.src = '';
-        }, 300);
+        // Sort by order_index
+        tasks.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
+        let cTodo=0, cProg=0, cDone=0;
+        tasks.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'task-card bg-card border border-border rounded-xl p-4 shadow-sm relative group';
+            card.dataset.id = t.id;
+            card.dataset.status = t.status;
+            
+            let assigneesHtml = '<span class="text-xs text-muted">Belum di-assign</span>';
+            if (t.assignees) {
+                const names = t.assignees.split(', ');
+                assigneesHtml = `<div class="flex -space-x-2">` + 
+                    names.map(n => `<div class="w-6 h-6 rounded-full bg-accentLight border-2 border-card flex items-center justify-center text-[8px] font-bold text-accent shadow-sm" title="${n}">${getInitials(n)}</div>`).join('') + 
+                `</div>`;
+            }
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex gap-2 items-center">
+                        <span class="text-[10px] font-mono font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded">${t.code || '-'}</span>
+                        ${getPriorityHtml(t.priority)}
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick='openEditModalObj(${JSON.stringify(t).replace(/'/g, "&#39;")})' class="text-muted hover:text-accent p-1 bg-inputBg rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+                        <button onclick='openDetailModalObj(${JSON.stringify(t).replace(/'/g, "&#39;")})' class="text-muted hover:text-accent p-1 bg-inputBg rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
+                    </div>
+                </div>
+                <h4 class="font-semibold text-sm text-fg mb-3">${t.task}</h4>
+                <div class="flex justify-between items-end mt-auto pt-2 border-t border-border/50">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[10px] text-muted flex items-center gap-1 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> ${t.deadline}</span>
+                    </div>
+                    ${assigneesHtml}
+                </div>
+            `;
+
+            if(t.status === 'Todo') { cols['Todo'].appendChild(card); cTodo++; }
+            else if(t.status === 'On Progress') { cols['On Progress'].appendChild(card); cProg++; }
+            else if(t.status === 'Done') { cols['Done'].appendChild(card); cDone++; }
+        });
+        
+        document.getElementById('countTodo').textContent = cTodo;
+        document.getElementById('countProgress').textContent = cProg;
+        document.getElementById('countDone').textContent = cDone;
+        
+        setupSortableJS();
+    }
+    
+    function setupSortableJS() {
+        // Destroy existing instances
+        sortableInstances.forEach(inst => inst.destroy());
+        sortableInstances = [];
+
+        const columns = document.querySelectorAll('.kanban-col [id^="col"]');
+        columns.forEach(colInner => {
+            const colOuter = colInner.closest('.kanban-col');
+            const inst = new Sortable(colInner, {
+                group: 'shared-kanban',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'task-card--dragging',
+                onEnd: function (evt) {
+                    const itemEl = evt.item;
+                    const newStatus = evt.to.closest('.kanban-col').dataset.status;
+                    const id = itemEl.dataset.id;
+
+                    // Optimistic local update of status
+                    const taskIndex = allTasks.findIndex(t => t.id == id);
+                    if (taskIndex > -1) {
+                        allTasks[taskIndex].status = newStatus;
+                    }
+
+                    // Gather new order for the destination column
+                    const updates = [];
+                    Array.from(evt.to.children).forEach((child, index) => {
+                        if (child.dataset.id) {
+                            updates.push({ id: parseInt(child.dataset.id), status: newStatus, order_index: index });
+                            const tIdx = allTasks.findIndex(t => t.id == child.dataset.id);
+                            if (tIdx > -1) allTasks[tIdx].order_index = index;
+                        }
+                    });
+
+                    // Gather new order for the source column if moved across columns
+                    if (evt.from !== evt.to) {
+                        const fromStatus = evt.from.closest('.kanban-col').dataset.status;
+                        Array.from(evt.from.children).forEach((child, index) => {
+                            if (child.dataset.id) {
+                                updates.push({ id: parseInt(child.dataset.id), status: fromStatus, order_index: index });
+                                const tIdx = allTasks.findIndex(t => t.id == child.dataset.id);
+                                if (tIdx > -1) allTasks[tIdx].order_index = index;
+                            }
+                        });
+                    }
+
+                    // Only update metrics counts — do NOT call renderKanban/renderDashboard
+                    // because that would re-build the DOM and fight with SortableJS
+                    updateKanbanMetrics();
+
+                    // Persist to server
+                    fetch('/task-management/update-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ updates })
+                    }).catch(err => console.error('Error updating order:', err));
+                }
+            });
+            sortableInstances.push(inst);
+        });
     }
 
-    // Client-side Pagination and Filtering Logic
-    let currentPage = 1;
-    const itemsPerPage = 10;
-    let filteredRows = [];
-    let filteredCards = [];
+    function updateKanbanMetrics() {
+        // Re-count from live DOM (not allTasks) to avoid off-by-one after drag
+        const cTodo = document.getElementById('colTodo').children.length;
+        const cProg = document.getElementById('colProgress').children.length;
+        const cDone = document.getElementById('colDone').children.length;
+        const total = cTodo + cProg + cDone;
+        const rate = total > 0 ? Math.round((cDone / total) * 100) : 0;
+
+        document.getElementById('countTodo').textContent = cTodo;
+        document.getElementById('countProgress').textContent = cProg;
+        document.getElementById('countDone').textContent = cDone;
+        document.getElementById('metricTotal').textContent = total;
+        document.getElementById('metricTodo').textContent = cTodo;
+        document.getElementById('metricProgress').textContent = cProg;
+        document.getElementById('metricDone').textContent = cDone;
+        document.getElementById('metricDoneRate').textContent = rate + '%';
+        document.getElementById('metricDoneBar').style.width = rate + '%';
+    }
+
+    function renderList(tasks) {
+        const tbody = document.getElementById('listTableBody');
+        tbody.innerHTML = '';
+        
+        // Sort lists by order_index primarily
+        tasks.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
+        const total = tasks.length;
+        const totalPages = Math.ceil(total / itemsPerPage);
+        if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+        
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = Math.min(start + itemsPerPage, total);
+        
+        document.getElementById('pageStart').textContent = total === 0 ? 0 : start + 1;
+        document.getElementById('pageEnd').textContent = end;
+        document.getElementById('totalCount').textContent = total;
+        
+        const pageTasks = tasks.slice(start, end);
+        if (pageTasks.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-sm text-muted">Tidak ada tiket ditemukan.</td></tr>`;
+        } else {
+            pageTasks.forEach(t => {
+                let assigneesHtml = '<span class="text-xs text-muted">Belum di-assign</span>';
+                if (t.assignees) {
+                    const names = t.assignees.split(', ');
+                    assigneesHtml = `<div class="flex -space-x-2">` + 
+                        names.map(n => `<div class="w-8 h-8 rounded-full bg-accentLight border-2 border-card flex items-center justify-center text-[10px] font-bold text-accent shadow-sm" title="${n}">${getInitials(n)}</div>`).join('') + 
+                    `</div>`;
+                }
+                let statusBadge = '';
+                if(t.status === 'Todo') statusBadge = '<span class="px-2 py-1 rounded bg-amber-100 text-amber-800 text-xs font-bold">Todo</span>';
+                if(t.status === 'On Progress') statusBadge = '<span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-bold">Progress</span>';
+                if(t.status === 'Done') statusBadge = '<span class="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-bold">Done</span>';
+
+                const tData = JSON.stringify(t).replace(/'/g, "&#39;");
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-inputBg/50 transition-colors cursor-pointer select-none';
+                tr.title = 'Klik untuk detail · Klik kanan untuk aksi';
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col gap-1">
+                            <span class="font-mono text-xs font-bold text-accent">${t.code || '-'}</span>
+                            <span class="text-sm font-semibold text-fg line-clamp-1 max-w-[200px]" title="${t.task}">${t.task}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-muted">${t.workspace || 'General'}</td>
+                    <td class="px-6 py-4 text-sm text-fg">${t.requester || '-'}</td>
+                    <td class="px-6 py-4 text-sm text-fg">${t.deadline}</td>
+                    <td class="px-6 py-4">${getPriorityHtml(t.priority)}</td>
+                    <td class="px-6 py-4">${statusBadge}</td>
+                    <td class="px-6 py-4">${assigneesHtml}</td>
+                `;
+                // Left click → detail modal
+                tr.addEventListener('click', () => openDetailModalObj(t));
+                // Right click → context menu
+                tr.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    showContextMenu(e.clientX, e.clientY, t);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+        
+        const pgControls = document.getElementById('paginationControls');
+        pgControls.innerHTML = '';
+        if(totalPages > 1) {
+            if(currentPage > 1) {
+                pgControls.innerHTML += `<button onclick="setPage(${currentPage-1})" class="px-3 py-1 bg-inputBg border border-border rounded text-sm hover:bg-border transition-colors">Prev</button>`;
+            }
+            if(currentPage < totalPages) {
+                pgControls.innerHTML += `<button onclick="setPage(${currentPage+1})" class="px-3 py-1 bg-inputBg border border-border rounded text-sm hover:bg-border transition-colors">Next</button>`;
+            }
+        }
+    }
+
+    function setWorkspace(ws) {
+        currentWorkspace = ws;
+        localStorage.setItem('activeWorkspace', ws);
+        document.querySelectorAll('.workspace-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.ws === ws);
+        });
+        currentPage = 1;
+        renderDashboard();
+    }
+    
+    function setViewMode(mode) {
+        currentView = mode;
+        localStorage.setItem('activeView', mode);
+        document.getElementById('btnViewKanban').classList.toggle('active', mode === 'kanban');
+        document.getElementById('btnViewList').classList.toggle('active', mode === 'list');
+        renderDashboard();
+    }
 
     function applyFilters() {
-        const searchValue = document.getElementById('searchFilter').value.toLowerCase().trim();
-        const statusValue = document.getElementById('statusFilter').value;
-        const dateValue = document.getElementById('dateFilter').value;
-
-        // Handle date clear button visibility
-        const clearBtn = document.getElementById('clearDateBtn');
-        if (dateValue) {
-            clearBtn.classList.remove('hidden');
-        } else {
-            clearBtn.classList.add('hidden');
-        }
-
-        const rows = Array.from(document.querySelectorAll('.task-row'));
-        const cards = Array.from(document.querySelectorAll('.task-card'));
-
-        // Filter rows
-        filteredRows = rows.filter(row => {
-            const task = row.getAttribute('data-task').toLowerCase();
-            const code = (row.getAttribute('data-code') || '').toLowerCase();
-            const assignees = row.getAttribute('data-assignees').toLowerCase();
-            const status = row.getAttribute('data-status');
-            const date = row.getAttribute('data-date'); // YYYY-MM-DD
-
-            const matchesSearch = !searchValue || task.includes(searchValue) || code.includes(searchValue) || assignees.includes(searchValue);
-            const matchesStatus = !statusValue || status === statusValue;
-            const matchesDate = !dateValue || date === dateValue;
-
-            return matchesSearch && matchesStatus && matchesDate;
-        });
-
-        // Filter cards
-        filteredCards = cards.filter(card => {
-            const task = card.getAttribute('data-task').toLowerCase();
-            const code = (card.getAttribute('data-code') || '').toLowerCase();
-            const assignees = card.getAttribute('data-assignees').toLowerCase();
-            const status = card.getAttribute('data-status');
-            const date = card.getAttribute('data-date');
-
-            const matchesSearch = !searchValue || task.includes(searchValue) || code.includes(searchValue) || assignees.includes(searchValue);
-            const matchesStatus = !statusValue || status === statusValue;
-            const matchesDate = !dateValue || date === dateValue;
-
-            return matchesSearch && matchesStatus && matchesDate;
-        });
-
-        // Reset page
+        currentSearch = document.getElementById('searchInput').value;
         currentPage = 1;
-        showPage();
+        renderDashboard();
     }
 
-    function showPage() {
-        const totalItems = filteredRows.length;
-        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    function setPage(p) {
+        currentPage = p;
+        renderDashboard();
+    }
 
-        // Ensure currentPage is within range
-        if (currentPage < 1) currentPage = 1;
-        if (currentPage > totalPages) currentPage = totalPages;
-
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-
-        // Hide all rows/cards first
-        document.querySelectorAll('.task-row').forEach(row => row.classList.add('hidden'));
-        document.querySelectorAll('.task-card').forEach(card => card.classList.add('hidden'));
-
-        // Show paginated rows/cards and dynamic numbering
-        let count = startIndex + 1;
-        for (let i = startIndex; i < endIndex; i++) {
-            if (filteredRows[i]) {
-                filteredRows[i].classList.remove('hidden');
-                const indexCell = filteredRows[i].querySelector('.task-index');
-                if (indexCell) indexCell.textContent = count++;
+    function setupSSE() {
+        if (!window.EventSource) return;
+        const evtSource = new EventSource('/api/events');
+        evtSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'task') {
+                    if (data.action === 'status-updated') {
+                        const idx = allTasks.findIndex(t => t.id == data.taskId);
+                        if (idx > -1) {
+                            allTasks[idx].status = data.status;
+                            renderDashboard();
+                            if (data.status === 'On Progress' && data.assignees) {
+                                playVoiceAnnouncement(`Tiket dengan kode ${data.code} sedang dikerjakan oleh ${data.assignees}`);
+                            } else if (data.status === 'Done') {
+                                playVoiceAnnouncement(`Tiket dengan kode ${data.code} telah selesai dikerjakan`);
+                            }
+                        }
+                    } else if (data.action === 'add' || data.action === 'edited') {
+                        window.location.reload(); 
+                    } else if (data.action === 'delete') {
+                        allTasks = allTasks.filter(t => t.id != data.taskId);
+                        renderDashboard();
+                    }
+                }
+            } catch (e) {
+                console.error("SSE parse error", e);
             }
-            if (filteredCards[i]) {
-                filteredCards[i].classList.remove('hidden');
-            }
-        }
+        };
+    }
 
-        // Update total info text
-        document.getElementById('pageStart').textContent = totalItems === 0 ? 0 : startIndex + 1;
-        document.getElementById('pageEnd').textContent = endIndex;
-        document.getElementById('totalCount').textContent = totalItems;
+    // Modal Toggles
+    function openWsModal() {
+        document.getElementById('wsModal').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('wsModal').classList.remove('opacity-0');
+            document.getElementById('wsModalContent').classList.remove('scale-95');
+        }, 10);
+    }
+    function closeWsModal() {
+        document.getElementById('wsModal').classList.add('opacity-0');
+        document.getElementById('wsModalContent').classList.add('scale-95');
+        setTimeout(() => document.getElementById('wsModal').classList.add('hidden'), 300);
+    }
 
-        // Handle empty state
-        const desktopEmpty = document.getElementById('desktopEmptyState');
-        const mobileEmpty = document.getElementById('mobileEmptyState');
-        const paginationContainer = document.getElementById('paginationContainer');
+    function openAddModal() {
+        document.getElementById('addModal').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('addModal').classList.remove('opacity-0');
+            document.getElementById('addModalContent').classList.remove('scale-95');
+        }, 10);
+    }
+    function closeAddModal() {
+        document.getElementById('addModal').classList.add('opacity-0');
+        document.getElementById('addModalContent').classList.add('scale-95');
+        setTimeout(() => document.getElementById('addModal').classList.add('hidden'), 300);
+    }
+    
+    function openEditModalObj(task) {
+        document.getElementById('editId').value = task.id;
+        document.getElementById('editWorkspace').value = task.workspace || currentWorkspace;
+        document.getElementById('editRequester').value = task.requester || '';
+        document.getElementById('editTaskDesc').value = task.task;
+        document.getElementById('editPriority').value = task.priority || 'Low';
+        document.getElementById('editSource').value = task.source || 'Sistem';
+        document.getElementById('editTanggal').value = task.tanggal;
+        document.getElementById('editDeadline').value = task.deadline;
+        document.getElementById('editStatus').value = task.status;
+        document.getElementById('editLink').value = task.link || '';
         
-        if (totalItems === 0) {
-            if (desktopEmpty) desktopEmpty.classList.remove('hidden');
-            if (mobileEmpty) mobileEmpty.classList.remove('hidden');
-            if (paginationContainer) paginationContainer.classList.add('hidden');
-        } else {
-            if (desktopEmpty) desktopEmpty.classList.add('hidden');
-            if (mobileEmpty) mobileEmpty.classList.add('hidden');
-            if (paginationContainer) paginationContainer.classList.remove('hidden');
-        }
+        document.querySelectorAll('.edit-assignee-cb').forEach(cb => {
+            cb.checked = task.assigneeIds && task.assigneeIds.includes(parseInt(cb.value));
+        });
 
-        // Render page numbers
-        renderPageNumbers(totalPages);
+        document.getElementById('editModal').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('editModal').classList.remove('opacity-0');
+            document.getElementById('editModalContent').classList.remove('scale-95');
+        }, 10);
+    }
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('opacity-0');
+        document.getElementById('editModalContent').classList.add('scale-95');
+        setTimeout(() => document.getElementById('editModal').classList.add('hidden'), 300);
     }
 
-    function renderPageNumbers(totalPages) {
-        const container = document.getElementById('pageNumbersContainer');
-        if (!container) return;
-        container.innerHTML = '';
-
-        // Prev Button
-        const prevBtn = document.createElement('button');
-        prevBtn.type = 'button';
-        prevBtn.className = `relative inline-flex items-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${currentPage === 1 ? 'text-muted cursor-not-allowed' : 'text-fg hover:bg-border'}`;
-        prevBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>`;
-        prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; showPage(); } };
-        container.appendChild(prevBtn);
-
-        // Page numbers
-        for (let i = 1; i <= totalPages; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.type = 'button';
-            pageBtn.className = `relative inline-flex items-center rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${currentPage === i ? 'bg-accent text-white' : 'text-fg hover:bg-border'}`;
-            pageBtn.textContent = i;
-            pageBtn.onclick = () => { currentPage = i; showPage(); };
-            container.appendChild(pageBtn);
-        }
-
-        // Next Button
-        const nextBtn = document.createElement('button');
-        nextBtn.type = 'button';
-        nextBtn.className = `relative inline-flex items-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${currentPage === totalPages ? 'text-muted cursor-not-allowed' : 'text-fg hover:bg-border'}`;
-        nextBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>`;
-        nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; showPage(); } };
-        container.appendChild(nextBtn);
-
-        // Mobile Buttons
-        const prevMobile = document.getElementById('prevMobileBtn');
-        const nextMobile = document.getElementById('nextMobileBtn');
-        if (prevMobile && nextMobile) {
-            prevMobile.disabled = currentPage === 1;
-            nextMobile.disabled = currentPage === totalPages;
-            prevMobile.className = `relative inline-flex items-center rounded-xl border border-border bg-inputBg px-4 py-2 text-sm font-medium transition-colors ${currentPage === 1 ? 'text-muted cursor-not-allowed' : 'text-fg hover:bg-border'}`;
-            nextMobile.className = `relative ml-3 inline-flex items-center rounded-xl border border-border bg-inputBg px-4 py-2 text-sm font-medium transition-colors ${currentPage === totalPages ? 'text-muted cursor-not-allowed' : 'text-fg hover:bg-border'}`;
-            prevMobile.onclick = () => { if (currentPage > 1) { currentPage--; showPage(); } };
-            nextMobile.onclick = () => { if (currentPage < totalPages) { currentPage++; showPage(); } };
-        }
+    function openLightbox(src) {
+        document.getElementById('lightboxImg').src = src;
+        document.getElementById('lightbox').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('lightbox').classList.remove('opacity-0');
+            document.getElementById('lightboxImg').classList.remove('scale-95');
+        }, 10);
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.add('opacity-0');
+        document.getElementById('lightboxImg').classList.add('scale-95');
+        setTimeout(() => document.getElementById('lightbox').classList.add('hidden'), 300);
     }
 
-    function clearDateFilter() {
-        document.getElementById('dateFilter').value = '';
-        applyFilters();
+    function openDetailModalObj(task) {
+        const modal = document.getElementById('detailModalContent');
+        
+        let imgHtml = '';
+        if(task.foto || task.link) {
+            imgHtml += `<div class="mt-6 border-t border-border pt-4">
+                <span class="text-xs uppercase font-bold text-muted tracking-wider block mb-3">Lampiran (Evidence)</span>`;
+            
+            if(task.foto) {
+                imgHtml += `<img src="${task.foto}" alt="Lampiran" onclick="openLightbox('${task.foto}')" class="rounded-xl w-full max-h-60 object-cover bg-inputBg border border-border cursor-pointer hover:opacity-90 transition-opacity mb-3">`;
+            }
+            if(task.link) {
+                imgHtml += `<a href="${task.link}" target="_blank" class="inline-flex items-center gap-2 text-sm text-accent hover:underline bg-accentLight px-3 py-2 rounded-xl">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    Buka Tautan Lampiran
+                </a>`;
+            }
+            imgHtml += `</div>`;
+        }
+
+        modal.innerHTML = `
+            <div class="flex items-center justify-between pb-4 border-b border-border mb-6">
+                <div class="flex items-center gap-3">
+                    <h3 class="font-display text-2xl font-bold text-fg flex items-center gap-3">
+                        <span class="bg-accent text-white px-3 py-1 rounded-lg font-mono text-sm shadow-sm">${task.code || '-'}</span>
+                        Detail Tiket
+                    </h3>
+                </div>
+                <button type="button" onclick="closeDetailModal()" class="text-muted hover:text-fg p-1.5 rounded-lg hover:bg-inputBg transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <span class="text-xs uppercase font-bold text-muted tracking-wider block mb-1">Masalah / Deskripsi</span>
+                        <p class="text-sm text-fg font-medium bg-inputBg/50 p-4 rounded-xl border border-border/50">${task.task}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <span class="text-xs uppercase font-bold text-muted tracking-wider block mb-1">Workspace</span>
+                            <span class="text-sm text-fg font-semibold">${task.workspace || 'General'}</span>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase font-bold text-muted tracking-wider block mb-1">Pemohon</span>
+                            <span class="text-sm text-fg font-semibold">${task.requester || '-'}</span>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase font-bold text-muted tracking-wider block mb-1">Sumber</span>
+                            <span class="text-sm text-fg font-semibold">${task.source || 'Sistem'}</span>
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase font-bold text-muted tracking-wider block mb-1">Prioritas</span>
+                            ${getPriorityHtml(task.priority)}
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-card border border-border rounded-xl p-4">
+                        <span class="text-xs uppercase font-bold text-muted tracking-wider block mb-3">Penugasan & Status</span>
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-sm text-fg font-medium">Status:</span>
+                            <span class="px-2.5 py-1 text-xs font-bold rounded bg-inputBg text-fg border border-border">${task.status}</span>
+                        </div>
+                        <div>
+                            <span class="text-sm text-fg font-medium block mb-2">Assignees:</span>
+                            <div class="text-sm text-muted">${task.assignees ? task.assignees.split(', ').join('<br>') : 'Belum di-assign'}</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 bg-inputBg/30 p-4 rounded-xl border border-border">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-muted tracking-wider block">Tanggal Mulai</span>
+                            <span class="text-sm text-fg">${task.tanggal}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-accent tracking-wider block">Deadline</span>
+                            <span class="text-sm font-bold text-accent">${task.deadline}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            ${imgHtml}
+        `;
+        document.getElementById('detailModal').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('detailModal').classList.remove('opacity-0');
+            document.getElementById('detailModalContent').classList.remove('scale-95');
+        }, 10);
+    }
+    function closeDetailModal() {
+        document.getElementById('detailModal').classList.add('opacity-0');
+        document.getElementById('detailModalContent').classList.add('scale-95');
+        setTimeout(() => document.getElementById('detailModal').classList.add('hidden'), 300);
     }
 
-    // Initialize pagination and filtering on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        applyFilters();
+    function openDeleteModalObj(task) {
+        document.getElementById('deleteTaskName').textContent = task.code + " (" + task.task.substring(0, 30) + "...)";
+        document.getElementById('deleteId').value = task.id;
+        document.getElementById('deleteModal').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('deleteModal').classList.remove('opacity-0');
+            document.getElementById('deleteModalContent').classList.remove('scale-95');
+        }, 10);
+    }
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('opacity-0');
+        document.getElementById('deleteModalContent').classList.add('scale-95');
+        setTimeout(() => document.getElementById('deleteModal').classList.add('hidden'), 300);
+    }
+
+    // ---- Context Menu ----
+    let _ctxTask = null;
+
+    function showContextMenu(x, y, task) {
+        _ctxTask = task;
+        const menu = document.getElementById('contextMenu');
+        menu.classList.remove('hidden');
+        // Position - keep within viewport
+        const menuW = 180, menuH = 100;
+        const vpW = window.innerWidth, vpH = window.innerHeight;
+        menu.style.left = (x + menuW > vpW ? x - menuW : x) + 'px';
+        menu.style.top  = (y + menuH > vpH ? y - menuH : y) + 'px';
+    }
+
+    function hideContextMenu() {
+        document.getElementById('contextMenu').classList.add('hidden');
+        _ctxTask = null;
+    }
+
+    document.addEventListener('click', hideContextMenu);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideContextMenu(); });
+    document.addEventListener('contextmenu', (e) => {
+        // Hide if clicking outside a table row
+        if (!e.target.closest('#listTableBody tr')) hideContextMenu();
     });
 </script>
+
+<!-- Context Menu (right-click on list row) -->
+<div id="contextMenu" class="hidden fixed z-[80] bg-card border border-border rounded-xl shadow-2xl p-1.5" style="min-width:160px">
+    <div class="ctx-item" onclick="if(_ctxTask){openDetailModalObj(_ctxTask);hideContextMenu();}">
+        <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        Lihat Detail
+    </div>
+    <div class="ctx-item" onclick="if(_ctxTask){openEditModalObj(_ctxTask);hideContextMenu();}">
+        <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Edit Tiket
+    </div>
+    <div class="border-t border-border my-1"></div>
+    <div class="ctx-item danger" onclick="if(_ctxTask){openDeleteModalObj(_ctxTask);hideContextMenu();}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Hapus Tiket
+    </div>
+</div>
 <%- include('partials/footer') %>

@@ -197,7 +197,7 @@ const monthNames = [
   "Desember",
 ];
 
-// Utility to fetch all Karyawan
+// Utility to fetch all Karyawan (including Staf type)
 const getKaryawan = () => {
   return new Promise((resolve, reject) => {
     db.all("SELECT * FROM karyawan ORDER BY nama ASC", (err, rows) => {
@@ -207,10 +207,20 @@ const getKaryawan = () => {
   });
 };
 
+// Utility to fetch only Student Staff (type != 'Staf') — for presensi & kehadiran pages
+const getStudentStaff = () => {
+  return new Promise((resolve, reject) => {
+    db.all("SELECT * FROM karyawan WHERE (type IS NULL OR type != 'Staf') ORDER BY nama ASC", (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+};
+
 // Route: Form Isi Presensi
 app.get("/", async (req, res) => {
   try {
-    const karyawanList = await getKaryawan();
+    const karyawanList = await getStudentStaff();
     const todayObj = new Date();
     const today = todayObj.toISOString().split("T")[0];
 
@@ -497,7 +507,7 @@ app.post("/presensi-pulang", async (req, res) => {
 // Route: Daftar Kehadiran
 app.get("/daftar-kehadiran", async (req, res) => {
   try {
-    const karyawanList = await getKaryawan();
+    const karyawanList = await getStudentStaff();
     const filterNama = req.query.filterNama || "all";
     let filterTanggalMulai = req.query.filterTanggalMulai;
     let filterTanggalSelesai = req.query.filterTanggalSelesai;
@@ -796,7 +806,7 @@ app.get("/detail-bulanan", async (req, res) => {
     const monthName = `${monthNames[parseInt(mStr, 10) - 1]} ${yearStr}`;
     const formattedRange = await getPeriodRangeString(monthStr);
 
-    const karyawanList = await getKaryawan();
+    const karyawanList = await getStudentStaff();
     const filterNama = req.query.filterNama || "all";
 
     let query =
@@ -853,7 +863,7 @@ app.get("/export-pdf", async (req, res) => {
         .send("Parameter startDate/endDate atau month wajib diisi");
     }
 
-    const karyawanList = await getKaryawan();
+    const karyawanList = await getStudentStaff();
     const karyawan = karyawanList.find((x) => x.id == filterNama);
     if (!karyawan) {
       return res.status(404).send("Karyawan tidak ditemukan");
@@ -953,7 +963,7 @@ app.get("/export-pdf", async (req, res) => {
 // Route: Overtime Dashboard
 app.get("/overtime", async (req, res) => {
   try {
-    const karyawanList = await getKaryawan();
+    const karyawanList = await getStudentStaff();
     const filterNama = req.query.filterNama || "all";
 
     // Default date to current pay period (same logic as /daftar-kehadiran)
@@ -1187,7 +1197,7 @@ app.get("/overtime", async (req, res) => {
 // Route: Export Overtime PDF (only transfer history, filtered by nama + date range)
 app.get("/overtime/pdf", async (req, res) => {
   try {
-    const karyawanList = await getKaryawan();
+    const karyawanList = await getStudentStaff();
     const filterNama = req.query.filterNama || "all";
 
     // Default date to current pay period if not provided
@@ -1720,11 +1730,11 @@ app.get("/student-staff", async (req, res) => {
 });
 
 app.post("/student-staff/add", (req, res) => {
-  const { nama, nim } = req.body;
-  if (!nama || !nim) return res.redirect("/student-staff?error=add_failed");
+  const { nama, type, role } = req.body;
+  if (!nama) return res.redirect("/student-staff?error=add_failed");
   db.run(
-    "INSERT INTO karyawan (nama, nim) VALUES (?, ?)",
-    [nama, nim],
+    "INSERT INTO karyawan (nama, type, role) VALUES (?, ?, ?)",
+    [nama, type || null, role || null],
     (err) => {
       if (err) {
         console.error(err);
@@ -1736,12 +1746,12 @@ app.post("/student-staff/add", (req, res) => {
 });
 
 app.post("/student-staff/edit", (req, res) => {
-  const { id, nama, nim } = req.body;
-  if (!id || !nama || !nim)
+  const { id, nama, type, role } = req.body;
+  if (!id || !nama)
     return res.redirect("/student-staff?error=edit_failed");
   db.run(
-    "UPDATE karyawan SET nama = ?, nim = ? WHERE id = ?",
-    [nama, nim, id],
+    "UPDATE karyawan SET nama = ?, type = ?, role = ? WHERE id = ?",
+    [nama, type || null, role || null, id],
     (err) => {
       if (err) {
         console.error(err);
@@ -1769,49 +1779,59 @@ app.post("/student-staff/delete", (req, res) => {
 app.get("/task-management", async (req, res) => {
   try {
     const karyawanList = await getKaryawan();
-    db.all(`
-      SELECT t.*, 
-             GROUP_CONCAT(k.nama ORDER BY k.nama ASC SEPARATOR ', ') AS assignees,
-             GROUP_CONCAT(k.id ORDER BY k.nama ASC SEPARATOR ',') AS assigneeIds
-      FROM tasks t
-      LEFT JOIN task_karyawan tk ON t.id = tk.taskId
-      LEFT JOIN karyawan k ON tk.karyawanId = k.id
-      GROUP BY t.id
-      ORDER BY CASE WHEN t.status = 'Todo' THEN 1 WHEN t.status = 'On Progress' THEN 2 WHEN t.status = 'Done' THEN 3 ELSE 4 END ASC, t.id DESC
-    `, (err, tasks) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send("Internal Server Error");
-      }
+    db.all("SELECT * FROM workspaces ORDER BY id ASC", (errW, workspaces) => {
+      if (errW) workspaces = [{ id: 1, nama: 'General' }];
+      db.all(`
+        SELECT t.*, 
+               GROUP_CONCAT(k.nama ORDER BY k.nama ASC SEPARATOR ', ') AS assignees,
+               GROUP_CONCAT(k.id ORDER BY k.nama ASC SEPARATOR ',') AS assigneeIds
+        FROM tasks t
+        LEFT JOIN task_karyawan tk ON t.id = tk.taskId
+        LEFT JOIN karyawan k ON tk.karyawanId = k.id
+        GROUP BY t.id
+        ORDER BY CASE WHEN t.status = 'Todo' THEN 1 WHEN t.status = 'On Progress' THEN 2 WHEN t.status = 'Done' THEN 3 ELSE 4 END ASC, t.order_index ASC, t.id DESC
+      `, (err, tasks) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send("Internal Server Error");
+        }
 
-      const tasksFormatted = tasks.map(task => ({
-        ...task,
-        assigneeIds: task.assigneeIds ? task.assigneeIds.split(',').map(Number) : []
-      }));
+        const tasksFormatted = tasks.map(task => ({
+          ...task,
+          assigneeIds: task.assigneeIds ? task.assigneeIds.split(',').map(Number) : []
+        }));
 
-      res.render("task-management", {
-        tasks: tasksFormatted,
-        karyawanList,
-        path: "/task-management",
-        success_msg:
-          req.query.success === "added"
-            ? "Task berhasil ditambahkan."
-            : req.query.success === "edited"
-              ? "Task berhasil diperbarui."
-              : req.query.success === "deleted"
-                ? "Task berhasil dihapus."
-                : null,
-        error_msg:
-          req.query.error === "add_failed"
-            ? "Gagal menambahkan Task."
-            : req.query.error === "edit_failed"
-              ? "Gagal memperbarui Task."
-              : req.query.error === "delete_failed"
-                ? "Gagal menghapus Task."
-                : null,
-        notifyAction: req.query.success || null,
-        notifyTaskId: req.query.taskId || null,
-        notifyStatus: req.query.toStatus || null
+        res.render("task-management", {
+          tasks: tasksFormatted,
+          karyawanList,
+          workspaces: workspaces || [],
+          path: "/task-management",
+          success_msg:
+            req.query.success === "added"
+              ? "Task berhasil ditambahkan."
+              : req.query.success === "edited"
+                ? "Task berhasil diperbarui."
+                : req.query.success === "deleted"
+                  ? "Task berhasil dihapus."
+                  : req.query.success === "ws_added"
+                    ? "Workspace berhasil ditambahkan."
+                    : req.query.success === "ws_edited"
+                      ? "Workspace berhasil diperbarui."
+                      : req.query.success === "ws_deleted"
+                        ? "Workspace berhasil dihapus."
+                        : null,
+          error_msg:
+            req.query.error === "add_failed"
+              ? "Gagal menambahkan data."
+              : req.query.error === "edit_failed"
+                ? "Gagal memperbarui data."
+                : req.query.error === "delete_failed"
+                  ? "Gagal menghapus data."
+                  : null,
+          notifyAction: req.query.success || null,
+          notifyTaskId: req.query.taskId || null,
+          notifyStatus: req.query.toStatus || null
+        });
       });
     });
   } catch (err) {
@@ -1820,15 +1840,59 @@ app.get("/task-management", async (req, res) => {
   }
 });
 
+// --- WORKSPACE CRUD ---
+app.post("/workspaces/add", (req, res) => {
+  const { nama } = req.body;
+  if (!nama) return res.redirect("/task-management?error=add_failed");
+  db.run("INSERT INTO workspaces (nama) VALUES (?)", [nama], (err) => {
+    if (err) return res.redirect("/task-management?error=add_failed");
+    res.redirect("/task-management?success=ws_added");
+  });
+});
+
+app.post("/workspaces/edit", (req, res) => {
+  const { id, nama } = req.body;
+  if (!id || !nama) return res.redirect("/task-management?error=edit_failed");
+  
+  db.get("SELECT nama FROM workspaces WHERE id = ?", [id], (errG, row) => {
+    if (errG || !row) return res.redirect("/task-management?error=edit_failed");
+    const oldName = row.nama;
+    db.run("UPDATE workspaces SET nama = ? WHERE id = ?", [nama, id], (err) => {
+      if (err) return res.redirect("/task-management?error=edit_failed");
+      // Update tasks that were using this workspace
+      db.run("UPDATE tasks SET workspace = ? WHERE workspace = ?", [nama, oldName], () => {
+        res.redirect("/task-management?success=ws_edited");
+      });
+    });
+  });
+});
+
+app.post("/workspaces/delete", (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.redirect("/task-management?error=delete_failed");
+
+  db.get("SELECT nama FROM workspaces WHERE id = ?", [id], (errG, row) => {
+    if (errG || !row) return res.redirect("/task-management?error=delete_failed");
+    const oldName = row.nama;
+    db.run("DELETE FROM workspaces WHERE id = ?", [id], (err) => {
+      if (err) return res.redirect("/task-management?error=delete_failed");
+      // Fallback tasks to 'General'
+      db.run("UPDATE tasks SET workspace = 'General' WHERE workspace = ?", [oldName], () => {
+        res.redirect("/task-management?success=ws_deleted");
+      });
+    });
+  });
+});
+
 app.post("/task-management/add", (req, res) => {
-  const { task, tanggal, deadline, status, assignees, foto } = req.body;
+  const { task, tanggal, deadline, status, assignees, foto, workspace, requester, source, priority, link } = req.body;
   if (!task || !tanggal || !deadline || !status) {
     return res.redirect("/task-management?error=add_failed");
   }
 
   db.run(
-    "INSERT INTO tasks (task, tanggal, deadline, status, foto) VALUES (?, ?, ?, ?, NULL)",
-    [task, tanggal, deadline, status],
+    "INSERT INTO tasks (task, tanggal, deadline, status, foto, workspace, requester, source, priority, link, order_index) VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, 0)",
+    [task, tanggal, deadline, status, workspace || 'General', requester || null, source || 'Sistem', priority || 'Low', link || null],
     function (err) {
       if (err) {
         console.error(err);
@@ -1858,16 +1922,21 @@ app.post("/task-management/add", (req, res) => {
               if (insertCount >= assigneeIds.length) {
                 db.all("SELECT nama FROM karyawan WHERE id IN (" + assigneeIds.map(() => "?").join(",") + ")", assigneeIds, (errK, kRows) => {
                   const namesList = kRows ? kRows.map(r => r.nama).join(", ") : "";
-                  const code = "#" + String(taskId).padStart(4, "0");
-                  sendSseEvent({
-                    type: "task",
-                    action: "added",
-                    taskId: taskId,
-                    code: code,
-                    assignees: namesList,
-                    timestamp: Date.now()
+                  const assigneeIdsList = assigneeIds.map(Number);
+                  
+                  db.get("SELECT * FROM tasks WHERE id = ?", [taskId], (errT, tRow) => {
+                    sendSseEvent({
+                      type: "task",
+                      action: "added",
+                      task: {
+                        ...tRow,
+                        assignees: namesList,
+                        assigneeIds: assigneeIdsList
+                      },
+                      timestamp: Date.now()
+                    });
+                    res.redirect(`/task-management?success=added&taskId=${taskId}`);
                   });
-                  res.redirect(`/task-management?success=added&taskId=${taskId}`);
                 });
                 return;
               }
@@ -1885,15 +1954,19 @@ app.post("/task-management/add", (req, res) => {
             };
             runInsert();
           } else {
-            sendSseEvent({
-              type: "task",
-              action: "added",
-              taskId: taskId,
-              code: "#" + String(taskId).padStart(4, "0"),
-              assignees: "",
-              timestamp: Date.now()
+            db.get("SELECT * FROM tasks WHERE id = ?", [taskId], (errT, tRow) => {
+              sendSseEvent({
+                type: "task",
+                action: "added",
+                task: {
+                  ...tRow,
+                  assignees: "",
+                  assigneeIds: []
+                },
+                timestamp: Date.now()
+              });
+              res.redirect(`/task-management?success=added&taskId=${taskId}`);
             });
-            res.redirect(`/task-management?success=added&taskId=${taskId}`);
           }
         };
 
@@ -1911,7 +1984,7 @@ app.post("/task-management/add", (req, res) => {
 });
 
 app.post("/task-management/edit", (req, res) => {
-  const { id, task, tanggal, deadline, status, assignees, foto } = req.body;
+  const { id, task, tanggal, deadline, status, assignees, foto, workspace, requester, source, priority, link } = req.body;
   if (!id || !task || !tanggal || !deadline || !status) {
     return res.redirect("/task-management?error=edit_failed");
   }
@@ -1930,8 +2003,8 @@ app.post("/task-management/edit", (req, res) => {
     const finalFoto = foto ? (fotoPath || null) : (existingTask ? existingTask.foto : null);
 
     db.run(
-      "UPDATE tasks SET task = ?, tanggal = ?, deadline = ?, status = ?, foto = ? WHERE id = ?",
-      [task, tanggal, deadline, status, finalFoto, id],
+      "UPDATE tasks SET task = ?, tanggal = ?, deadline = ?, status = ?, foto = ?, workspace = ?, requester = ?, source = ?, priority = ?, link = ? WHERE id = ?",
+      [task, tanggal, deadline, status, finalFoto, workspace || 'General', requester || null, source || 'Sistem', priority || 'Low', link || null, id],
       (err) => {
         if (err) {
           console.error(err);
@@ -1949,21 +2022,21 @@ app.post("/task-management/edit", (req, res) => {
             let insertCount = 0;
             const runInsert = () => {
               if (insertCount >= assigneeIds.length) {
-                db.get("SELECT code FROM tasks WHERE id = ?", [id], (errT, tRow) => {
-                  const code = tRow ? tRow.code : ("#" + String(id).padStart(4, "0"));
-                  db.all("SELECT nama FROM karyawan WHERE id IN (" + assigneeIds.map(() => "?").join(",") + ")", assigneeIds, (errK, kRows) => {
-                    const namesList = kRows ? kRows.map(r => r.nama).join(", ") : "";
-                    
+                db.all("SELECT nama FROM karyawan WHERE id IN (" + assigneeIds.map(() => "?").join(",") + ")", assigneeIds, (errK, kRows) => {
+                  const namesList = kRows ? kRows.map(r => r.nama).join(", ") : "";
+                  const assigneeIdsList = assigneeIds.map(Number);
+                  
+                  db.get("SELECT * FROM tasks WHERE id = ?", [id], (errT, tRow) => {
                     sendSseEvent({
                       type: "task",
                       action: "edited",
-                      status: status,
-                      taskId: id,
-                      code: code,
-                      assignees: namesList,
+                      task: {
+                        ...tRow,
+                        assignees: namesList,
+                        assigneeIds: assigneeIdsList
+                      },
                       timestamp: Date.now()
                     });
-
                     res.redirect(`/task-management?success=edited&taskId=${id}&toStatus=${status}`);
                   });
                 });
@@ -1983,15 +2056,15 @@ app.post("/task-management/edit", (req, res) => {
             };
             runInsert();
           } else {
-            db.get("SELECT code FROM tasks WHERE id = ?", [id], (errT, tRow) => {
-              const code = tRow ? tRow.code : ("#" + String(id).padStart(4, "0"));
+            db.get("SELECT * FROM tasks WHERE id = ?", [id], (errT, tRow) => {
               sendSseEvent({
                 type: "task",
                 action: "edited",
-                status: status,
-                taskId: id,
-                code: code,
-                assignees: "",
+                task: {
+                  ...tRow,
+                  assignees: "",
+                  assigneeIds: []
+                },
                 timestamp: Date.now()
               });
               res.redirect(`/task-management?success=edited&taskId=${id}&toStatus=${status}`);
@@ -2003,16 +2076,67 @@ app.post("/task-management/edit", (req, res) => {
   });
 });
 
+app.post("/task-management/update-status", (req, res) => {
+  const { id, status } = req.body;
+  if (!id || !status) {
+    return res.status(400).json({ success: false, error: "Missing task ID or status" });
+  }
+
+  db.run("UPDATE tasks SET status = ? WHERE id = ?", [status, id], (err) => {
+    if (err) {
+      console.error("Error updating task status:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.json({ success: true });
+  });
+});
+
+app.post("/task-management/update-order", (req, res) => {
+  const { updates } = req.body; // Array of { id, status, order_index }
+  if (!updates || !Array.isArray(updates)) {
+    return res.status(400).json({ success: false, error: "Invalid updates format" });
+  }
+
+  // To prevent multiple queries running synchronously and causing connection issues, run them sequentially
+  let updateCount = 0;
+  const doUpdate = () => {
+    if (updateCount >= updates.length) {
+      return res.json({ success: true });
+    }
+    const item = updates[updateCount];
+    db.run(
+      "UPDATE tasks SET status = ?, order_index = ? WHERE id = ?", 
+      [item.status, item.order_index, item.id], 
+      (err) => {
+        if (err) console.error("Error updating order:", err);
+        updateCount++;
+        doUpdate();
+      }
+    );
+  };
+  doUpdate();
+});
+
 app.post("/task-management/delete", (req, res) => {
   const { id } = req.body;
   if (!id) return res.redirect("/task-management?error=delete_failed");
 
-  db.run("DELETE FROM tasks WHERE id = ?", [id], (err) => {
-    if (err) {
-      console.error(err);
-      return res.redirect("/task-management?error=delete_failed");
-    }
-    res.redirect("/task-management?success=deleted");
+  db.get("SELECT code FROM tasks WHERE id = ?", [id], (errG, task) => {
+    const code = task ? task.code : ("#" + String(id).padStart(4, "0"));
+    db.run("DELETE FROM tasks WHERE id = ?", [id], (err) => {
+      if (err) {
+        console.error(err);
+        return res.redirect("/task-management?error=delete_failed");
+      }
+      sendSseEvent({
+        type: "task",
+        action: "deleted",
+        taskId: id,
+        code: code,
+        timestamp: Date.now()
+      });
+      res.redirect("/task-management?success=deleted");
+    });
   });
 });
 

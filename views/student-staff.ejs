@@ -5,8 +5,8 @@
     <!-- Page Header -->
     <div class="mb-6 sm:mb-8 animate-fadeInUp flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-1">Daftar Student Staff</h2>
-            <p class="text-xs sm:text-sm text-muted">Kelola data Student Staff (Tambah, Edit, Hapus)</p>
+            <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-1">Daftar Student & Staff</h2>
+            <p class="text-xs sm:text-sm text-muted">Kelola data Student & Staff</p>
         </div>
         <button onclick="openAddModal()" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm inline-flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
@@ -33,14 +33,15 @@
                     <tr>
                         <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">No</th>
                         <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Nama</th>
-                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">NIM</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tipe</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Role</th>
                         <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-border">
                     <% if (karyawanList && karyawanList.length === 0) { %>
                         <tr>
-                            <td colspan="4" class="py-10 text-center">
+                            <td colspan="5" class="py-10 text-center">
                                 <p class="text-muted text-sm">Data tidak ditemukan.</p>
                             </td>
                         </tr>
@@ -48,8 +49,29 @@
                         <% karyawanList.forEach((k, i) => { %>
                             <tr class="hover:bg-accentLighter/30 transition-colors">
                                 <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted font-medium"><%= i + 1 %></td>
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg font-medium"><%= k.nama %></td>
-                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg"><%= k.nim || '-' %></td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-full bg-accentLight flex items-center justify-center text-sm font-bold text-accent flex-shrink-0">
+                                            <%= k.nama.split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase() %>
+                                        </div>
+                                        <span class="text-sm text-fg font-medium"><%= k.nama %></span>
+                                    </div>
+                                </td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg">
+                                    <% if(k.type) { %>
+                                        <span class="px-2 py-1 rounded-lg text-xs font-semibold <%= k.type === 'Staf' ? 'bg-accent/10 text-accent' : 'bg-blue-100 text-blue-700' %>"><%= k.type %></span>
+                                        <% if(k.type === 'Staf') { %><span class="ml-1 text-[10px] text-muted">(tidak presensi)</span><% } %>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg">
+                                    <% if(k.role) { %>
+                                        <span class="px-2 py-1 rounded-lg bg-accent/10 text-accent text-xs font-semibold"><%= k.role %></span>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
                                 <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center gap-2">
                                         <button onclick='openEditModal(<%- JSON.stringify(k) %>)' class="text-muted hover:text-indigo-600 transition-colors p-1.5 rounded hover:bg-indigo-50" title="Edit">
@@ -78,9 +100,17 @@
             <% karyawanList.forEach(k => { %>
                 <div class="bg-card rounded-2xl border border-border p-5 shadow-sm space-y-3">
                     <div class="flex justify-between items-start">
-                        <div>
-                            <h4 class="font-bold text-fg text-sm"><%= k.nama %></h4>
-                            <p class="text-xs text-muted mt-1">NIM: <span class="font-medium text-fg"><%= k.nim || '-' %></span></p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-accentLight flex items-center justify-center text-sm font-bold text-accent flex-shrink-0">
+                                <%= k.nama.split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase() %>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-fg text-sm"><%= k.nama %></h4>
+                                <div class="flex gap-2 mt-1 flex-wrap">
+                                    <% if(k.type) { %><span class="px-2 py-0.5 rounded text-[11px] font-semibold <%= k.type === 'Staf' ? 'bg-accent/10 text-accent' : 'bg-blue-100 text-blue-700' %>"><%= k.type %></span><% } %>
+                                    <% if(k.role) { %><span class="px-2 py-0.5 rounded bg-inputBg text-muted text-[11px] font-semibold"><%= k.role %></span><% } %>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex items-center gap-1">
                             <button onclick='openEditModal(<%- JSON.stringify(k) %>)' class="text-muted hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-inputBg" title="Edit">
@@ -111,9 +141,19 @@
                 <label class="block text-sm font-semibold text-fg mb-2">Nama Student Staff</label>
                 <input type="text" name="nama" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Masukkan nama lengkap">
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-fg mb-2">NIM</label>
-                <input type="text" name="nim" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Masukkan NIM">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Tipe</label>
+                    <select name="type" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="">-- Pilih Tipe --</option>
+                        <option value="Student Staff">Student Staff</option>
+                        <option value="Staf">Staf</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Role</label>
+                    <input type="text" name="role" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Misal: Frontend Dev">
+                </div>
             </div>
             <div class="mt-6 pt-4 border-t border-border flex justify-end gap-3">
                 <button type="button" onclick="closeAddModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
@@ -138,9 +178,19 @@
                 <label class="block text-sm font-semibold text-fg mb-2">Nama Student Staff</label>
                 <input type="text" name="nama" id="editNama" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Masukkan nama lengkap">
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-fg mb-2">NIM</label>
-                <input type="text" name="nim" id="editNim" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Masukkan NIM">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Tipe</label>
+                    <select name="type" id="editType" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                        <option value="">-- Pilih Tipe --</option>
+                        <option value="Student Staff">Student Staff</option>
+                        <option value="Staf">Staf</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Role</label>
+                    <input type="text" name="role" id="editRole" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Misal: Frontend Dev">
+                </div>
             </div>
             <div class="mt-6 pt-4 border-t border-border flex justify-end gap-3">
                 <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
@@ -193,7 +243,8 @@
     function openEditModal(data) {
         document.getElementById('editId').value = data.id;
         document.getElementById('editNama').value = data.nama;
-        document.getElementById('editNim').value = data.nim || '';
+        document.getElementById('editType').value = data.type || '';
+        document.getElementById('editRole').value = data.role || '';
         
         editModal.classList.remove('hidden');
         setTimeout(() => {

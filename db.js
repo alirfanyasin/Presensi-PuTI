@@ -76,6 +76,76 @@ class MySQLWrapper {
         });
       });
 
+      // Migration: Add workspace, requester, source, and priority columns if they don't exist
+      const addColumnIfNotExist = (colName, colDef) => {
+        return new Promise((resolve) => {
+          this.pool.query(`SHOW COLUMNS FROM tasks LIKE '${colName}'`, (err, rows) => {
+            if (!err && rows && rows.length === 0) {
+              this.pool.query(`ALTER TABLE tasks ADD COLUMN ${colName} ${colDef}`, (errAlt) => {
+                if (errAlt) {
+                  console.error(`Failed to add column ${colName} to tasks:`, errAlt.message);
+                }
+                resolve();
+              });
+            } else {
+              resolve();
+            }
+          });
+        });
+      };
+
+      await addColumnIfNotExist('workspace', "VARCHAR(100) DEFAULT 'General'");
+      await addColumnIfNotExist('requester', "VARCHAR(255) DEFAULT NULL");
+      await addColumnIfNotExist('source', "VARCHAR(100) DEFAULT 'Sistem'");
+      await addColumnIfNotExist('priority', "VARCHAR(50) DEFAULT 'Low'");
+      await addColumnIfNotExist('link', "VARCHAR(500) DEFAULT NULL");
+      await addColumnIfNotExist('order_index', "INT DEFAULT 0");
+
+      // Migration: Add type and role columns to karyawan if they don't exist
+      const addKaryawanColIfNotExist = (colName, colDef) => {
+        return new Promise((resolve) => {
+          this.pool.query(`SHOW COLUMNS FROM karyawan LIKE '${colName}'`, (err, rows) => {
+            if (!err && rows && rows.length === 0) {
+              this.pool.query(`ALTER TABLE karyawan ADD COLUMN ${colName} ${colDef}`, (errAlt) => {
+                if (errAlt) console.error(`Failed to add column ${colName} to karyawan:`, errAlt.message);
+                resolve();
+              });
+            } else {
+              resolve();
+            }
+          });
+        });
+      };
+      await addKaryawanColIfNotExist('type', "VARCHAR(100) DEFAULT NULL");
+      await addKaryawanColIfNotExist('role', "VARCHAR(100) DEFAULT NULL");
+
+      // Migration: Drop nim column from karyawan if it still exists
+      await new Promise((resolve) => {
+        this.pool.query("SHOW COLUMNS FROM karyawan LIKE 'nim'", (err, rows) => {
+          if (!err && rows && rows.length > 0) {
+            this.pool.query("ALTER TABLE karyawan DROP COLUMN nim", (errDrop) => {
+              if (errDrop) console.error("Failed to drop nim column:", errDrop.message);
+              resolve();
+            });
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      // Seed default workspaces if empty
+      await new Promise((resolve) => {
+        this.pool.query("SELECT COUNT(*) AS cnt FROM workspaces", (err, rows) => {
+          if (!err && rows && rows[0].cnt === 0) {
+            const defaults = ['General', 'IT Support & Jaringan', 'Administrasi & Surat', 'Layanan Mahasiswa', 'Sarana & Prasarana'];
+            const vals = defaults.map(n => `('${n}')`).join(',');
+            this.pool.query(`INSERT INTO workspaces (nama) VALUES ${vals}`, () => resolve());
+          } else {
+            resolve();
+          }
+        });
+      });
+
       this.initialized = true;
       console.log('Connected to MySQL database and tables verified.');
       this._next();
@@ -144,7 +214,11 @@ class MySQLWrapper {
           tanggal VARCHAR(50) NOT NULL,
           deadline VARCHAR(50) NOT NULL,
           status VARCHAR(50) NOT NULL DEFAULT 'Todo',
-          foto LONGTEXT
+          foto LONGTEXT,
+          workspace VARCHAR(100) DEFAULT 'General',
+          requester VARCHAR(255) DEFAULT NULL,
+          source VARCHAR(100) DEFAULT 'Sistem',
+          priority VARCHAR(50) DEFAULT 'Low'
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
       `CREATE TABLE IF NOT EXISTS task_karyawan (
@@ -153,6 +227,11 @@ class MySQLWrapper {
           PRIMARY KEY (taskId, karyawanId),
           FOREIGN KEY (taskId) REFERENCES tasks (id) ON DELETE CASCADE,
           FOREIGN KEY (karyawanId) REFERENCES karyawan (id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+      `CREATE TABLE IF NOT EXISTS workspaces (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          nama VARCHAR(100) NOT NULL UNIQUE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
     ];
 
