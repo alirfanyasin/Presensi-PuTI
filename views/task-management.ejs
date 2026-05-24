@@ -578,16 +578,26 @@
     });
     
     let audioContext;
-    async function playVoiceAnnouncement(text) {
-        try {
-            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioContext.state === 'suspended') await audioContext.resume();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'id-ID';
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
-            window.speechSynthesis.speak(utterance);
-        } catch (e) { console.error("Audio error:", e); }
+    function playVoiceAnnouncement(text) {
+        return new Promise(async (resolve) => {
+            try {
+                if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') await audioContext.resume();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                utterance.onend = resolve;
+                utterance.onerror = resolve;
+                window.speechSynthesis.speak(utterance);
+                
+                // Fallback timeout in case onend doesn't fire
+                setTimeout(resolve, 8000); 
+            } catch (e) { 
+                console.error("Audio error:", e); 
+                resolve();
+            }
+        });
     }
 
     function getInitials(name) {
@@ -799,8 +809,28 @@
         const tbody = document.getElementById('listTableBody');
         tbody.innerHTML = '';
         
-        // Sort lists by order_index primarily
-        tasks.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+        // Sort lists by Status -> Priority -> Deadline DESC
+        const statusWeight = { 'Todo': 1, 'On Progress': 2, 'Done': 3 };
+        const priorityWeight = { 'Critical': 1, 'High': 2, 'Medium': 3, 'Low': 4 };
+        
+        tasks.sort((a, b) => {
+            // 1. Status (Todo -> On Progress -> Done)
+            const sA = statusWeight[a.status] || 99;
+            const sB = statusWeight[b.status] || 99;
+            if (sA !== sB) return sA - sB;
+
+            // 2. Prioritas (Critical -> High -> Medium -> Low)
+            const pA = priorityWeight[a.priority] || 99;
+            const pB = priorityWeight[b.priority] || 99;
+            if (pA !== pB) return pA - pB;
+
+            // 3. Deadline DESC (Terbaru ke Terlama)
+            const dA = new Date(a.deadline).getTime() || 0;
+            const dB = new Date(b.deadline).getTime() || 0;
+            if (dA !== dB) return dB - dA;
+
+            return 0;
+        });
 
         const total = tasks.length;
         const totalPages = Math.ceil(total / itemsPerPage);
@@ -918,8 +948,23 @@
                                 playVoiceAnnouncement(`Tiket dengan kode ${data.code} telah selesai dikerjakan`);
                             }
                         }
-                    } else if (data.action === 'add' || data.action === 'edited') {
-                        window.location.reload(); 
+                    } else if (data.action === 'add' || data.action === 'added' || data.action === 'edited') {
+                        let textToPlay = null;
+                        if (data.task && data.task.assignees) {
+                            if (data.action === 'add' || data.action === 'added') {
+                                textToPlay = `Tugas baru untuk ${data.task.assignees} dengan kode ${data.task.code || '-'}`;
+                            } else if (data.action === 'edited' && data.assigneesChanged) {
+                                textToPlay = `Tugas dengan kode ${data.task.code || '-'} diperbarui penugasannya ke ${data.task.assignees}`;
+                            }
+                        }
+                        
+                        if (textToPlay) {
+                            playVoiceAnnouncement(textToPlay).then(() => {
+                                window.location.reload(); 
+                            });
+                        } else {
+                            window.location.reload(); 
+                        }
                     } else if (data.action === 'delete') {
                         allTasks = allTasks.filter(t => t.id != data.taskId);
                         renderDashboard();
@@ -1066,7 +1111,14 @@
                         </div>
                         <div>
                             <span class="text-sm text-fg font-medium block mb-2">Assignees:</span>
-                            <div class="text-sm text-muted">${task.assignees ? task.assignees.split(', ').join('<br>') : 'Belum di-assign'}</div>
+                            <div class="flex flex-col gap-2">
+                                ${task.assignees ? task.assignees.split(', ').map(n => `
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-full bg-accentLight border-2 border-card flex items-center justify-center text-[10px] font-bold text-accent shadow-sm" title="${n}">${getInitials(n)}</div>
+                                        <span class="text-sm text-muted font-medium">${n}</span>
+                                    </div>
+                                `).join('') : '<span class="text-sm text-muted">Belum di-assign</span>'}
+                            </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4 bg-inputBg/30 p-4 rounded-xl border border-border">
@@ -1134,6 +1186,31 @@
     document.addEventListener('contextmenu', (e) => {
         // Hide if clicking outside a table row
         if (!e.target.closest('#listTableBody tr')) hideContextMenu();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const pendingVoice = sessionStorage.getItem('pendingVoice');
+        if (pendingVoice) {
+            playVoiceAnnouncement(pendingVoice);
+            sessionStorage.removeItem('pendingVoice');
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            const successStatus = urlParams.get('success');
+            const taskIdParam = urlParams.get('taskId');
+            const assigneesChanged = urlParams.get('assigneesChanged');
+
+            if (successStatus && taskIdParam) {
+                const changedTask = allTasks.find(t => t.id == taskIdParam);
+                if (changedTask && changedTask.assignees) {
+                    if (successStatus === 'added') {
+                        playVoiceAnnouncement(`Tugas baru untuk ${changedTask.assignees} dengan kode ${changedTask.code}`);
+                    } else if (successStatus === 'edited' && assigneesChanged === 'true') {
+                        playVoiceAnnouncement(`Tugas dengan kode ${changedTask.code} diperbarui penugasannya ke ${changedTask.assignees}`);
+                    }
+                }
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
     });
 </script>
 
