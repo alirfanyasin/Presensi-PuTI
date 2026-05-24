@@ -1,0 +1,960 @@
+<%- include('partials/header', { title: 'Task Management' }) %>
+<%- include('partials/nav', { path: '/task-management' }) %>
+
+<% 
+  const getInitials = (name) => {
+    if (!name) return "";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  };
+%>
+
+<main class="flex-grow w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+    <!-- Page Header -->
+    <div class="mb-6 sm:mb-8 animate-fadeInUp flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="font-display text-2xl sm:text-4xl font-bold text-fg mb-1">Task Management</h2>
+            <p class="text-xs sm:text-sm text-muted">Kelola dan delegasikan tugas Student Staff secara terorganisir</p>
+        </div>
+        <button onclick="openAddModal()" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors btn-press text-sm inline-flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Tambah Task
+        </button>
+    </div>
+
+    <% if (typeof success_msg !== 'undefined' && success_msg) { %>
+        <div class="mb-6 bg-success/20 text-success border border-success/30 px-4 py-3 rounded-xl animate-fadeInUp font-semibold text-sm">
+            <%= success_msg %>
+        </div>
+    <% } %>
+    <% if (typeof error_msg !== 'undefined' && error_msg) { %>
+        <div class="mb-6 bg-red-500/20 text-red-500 border border-red-500/30 px-4 py-3 rounded-xl animate-fadeInUp font-semibold text-sm">
+            <%= error_msg %>
+        </div>
+    <% } %>
+
+    <!-- Filter & Search Bar -->
+    <div class="bg-card rounded-2xl border border-border p-4 sm:p-5 mb-6 animate-fadeInUp stagger-1 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-grow">
+            <!-- Search by Name/Task -->
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+                <input type="text" id="searchFilter" oninput="applyFilters()" class="w-full pl-10 pr-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm" placeholder="Cari tugas atau staff...">
+            </div>
+
+            <!-- Filter by Status -->
+            <div class="relative">
+                <select id="statusFilter" onchange="applyFilters()" class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                    <option value="">Semua Status</option>
+                    <option value="Todo">Todo</option>
+                    <option value="On Progress">On Progress</option>
+                    <option value="Done">Done</option>
+                </select>
+                <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-muted">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </span>
+            </div>
+
+            <!-- Filter by Start Date -->
+            <div class="relative flex items-center">
+                <input type="date" id="dateFilter" onchange="applyFilters()" class="w-full px-4 py-2 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                <!-- Clear date button -->
+                <button onclick="clearDateFilter()" class="absolute right-3 text-muted hover:text-fg focus:outline-none hidden" id="clearDateBtn">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Table Section -->
+    <div class="hidden md:block bg-card rounded-2xl border border-border overflow-hidden animate-fadeInUp stagger-1 shadow-sm mb-6">
+        <div class="table-container overflow-x-auto">
+            <table class="w-full min-w-[800px]">
+                <thead class="bg-accentLighter border-b border-border">
+                    <tr>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">No</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Kode</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tugas</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Tanggal Mulai</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Deadline</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Status</th>
+                        <th class="px-4 sm:px-6 py-4 text-left text-xs font-bold text-accent uppercase tracking-wider">Assignee</th>
+                        <th class="px-4 sm:px-6 py-4 text-center text-xs font-bold text-accent uppercase tracking-wider">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    <% if (tasks && tasks.length === 0) { %>
+                        <tr>
+                            <td colspan="8" class="py-10 text-center">
+                                <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                                <p class="text-muted text-sm">Belum ada tugas terdaftar.</p>
+                            </td>
+                        </tr>
+                    <% } else if (tasks) { %>
+                        <% tasks.forEach((t, i) => { %>
+                            <tr class="task-row hover:bg-accentLighter/30 transition-colors" data-id="<%= t.id %>" data-task="<%= t.task %>" data-code="<%= t.code || '' %>" data-status="<%= t.status %>" data-date="<%= t.tanggal %>" data-assignees="<%= t.assignees || '' %>">
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-muted font-medium task-index"><%= i + 1 %></td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-bold text-accent font-mono"><%= t.code || '-' %></td>
+                                <td class="px-4 sm:px-6 py-4 text-sm text-fg font-semibold max-w-xs">
+                                    <span style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all;"><%= t.task %></span>
+                                </td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg"><%= t.tanggal %></td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-fg font-medium text-accent"><%= t.deadline %></td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                                    <% if (t.status === 'Todo') { %>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                                            Todo
+                                        </span>
+                                    <% } else if (t.status === 'On Progress') { %>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                                            On Progress
+                                        </span>
+                                    <% } else if (t.status === 'Done') { %>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                            Done
+                                        </span>
+                                    <% } %>
+                                </td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center -space-x-2">
+                                        <% if (t.assignees) { %>
+                                            <% t.assignees.split(', ').forEach(name => { %>
+                                                <div class="w-8 h-8 rounded-full bg-accentLight border-2 border-card flex items-center justify-center text-[10px] font-bold text-accent cursor-pointer transition-transform hover:scale-110 hover:z-10" title="<%= name %>">
+                                                    <%= getInitials(name) %>
+                                                </div>
+                                            <% }) %>
+                                        <% } else { %>
+                                            <span class="text-xs text-muted">Belum di-assign</span>
+                                        <% } %>
+                                    </div>
+                                </td>
+                                <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <button onclick="openDetail(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="text-muted hover:text-accent transition-colors p-1.5 rounded hover:bg-accentLight/20" title="Detail">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        </button>
+                                        <button onclick="openEdit(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="text-muted hover:text-indigo-600 transition-colors p-1.5 rounded hover:bg-indigo-50" title="Edit">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </button>
+                                        <button onclick="openDelete(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="text-muted hover:text-red-500 transition-colors p-1.5 rounded hover:bg-red-50" title="Hapus">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } %>
+                    <!-- Empty State for filtered desktop results -->
+                    <tr id="desktopEmptyState" class="hidden">
+                        <td colspan="8" class="py-10 text-center">
+                            <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <p class="text-muted text-sm">Tidak ada tugas yang sesuai dengan filter.</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile Card Section -->
+    <div class="md:hidden space-y-4 animate-fadeInUp stagger-1 mb-6">
+        <% if (tasks && tasks.length === 0) { %>
+            <div class="bg-card rounded-2xl border border-border p-8 text-center shadow-sm">
+                <p class="text-muted text-sm">Belum ada tugas terdaftar.</p>
+            </div>
+        <% } else if (tasks) { %>
+            <% tasks.forEach(t => { %>
+                <div class="task-card bg-card rounded-2xl border border-border p-5 shadow-sm space-y-4" data-id="<%= t.id %>" data-task="<%= t.task %>" data-code="<%= t.code || '' %>" data-status="<%= t.status %>" data-date="<%= t.tanggal %>" data-assignees="<%= t.assignees || '' %>">
+                    <div class="flex justify-between items-start">
+                        <div class="space-y-1.5 pr-2">
+                            <span class="inline-flex font-mono text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-lg"><%= t.code || '-' %></span>
+                            <h4 class="font-bold text-fg text-base" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-all;"><%= t.task %></h4>
+                            <div class="flex flex-wrap gap-1.5 text-xs text-muted">
+                                <span>Mulai: <strong class="text-fg"><%= t.tanggal %></strong></span>
+                                <span>·</span>
+                                <span>Deadline: <strong class="text-accent"><%= t.deadline %></strong></span>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <% if (t.status === 'Todo') { %>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                                    Todo
+                                </span>
+                            <% } else if (t.status === 'On Progress') { %>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                                    On Progress
+                                </span>
+                            <% } else if (t.status === 'Done') { %>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">
+                                    Done
+                                </span>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <% if (t.foto) { %>
+                        <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-border cursor-pointer group" onclick="showTaskPhoto('<%= t.foto %>', '<%= t.task %>')">
+                            <img class="w-full h-full object-cover" src="<%= t.foto %>" alt="Lampiran Foto Tugas">
+                            <div class="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span class="px-3 py-1.5 bg-white/20 backdrop-blur-md text-white text-[10px] font-semibold rounded-lg border border-white/30">Lihat Fullscreen</span>
+                            </div>
+                        </div>
+                    <% } %>
+
+                    <div class="bg-inputBg/40 border border-border/60 rounded-xl p-3">
+                        <span class="block text-[10px] uppercase font-bold tracking-wider text-muted mb-1">Assignee</span>
+                        <div class="flex items-center -space-x-2">
+                            <% if (t.assignees) { %>
+                                <% t.assignees.split(', ').forEach(name => { %>
+                                    <div class="w-8 h-8 rounded-full bg-accentLight border-2 border-card flex items-center justify-center text-[10px] font-bold text-accent cursor-pointer" title="<%= name %>">
+                                        <%= getInitials(name) %>
+                                    </div>
+                                <% }) %>
+                            <% } else { %>
+                                <span class="text-xs text-muted">Belum di-assign</span>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                        <button onclick="openDetail(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="flex items-center gap-1 px-3 py-1.5 bg-inputBg text-muted text-xs font-semibold rounded-lg hover:bg-border transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            Detail
+                        </button>
+                        <button onclick="openEdit(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="flex items-center gap-1 px-3 py-1.5 bg-inputBg text-muted text-xs font-semibold rounded-lg hover:bg-border transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Edit
+                        </button>
+                        <button onclick="openDelete(this)" data-task="<%= encodeURIComponent(JSON.stringify(t)) %>" class="flex items-center gap-1 px-3 py-1.5 bg-accent/10 text-accent text-xs font-semibold rounded-lg hover:bg-accentLight transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Hapus
+                        </button>
+                    </div>
+                </div>
+            <% }) %>
+        <% } %>
+    </div>
+
+    <!-- Empty State for filtered mobile results -->
+    <div id="mobileEmptyState" class="hidden md:hidden bg-card rounded-2xl border border-border p-8 text-center shadow-sm mb-6 animate-fadeInUp">
+        <svg class="w-12 h-12 mx-auto text-border mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <p class="text-muted text-sm">Tidak ada tugas yang sesuai dengan filter.</p>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div id="paginationContainer" class="flex items-center justify-between mt-6 px-4 py-3 bg-card border border-border rounded-2xl shadow-sm animate-fadeInUp">
+        <div class="flex flex-1 justify-between sm:hidden">
+            <button id="prevMobileBtn" class="relative inline-flex items-center rounded-xl border border-border bg-inputBg px-4 py-2 text-sm font-medium text-fg hover:bg-border transition-colors">Previous</button>
+            <button id="nextMobileBtn" class="relative ml-3 inline-flex items-center rounded-xl border border-border bg-inputBg px-4 py-2 text-sm font-medium text-fg hover:bg-border transition-colors">Next</button>
+        </div>
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-muted">
+                    Menampilkan <span class="font-bold text-fg" id="pageStart">1</span> - <span class="font-bold text-fg" id="pageEnd">10</span> dari <span class="font-bold text-fg" id="totalCount">0</span> data
+                </p>
+            </div>
+            <div>
+                <nav class="isolate inline-flex -space-x-px rounded-xl shadow-sm bg-inputBg border border-border p-1 gap-1" aria-label="Pagination" id="pageNumbersContainer">
+                    <!-- Dynamic page numbers -->
+                </nav>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Add Modal -->
+<div id="addModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
+    <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto" id="addModalContent">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="font-display text-xl font-bold text-fg">Tambah Task</h3>
+            <button type="button" onclick="closeAddModal()" class="text-muted hover:text-fg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form action="/task-management/add" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Tugas / Task</label>
+                <textarea name="task" required rows="3" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm resize-none" placeholder="Nama atau deskripsi tugas"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Tanggal Mulai</label>
+                    <input type="date" name="tanggal" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Deadline</label>
+                    <input type="date" name="deadline" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Status</label>
+                <select name="status" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                    <option value="Todo" selected>Todo</option>
+                    <option value="On Progress">On Progress</option>
+                    <option value="Done">Done</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Assign Student Staff</label>
+                <div class="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto p-3 bg-inputBg border border-border rounded-xl hide-scrollbar">
+                    <% if (karyawanList && karyawanList.length === 0) { %>
+                        <p class="text-xs text-muted text-center py-2">Belum ada student staff. Tambah terlebih dahulu.</p>
+                    <% } else if (karyawanList) { %>
+                        <% karyawanList.forEach(k => { %>
+                            <label class="flex items-center gap-3 p-2 hover:bg-card/75 rounded-lg cursor-pointer transition-colors text-sm font-medium text-fg">
+                                <input type="checkbox" name="assignees" value="<%= k.id %>" class="w-4 h-4 text-accent border-border rounded focus:ring-accent">
+                                <div class="w-8 h-8 rounded-full bg-accentLight flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">
+                                    <%= getInitials(k.nama) %>
+                                </div>
+                                <span class="truncate"><%= k.nama %></span>
+                            </label>
+                        <% }) %>
+                    <% } %>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Foto Lampiran (Opsional)</label>
+                <div class="flex items-center justify-center w-full">
+                    <label for="taskImageInput" class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
+                        <div class="flex flex-col items-center justify-center pt-2 pb-2 text-center">
+                            <svg class="w-6 h-6 mb-1 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <p class="text-xs text-muted font-semibold">Klik untuk unggah gambar</p>
+                        </div>
+                        <input id="taskImageInput" type="file" accept="image/*" class="hidden" />
+                    </label>
+                </div>
+                <img id="taskImagePreview" class="hidden w-full rounded-xl mt-3 aspect-video border border-border object-cover max-h-40" alt="Pratinjau Foto">
+                <input type="hidden" name="foto" id="taskFotoInput">
+            </div>
+            <div class="mt-6 pt-4 border-t border-border flex justify-end gap-3">
+                <button type="button" onclick="closeAddModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
+                <button type="submit" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto">
+    <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300 my-auto" id="editModalContent">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="font-display text-xl font-bold text-fg">Edit Task</h3>
+            <button type="button" onclick="closeEditModal()" class="text-muted hover:text-fg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form action="/task-management/edit" method="POST" class="space-y-4">
+            <input type="hidden" name="id" id="editId">
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Tugas / Task</label>
+                <textarea name="task" id="editTask" required rows="3" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm resize-none" placeholder="Nama atau deskripsi tugas"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Tanggal Mulai</label>
+                    <input type="date" name="tanggal" id="editTanggal" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-fg mb-2">Deadline</label>
+                    <input type="date" name="deadline" id="editDeadline" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg focus:border-accent transition-colors text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Status</label>
+                <select name="status" id="editStatus" required class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                    <option value="Todo">Todo</option>
+                    <option value="On Progress">On Progress</option>
+                    <option value="Done">Done</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Assign Student Staff</label>
+                <div class="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto p-3 bg-inputBg border border-border rounded-xl hide-scrollbar">
+                    <% if (karyawanList && karyawanList.length === 0) { %>
+                        <p class="text-xs text-muted text-center py-2">Belum ada student staff. Tambah terlebih dahulu.</p>
+                    <% } else if (karyawanList) { %>
+                        <% karyawanList.forEach(k => { %>
+                            <label class="flex items-center gap-3 p-2 hover:bg-card/75 rounded-lg cursor-pointer transition-colors text-sm font-medium text-fg">
+                                <input type="checkbox" name="assignees" value="<%= k.id %>" class="edit-assignee-checkbox w-4 h-4 text-accent border-border rounded focus:ring-accent">
+                                <div class="w-8 h-8 rounded-full bg-accentLight flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">
+                                    <%= getInitials(k.nama) %>
+                                </div>
+                                <span class="truncate"><%= k.nama %></span>
+                            </label>
+                        <% }) %>
+                    <% } %>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-fg mb-2">Foto Lampiran (Opsional)</label>
+                <div class="flex items-center justify-center w-full">
+                    <label for="editTaskImageInput" class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
+                        <div class="flex flex-col items-center justify-center pt-2 pb-2 text-center">
+                            <svg class="w-6 h-6 mb-1 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <p class="text-xs text-muted font-semibold">Klik untuk unggah gambar baru</p>
+                        </div>
+                        <input id="editTaskImageInput" type="file" accept="image/*" class="hidden" />
+                    </label>
+                </div>
+                <img id="editTaskImagePreview" class="hidden w-full rounded-xl mt-3 aspect-video border border-border object-cover max-h-40" alt="Pratinjau Foto">
+                <input type="hidden" name="foto" id="editTaskFotoInput">
+            </div>
+            <div class="mt-6 pt-4 border-t border-border flex justify-end gap-3">
+                <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
+                <button type="submit" class="px-5 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accentHover transition-colors text-sm">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-card rounded-2xl p-6 max-w-md w-full shadow-xl transform scale-95 transition-transform duration-300" id="deleteModalContent">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display text-xl font-bold text-fg">Konfirmasi Hapus</h3>
+            <button type="button" onclick="closeDeleteModal()" class="text-muted hover:text-fg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <p class="text-sm text-muted mb-6 break-all">Apakah Anda yakin ingin menghapus task <span id="deleteTaskName" class="font-bold text-fg break-all"></span>?</p>
+        <form action="/task-management/delete" method="POST">
+            <input type="hidden" name="id" id="deleteId">
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeDeleteModal()" class="px-5 py-2.5 bg-inputBg text-muted font-semibold rounded-xl hover:bg-border transition-colors text-sm">Batal</button>
+                <button type="submit" class="px-5 py-2.5 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors text-sm">Ya, Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Fullscreen Photo Modal -->
+<style>
+    .animate-scaleUp {
+        animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes scaleUp {
+        from {
+            transform: scale(0.92) translateY(10px);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+<div id="photoModal" class="fixed inset-0 bg-black/85 z-[100] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300" onclick="closePhotoModal()">
+    <div class="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center animate-scaleUp" onclick="event.stopPropagation()">
+        <button type="button" onclick="closePhotoModal()" class="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors bg-white/10 p-2 rounded-full backdrop-blur-sm focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <img id="modalPhotoImg" class="max-w-full max-h-[85vh] object-contain rounded-2xl border border-white/10 shadow-2xl" src="" alt="Foto Lampiran Tugas">
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="detailModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 overflow-y-auto" onclick="closeDetailModal()">
+    <div class="bg-card rounded-2xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl transform scale-95 transition-transform duration-300 my-auto text-left" id="detailModalContent" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between pb-4 border-b border-border mb-6">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-accent/10 text-accent rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </div>
+                <h3 class="font-display text-xl sm:text-2xl font-bold text-fg flex items-center gap-2">
+                    <span>Detail Tugas / Task</span>
+                    <span id="detailTaskCode" class="font-mono text-xs sm:text-sm font-bold text-white bg-accent px-2.5 py-0.5 rounded-lg"></span>
+                </h3>
+            </div>
+            <button type="button" onclick="closeDetailModal()" class="text-muted hover:text-fg transition-colors p-1.5 hover:bg-inputBg rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Left side: Task description & Details -->
+            <div class="md:col-span-2 space-y-6">
+                <div>
+                    <h4 class="text-xs uppercase font-bold tracking-wider text-muted mb-2">Deskripsi Tugas</h4>
+                    <div class="bg-inputBg/40 border border-border/60 rounded-2xl p-4 sm:p-5 text-sm text-fg font-medium whitespace-pre-wrap break-all leading-relaxed max-h-[40vh] overflow-y-auto" id="detailTaskDescription"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-inputBg/40 border border-border/60 rounded-2xl p-4">
+                        <span class="block text-xs font-bold text-muted uppercase tracking-wider mb-1">Tanggal Mulai</span>
+                        <span class="text-sm font-semibold text-fg" id="detailStartDate"></span>
+                    </div>
+                    <div class="bg-inputBg/40 border border-border/60 rounded-2xl p-4">
+                        <span class="block text-xs font-bold text-accent uppercase tracking-wider mb-1">Deadline</span>
+                        <span class="text-sm font-bold text-accent" id="detailDeadline"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-xs uppercase font-bold tracking-wider text-muted mb-2">Status Tugas</h4>
+                    <div id="detailStatusBadge" class="inline-flex"></div>
+                </div>
+            </div>
+
+            <!-- Right side: Assignees & Attachment -->
+            <div class="space-y-6">
+                <div>
+                    <h4 class="text-xs uppercase font-bold tracking-wider text-muted mb-3">Didelegasikan Kepada</h4>
+                    <div class="bg-inputBg/40 border border-border/60 rounded-2xl p-4 space-y-3 max-h-48 overflow-y-auto" id="detailAssigneeList">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+
+                <div id="detailAttachmentSection">
+                    <h4 class="text-xs uppercase font-bold tracking-wider text-muted mb-3">Foto Lampiran</h4>
+                    <div class="relative aspect-video rounded-2xl overflow-hidden border border-border cursor-pointer group" id="detailImageWrapper">
+                        <img id="detailImagePreview" class="w-full h-full object-cover" src="" alt="Lampiran Foto Tugas">
+                        <div class="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="px-3 py-1.5 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-xl border border-white/30">Lihat Fullscreen</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Safe modal openers using encoded attributes
+    function openDetail(btn) {
+        const data = JSON.parse(decodeURIComponent(btn.getAttribute('data-task')));
+        openDetailModal(data);
+    }
+
+    function openEdit(btn) {
+        const data = JSON.parse(decodeURIComponent(btn.getAttribute('data-task')));
+        openEditModal(data);
+    }
+
+    function openDelete(btn) {
+        const data = JSON.parse(decodeURIComponent(btn.getAttribute('data-task')));
+        openDeleteModal(data);
+    }
+
+    // Helper function for initials
+    function getInitials(name) {
+        if (!name) return "";
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) {
+            return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+        }
+        return parts[0].substring(0, 2).toUpperCase();
+    }
+
+    // Detail Modal
+    const detailModal = document.getElementById('detailModal');
+    const detailModalContent = document.getElementById('detailModalContent');
+    function openDetailModal(data) {
+        document.getElementById('detailTaskCode').textContent = data.code || '-';
+        document.getElementById('detailTaskDescription').textContent = data.task;
+        document.getElementById('detailStartDate').textContent = data.tanggal;
+        document.getElementById('detailDeadline').textContent = data.deadline;
+        
+        const statusContainer = document.getElementById('detailStatusBadge');
+        statusContainer.innerHTML = '';
+        if (data.status === 'Todo') {
+            statusContainer.innerHTML = `<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Todo</span>`;
+        } else if (data.status === 'On Progress') {
+            statusContainer.innerHTML = `<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">On Progress</span>`;
+        } else if (data.status === 'Done') {
+            statusContainer.innerHTML = `<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Done</span>`;
+        }
+
+        const assigneeContainer = document.getElementById('detailAssigneeList');
+        assigneeContainer.innerHTML = '';
+        if (data.assignees) {
+            const names = data.assignees.split(', ');
+            names.forEach(name => {
+                const initials = getInitials(name);
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-3 p-1.5 hover:bg-card/40 rounded-xl transition-colors';
+                item.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-accentLight flex items-center justify-center text-[10px] font-bold text-accent flex-shrink-0">
+                        ${initials}
+                    </div>
+                    <span class="text-sm font-semibold text-fg truncate">${name}</span>
+                `;
+                assigneeContainer.appendChild(item);
+            });
+        } else {
+            assigneeContainer.innerHTML = `<p class="text-xs text-muted py-2 text-center">Belum di-assign</p>`;
+        }
+
+        const attachmentSection = document.getElementById('detailAttachmentSection');
+        const imagePreview = document.getElementById('detailImagePreview');
+        const imageWrapper = document.getElementById('detailImageWrapper');
+        if (data.foto) {
+            attachmentSection.classList.remove('hidden');
+            imagePreview.src = data.foto;
+            imageWrapper.onclick = function() {
+                showTaskPhoto(data.foto, data.task);
+            };
+        } else {
+            attachmentSection.classList.add('hidden');
+            imagePreview.src = '';
+            imageWrapper.onclick = null;
+        }
+
+        detailModal.classList.remove('hidden');
+        setTimeout(() => {
+            detailModal.classList.remove('opacity-0');
+            detailModalContent.classList.remove('scale-95');
+        }, 10);
+    }
+
+    function closeDetailModal() {
+        detailModal.classList.add('opacity-0');
+        detailModalContent.classList.add('scale-95');
+        setTimeout(() => detailModal.classList.add('hidden'), 300);
+    }
+    // Add Modal
+    const addModal = document.getElementById('addModal');
+    const addModalContent = document.getElementById('addModalContent');
+    function openAddModal() {
+        addModal.classList.remove('hidden');
+        setTimeout(() => {
+            addModal.classList.remove('opacity-0');
+            addModalContent.classList.remove('scale-95');
+        }, 10);
+    }
+    function closeAddModal() {
+        addModal.classList.add('opacity-0');
+        addModalContent.classList.add('scale-95');
+        setTimeout(() => addModal.classList.add('hidden'), 300);
+    }
+
+    // Edit Modal
+    const editModal = document.getElementById('editModal');
+    const editModalContent = document.getElementById('editModalContent');
+    function openEditModal(data) {
+        document.getElementById('editId').value = data.id;
+        document.getElementById('editTask').value = data.task;
+        document.getElementById('editTanggal').value = data.tanggal;
+        document.getElementById('editDeadline').value = data.deadline;
+        document.getElementById('editStatus').value = data.status;
+        
+        // Clear checkboxes
+        const checkboxes = document.querySelectorAll('.edit-assignee-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+
+        // Check assigned staff
+        if (data.assigneeIds && Array.isArray(data.assigneeIds)) {
+            data.assigneeIds.forEach(id => {
+                const cb = document.querySelector(`.edit-assignee-checkbox[value="${id}"]`);
+                if (cb) cb.checked = true;
+            });
+        }
+
+        // Image preview edit modal
+        const preview = document.getElementById('editTaskImagePreview');
+        const fotoInput = document.getElementById('editTaskFotoInput');
+        const fileInput = document.getElementById('editTaskImageInput');
+        fileInput.value = '';
+        if (data.foto) {
+            preview.src = data.foto;
+            preview.classList.remove('hidden');
+            fotoInput.value = data.foto;
+        } else {
+            preview.src = '';
+            preview.classList.add('hidden');
+            fotoInput.value = '';
+        }
+
+        editModal.classList.remove('hidden');
+        setTimeout(() => {
+            editModal.classList.remove('opacity-0');
+            editModalContent.classList.remove('scale-95');
+        }, 10);
+    }
+    function closeEditModal() {
+        editModal.classList.add('opacity-0');
+        editModalContent.classList.add('scale-95');
+        setTimeout(() => editModal.classList.add('hidden'), 300);
+    }
+
+    // Delete Modal
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteModalContent = document.getElementById('deleteModalContent');
+    function openDeleteModal(data) {
+        document.getElementById('deleteId').value = data.id;
+        document.getElementById('deleteTaskName').textContent = data.task;
+        
+        deleteModal.classList.remove('hidden');
+        setTimeout(() => {
+            deleteModal.classList.remove('opacity-0');
+            deleteModalContent.classList.remove('scale-95');
+        }, 10);
+    }
+    function closeDeleteModal() {
+        deleteModal.classList.add('opacity-0');
+        deleteModalContent.classList.add('scale-95');
+        setTimeout(() => deleteModal.classList.add('hidden'), 300);
+    }
+
+    // FileReader and Compression handlers
+    function compressImage(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1200;
+                const MAX_HEIGHT = 1200;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Compress as JPEG with 0.7 quality
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                callback(compressedBase64);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function setupImageUpload(inputEl, hiddenInputEl, previewEl) {
+        inputEl.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                compressImage(file, function(compressedBase64) {
+                    hiddenInputEl.value = compressedBase64;
+                    previewEl.src = compressedBase64;
+                    previewEl.classList.remove('hidden');
+                });
+            }
+        });
+    }
+
+    setupImageUpload(
+        document.getElementById('taskImageInput'),
+        document.getElementById('taskFotoInput'),
+        document.getElementById('taskImagePreview')
+    );
+
+    setupImageUpload(
+        document.getElementById('editTaskImageInput'),
+        document.getElementById('editTaskFotoInput'),
+        document.getElementById('editTaskImagePreview')
+    );
+
+    // Fullscreen photo modal
+    function showTaskPhoto(fotoUrl) {
+        if (!fotoUrl) return;
+        const photoModal = document.getElementById('photoModal');
+        const modalPhotoImg = document.getElementById('modalPhotoImg');
+        
+        modalPhotoImg.src = fotoUrl;
+
+        photoModal.classList.remove('hidden');
+        setTimeout(() => {
+            photoModal.classList.remove('opacity-0');
+        }, 10);
+    }
+
+    function closePhotoModal() {
+        const photoModal = document.getElementById('photoModal');
+        const modalPhotoImg = document.getElementById('modalPhotoImg');
+        
+        photoModal.classList.add('opacity-0');
+        setTimeout(() => {
+            photoModal.classList.add('hidden');
+            modalPhotoImg.src = '';
+        }, 300);
+    }
+
+    // Client-side Pagination and Filtering Logic
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let filteredRows = [];
+    let filteredCards = [];
+
+    function applyFilters() {
+        const searchValue = document.getElementById('searchFilter').value.toLowerCase().trim();
+        const statusValue = document.getElementById('statusFilter').value;
+        const dateValue = document.getElementById('dateFilter').value;
+
+        // Handle date clear button visibility
+        const clearBtn = document.getElementById('clearDateBtn');
+        if (dateValue) {
+            clearBtn.classList.remove('hidden');
+        } else {
+            clearBtn.classList.add('hidden');
+        }
+
+        const rows = Array.from(document.querySelectorAll('.task-row'));
+        const cards = Array.from(document.querySelectorAll('.task-card'));
+
+        // Filter rows
+        filteredRows = rows.filter(row => {
+            const task = row.getAttribute('data-task').toLowerCase();
+            const code = (row.getAttribute('data-code') || '').toLowerCase();
+            const assignees = row.getAttribute('data-assignees').toLowerCase();
+            const status = row.getAttribute('data-status');
+            const date = row.getAttribute('data-date'); // YYYY-MM-DD
+
+            const matchesSearch = !searchValue || task.includes(searchValue) || code.includes(searchValue) || assignees.includes(searchValue);
+            const matchesStatus = !statusValue || status === statusValue;
+            const matchesDate = !dateValue || date === dateValue;
+
+            return matchesSearch && matchesStatus && matchesDate;
+        });
+
+        // Filter cards
+        filteredCards = cards.filter(card => {
+            const task = card.getAttribute('data-task').toLowerCase();
+            const code = (card.getAttribute('data-code') || '').toLowerCase();
+            const assignees = card.getAttribute('data-assignees').toLowerCase();
+            const status = card.getAttribute('data-status');
+            const date = card.getAttribute('data-date');
+
+            const matchesSearch = !searchValue || task.includes(searchValue) || code.includes(searchValue) || assignees.includes(searchValue);
+            const matchesStatus = !statusValue || status === statusValue;
+            const matchesDate = !dateValue || date === dateValue;
+
+            return matchesSearch && matchesStatus && matchesDate;
+        });
+
+        // Reset page
+        currentPage = 1;
+        showPage();
+    }
+
+    function showPage() {
+        const totalItems = filteredRows.length;
+        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+        // Ensure currentPage is within range
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+
+        // Hide all rows/cards first
+        document.querySelectorAll('.task-row').forEach(row => row.classList.add('hidden'));
+        document.querySelectorAll('.task-card').forEach(card => card.classList.add('hidden'));
+
+        // Show paginated rows/cards and dynamic numbering
+        let count = startIndex + 1;
+        for (let i = startIndex; i < endIndex; i++) {
+            if (filteredRows[i]) {
+                filteredRows[i].classList.remove('hidden');
+                const indexCell = filteredRows[i].querySelector('.task-index');
+                if (indexCell) indexCell.textContent = count++;
+            }
+            if (filteredCards[i]) {
+                filteredCards[i].classList.remove('hidden');
+            }
+        }
+
+        // Update total info text
+        document.getElementById('pageStart').textContent = totalItems === 0 ? 0 : startIndex + 1;
+        document.getElementById('pageEnd').textContent = endIndex;
+        document.getElementById('totalCount').textContent = totalItems;
+
+        // Handle empty state
+        const desktopEmpty = document.getElementById('desktopEmptyState');
+        const mobileEmpty = document.getElementById('mobileEmptyState');
+        const paginationContainer = document.getElementById('paginationContainer');
+        
+        if (totalItems === 0) {
+            if (desktopEmpty) desktopEmpty.classList.remove('hidden');
+            if (mobileEmpty) mobileEmpty.classList.remove('hidden');
+            if (paginationContainer) paginationContainer.classList.add('hidden');
+        } else {
+            if (desktopEmpty) desktopEmpty.classList.add('hidden');
+            if (mobileEmpty) mobileEmpty.classList.add('hidden');
+            if (paginationContainer) paginationContainer.classList.remove('hidden');
+        }
+
+        // Render page numbers
+        renderPageNumbers(totalPages);
+    }
+
+    function renderPageNumbers(totalPages) {
+        const container = document.getElementById('pageNumbersContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // Prev Button
+        const prevBtn = document.createElement('button');
+        prevBtn.type = 'button';
+        prevBtn.className = `relative inline-flex items-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${currentPage === 1 ? 'text-muted cursor-not-allowed' : 'text-fg hover:bg-border'}`;
+        prevBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>`;
+        prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; showPage(); } };
+        container.appendChild(prevBtn);
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.type = 'button';
+            pageBtn.className = `relative inline-flex items-center rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${currentPage === i ? 'bg-accent text-white' : 'text-fg hover:bg-border'}`;
+            pageBtn.textContent = i;
+            pageBtn.onclick = () => { currentPage = i; showPage(); };
+            container.appendChild(pageBtn);
+        }
+
+        // Next Button
+        const nextBtn = document.createElement('button');
+        nextBtn.type = 'button';
+        nextBtn.className = `relative inline-flex items-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${currentPage === totalPages ? 'text-muted cursor-not-allowed' : 'text-fg hover:bg-border'}`;
+        nextBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>`;
+        nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; showPage(); } };
+        container.appendChild(nextBtn);
+
+        // Mobile Buttons
+        const prevMobile = document.getElementById('prevMobileBtn');
+        const nextMobile = document.getElementById('nextMobileBtn');
+        if (prevMobile && nextMobile) {
+            prevMobile.disabled = currentPage === 1;
+            nextMobile.disabled = currentPage === totalPages;
+            prevMobile.className = `relative inline-flex items-center rounded-xl border border-border bg-inputBg px-4 py-2 text-sm font-medium transition-colors ${currentPage === 1 ? 'text-muted cursor-not-allowed' : 'text-fg hover:bg-border'}`;
+            nextMobile.className = `relative ml-3 inline-flex items-center rounded-xl border border-border bg-inputBg px-4 py-2 text-sm font-medium transition-colors ${currentPage === totalPages ? 'text-muted cursor-not-allowed' : 'text-fg hover:bg-border'}`;
+            prevMobile.onclick = () => { if (currentPage > 1) { currentPage--; showPage(); } };
+            nextMobile.onclick = () => { if (currentPage < totalPages) { currentPage++; showPage(); } };
+        }
+    }
+
+    function clearDateFilter() {
+        document.getElementById('dateFilter').value = '';
+        applyFilters();
+    }
+
+    // Initialize pagination and filtering on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        applyFilters();
+    });
+</script>
+<%- include('partials/footer') %>

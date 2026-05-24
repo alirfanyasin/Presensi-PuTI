@@ -1,6 +1,6 @@
 <!-- Navigation -->
 <nav class="bg-card border-b border-border sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
         <div
             class="flex flex-col sm:flex-row sm:items-center sm:justify-between h-auto sm:h-16 py-3 sm:py-0 gap-3 sm:gap-4">
 
@@ -18,7 +18,7 @@
 
             <!-- Nav Links (Bottom row on mobile, centered/right on desktop) -->
             <div
-                class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0 hide-scrollbar justify-start">
+                class="flex items-center gap-1.5 overflow-x-auto w-full sm:flex-1 sm:min-w-0 -mx-4 px-4 sm:mx-6 pb-2 hide-scrollbar justify-start">
                 <a href="/"
                     class="nav-item <%= path === '/' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
                     Presensi
@@ -38,6 +38,10 @@
                 <a href="/student-staff"
                     class="nav-item <%= path === '/student-staff' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
                     Student Staff
+                </a>
+                <a href="/task-management"
+                    class="nav-item <%= path === '/task-management' ? 'active text-fg' : 'text-muted' %> px-4 py-2 text-sm font-medium rounded-xl hover:bg-inputBg transition-all btn-press whitespace-nowrap">
+                    Task Management
                 </a>
             </div>
 

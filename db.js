@@ -47,6 +47,35 @@ class MySQLWrapper {
       // 3. Initialize tables sequentially
       await this.createTables();
 
+      // Migration: Add foto column to tasks if it doesn't exist
+      await new Promise((resolve) => {
+        this.pool.query("SHOW COLUMNS FROM tasks LIKE 'foto'", (err, rows) => {
+          if (!err && rows && rows.length === 0) {
+            this.pool.query("ALTER TABLE tasks ADD COLUMN foto LONGTEXT", () => resolve());
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      // Migration: Add code column to tasks if it doesn't exist
+      await new Promise((resolve) => {
+        this.pool.query("SHOW COLUMNS FROM tasks LIKE 'code'", (err, rows) => {
+          if (!err && rows && rows.length === 0) {
+            this.pool.query("ALTER TABLE tasks ADD COLUMN code VARCHAR(50) UNIQUE DEFAULT NULL", (errAlt) => {
+              if (errAlt) {
+                console.error("Failed to add code column to tasks:", errAlt.message);
+                resolve();
+              } else {
+                this.pool.query("UPDATE tasks SET code = CONCAT('#', LPAD(id, 4, '0')) WHERE code IS NULL", () => resolve());
+              }
+            });
+          } else {
+            resolve();
+          }
+        });
+      });
+
       this.initialized = true;
       console.log('Connected to MySQL database and tables verified.');
       this._next();
@@ -106,6 +135,24 @@ class MySQLWrapper {
           FOREIGN KEY (karyawanId) REFERENCES karyawan (id) ON DELETE CASCADE,
           FOREIGN KEY (overtimeId) REFERENCES overtime (id) ON DELETE CASCADE,
           FOREIGN KEY (presensiId) REFERENCES presensi (id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+      `CREATE TABLE IF NOT EXISTS tasks (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          code VARCHAR(50) UNIQUE DEFAULT NULL,
+          task TEXT NOT NULL,
+          tanggal VARCHAR(50) NOT NULL,
+          deadline VARCHAR(50) NOT NULL,
+          status VARCHAR(50) NOT NULL DEFAULT 'Todo',
+          foto LONGTEXT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+      `CREATE TABLE IF NOT EXISTS task_karyawan (
+          taskId INT NOT NULL,
+          karyawanId INT NOT NULL,
+          PRIMARY KEY (taskId, karyawanId),
+          FOREIGN KEY (taskId) REFERENCES tasks (id) ON DELETE CASCADE,
+          FOREIGN KEY (karyawanId) REFERENCES karyawan (id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
     ];
 

@@ -1,6 +1,6 @@
 <!-- Footer -->
 <footer class="bg-card border-t border-border mt-auto  transition-all duration-300">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
 
         <!-- Left side: App Info & Copyright -->
         <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-sm text-muted text-center md:text-left">
@@ -25,6 +25,155 @@
         </div>
     </div>
 </footer>
+
+<script>
+    function playVoiceNotification(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+
+            const voices = window.speechSynthesis.getVoices();
+            const idVoice = voices.find(v => v.lang.startsWith('id'));
+            if (idVoice) utterance.voice = idVoice;
+
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    const globalPlayedEvents = new Set();
+
+    function playGlobalVoiceWithDedup(eventKey, message) {
+        if (globalPlayedEvents.has(eventKey)) {
+            console.log("Duplicate event blocked:", eventKey);
+            return;
+        }
+        globalPlayedEvents.add(eventKey);
+        setTimeout(() => globalPlayedEvents.delete(eventKey), 15000);
+
+        let played = false;
+        const playSafe = () => {
+            if (played) return;
+            played = true;
+            console.log("Playing global speech:", message);
+            playVoiceNotification(message);
+        };
+
+        if ('speechSynthesis' in window) {
+            if (window.speechSynthesis.getVoices().length === 0) {
+                window.speechSynthesis.addEventListener('voiceschanged', playSafe, { once: true });
+                setTimeout(playSafe, 300);
+                window.speechSynthesis.getVoices();
+            } else {
+                playSafe();
+            }
+        }
+    }
+
+    function getFormattedNames(assigneesStr) {
+        if (!assigneesStr) return "";
+        const names = assigneesStr.split(', ');
+        if (names.length === 1) return names[0];
+        if (names.length === 2) return `${names[0]} dan ${names[1]}`;
+        const last = names.pop();
+        return `${names.join(', ')}, dan ${last}`;
+    }
+
+    function formatTaskMessage(action, assignees, code, status) {
+        const namesText = getFormattedNames(assignees);
+        const assigneeList = assignees ? assignees.split(', ').filter(Boolean) : [];
+        const pronoun = assigneeList.length === 1 ? 'kamu' : 'kalian';
+        const spokenCode = code ? ` dengan kode ${code.replace('#', '')}` : '';
+        if (action === 'added') {
+            return `${namesText} ada task baru${spokenCode} untuk ${pronoun}`;
+        } else if (action === 'edited' && status === 'Done') {
+            return `Tugas dengan kode ${code.replace('#', '')} oleh ${namesText} sudah selesai`;
+        }
+        return '';
+    }
+
+    // Auto-unlock voice synthesis context on first user interaction
+    const unlockVoice = () => {
+        if ('speechSynthesis' in window) {
+            const u = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(u);
+        }
+        document.removeEventListener('click', unlockVoice);
+        document.removeEventListener('keydown', unlockVoice);
+    };
+    document.addEventListener('click', unlockVoice);
+    document.addEventListener('keydown', unlockVoice);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Handle Redirect parameters (if any page receives them)
+        const notifyAction = '<%= (typeof notifyAction !== "undefined" && notifyAction) ? notifyAction : "" %>';
+        const notifyNama = '<%= (typeof notifyNama !== "undefined" && notifyNama) ? notifyNama : "" %>';
+        const notifyJam = '<%= (typeof notifyJam !== "undefined" && notifyJam) ? notifyJam : "" %>';
+        const notifyTaskId = '<%= (typeof notifyTaskId !== "undefined" && notifyTaskId) ? notifyTaskId : "" %>';
+        const notifyStatus = '<%= (typeof notifyStatus !== "undefined" && notifyStatus) ? notifyStatus : "" %>';
+
+        if (notifyAction) {
+            if (notifyNama && notifyJam) {
+                let message = "";
+                if (notifyAction === "masuk") {
+                    message = `${notifyNama} sudah absen masuk pada jam ${notifyJam}. Semangat Bekerjaa yaa`;
+                } else if (notifyAction === "pulang") {
+                    message = `${notifyNama} sudah absen pulang pada jam ${notifyJam}. Terimakasi`;
+                }
+                if (message) {
+                    const eventKey = `presensi-${notifyAction}-${notifyNama}-${notifyJam}`;
+                    playGlobalVoiceWithDedup(eventKey, message);
+                }
+            } else if (notifyTaskId) {
+                const row = document.querySelector(`.task-row[data-id="${notifyTaskId}"]`);
+                if (row) {
+                    const assignees = row.getAttribute('data-assignees');
+                    if (assignees) {
+                        const code = row.getAttribute('data-code') || '';
+                        const message = formatTaskMessage(notifyAction, assignees, code, notifyStatus);
+                        if (message) {
+                            const eventKey = `task-${notifyAction}-${notifyTaskId}-${notifyStatus || ''}`;
+                            playGlobalVoiceWithDedup(eventKey, message);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Listen to Server-Sent Events (SSE) for cross-device real-time sync
+        const eventSource = new EventSource('/api/events');
+        eventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("Global SSE Event Received:", data);
+                
+                if (data.type === 'presensi') {
+                    let message = "";
+                    if (data.action === "masuk") {
+                        message = `${data.nama} sudah absen masuk pada jam ${data.jam}. Semangat Bekerjaa yaa`;
+                    } else if (data.action === "pulang") {
+                        message = `${data.nama} sudah absen pulang pada jam ${data.jam}. Terimakasi`;
+                    }
+                    if (message) {
+                        const eventKey = `presensi-${data.action}-${data.nama}-${data.jam}`;
+                        playGlobalVoiceWithDedup(eventKey, message);
+                    }
+                } else if (data.type === 'task') {
+                    const message = formatTaskMessage(data.action, data.assignees, data.code, data.status);
+                    if (message) {
+                        const eventKey = `task-${data.action}-${data.taskId}-${data.status || ''}`;
+                        playGlobalVoiceWithDedup(eventKey, message);
+                    }
+                }
+            } catch (err) {
+                console.error("Error parsing global SSE message:", err);
+            }
+        };
+    });
+</script>
 </body>
 
 </html>

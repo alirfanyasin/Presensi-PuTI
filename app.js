@@ -9,6 +9,21 @@ const { isHoliday } = require("./holidayHelper");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Registry of SSE clients for real-time notifications
+const sseClients = new Set();
+
+const sendSseEvent = (data) => {
+  const payload = `data: ${JSON.stringify(data)}\n\n`;
+  for (const client of sseClients) {
+    try {
+      client.write(payload);
+    } catch (err) {
+      console.error("Gagal mengirim SSE ke client:", err);
+      sseClients.delete(client);
+    }
+  }
+};
+
 // Retrieve Git versioning metadata for the footer
 const { execSync } = require("child_process");
 const pkg = require("./package.json");
@@ -237,6 +252,9 @@ app.get("/", async (req, res) => {
                 : req.query.error === "sudah_pulang"
                   ? "Anda sudah melakukan Presensi Pulang hari ini."
                   : undefined,
+            notifyAction: req.query.success || null,
+            notifyNama: req.query.nama || null,
+            notifyJam: req.query.jam || null,
           });
         },
       );
@@ -283,6 +301,29 @@ app.get("/api/check-presensi", async (req, res) => {
   }
 });
 
+// API: Server-Sent Events (SSE) stream for real-time audio announcements
+app.get("/api/events", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  sseClients.add(res);
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(":\n\n");
+    } catch (err) {
+      // client connection is already dead
+    }
+  }, 20000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+  });
+});
+
 // Route: Presensi Masuk (INSERT new record, time auto from server)
 app.post("/presensi-masuk", async (req, res) => {
   const { karyawanId, tanggal, suratTugas } = req.body;
@@ -300,17 +341,27 @@ app.post("/presensi-masuk", async (req, res) => {
   const jamMasuk = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const hari = moment(tanggal).locale("id").format("dddd");
 
-  db.run(
-    "INSERT INTO presensi (karyawanId, tanggal, jamMasuk, jamPulang, pekerjaan, createdAt, updatedAt, hari, totalJam, foto) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, NULL, NULL)",
-    [karyawanId, tanggal, jamMasuk, createdAt, createdAt, hari],
-    (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send("Error saving data");
-      }
-      res.redirect("/?success=masuk");
-    },
-  );
+  db.get("SELECT nama FROM karyawan WHERE id = ?", [karyawanId], (errK, kRow) => {
+    const nama = kRow ? kRow.nama : "";
+    db.run(
+      "INSERT INTO presensi (karyawanId, tanggal, jamMasuk, jamPulang, pekerjaan, createdAt, updatedAt, hari, totalJam, foto) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, NULL, NULL)",
+      [karyawanId, tanggal, jamMasuk, createdAt, createdAt, hari],
+      (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send("Error saving data");
+        }
+        sendSseEvent({
+          type: "presensi",
+          action: "masuk",
+          nama: nama,
+          jam: jamMasuk.substring(0, 5),
+          timestamp: Date.now()
+        });
+        res.redirect(`/?success=masuk&nama=${encodeURIComponent(nama)}&jam=${encodeURIComponent(jamMasuk.substring(0, 5))}`);
+      },
+    );
+  });
 });
 
 // Route: Presensi Pulang (UPDATE existing masuk record)
@@ -401,29 +452,42 @@ app.post("/presensi-pulang", async (req, res) => {
             return res.status(500).send("Error");
           }
 
-          if (isOvertime) {
-            const excessMins = totalMins - 480;
-            db.run(
-              "INSERT INTO overtime (karyawanId, presensiId, tanggal, durasiMenit, sisaMenit, keterangan, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'Lembur otomatis (kelebihan jam kerja harian)', ?, ?)",
-              [
-                karyawanId,
-                existing.id,
-                tanggal,
-                excessMins,
-                excessMins,
-                updatedAt,
-                updatedAt,
-              ],
-              (errOt) => {
-                if (errOt) {
-                  console.error("Gagal mencatat overtime otomatis:", errOt);
-                }
-                res.redirect("/?success=pulang");
-              },
-            );
-          } else {
-            res.redirect("/?success=pulang");
-          }
+          db.get("SELECT nama FROM karyawan WHERE id = ?", [karyawanId], (errK, kRow) => {
+            const nama = kRow ? kRow.nama : "";
+            const redirectUrl = `/?success=pulang&nama=${encodeURIComponent(nama)}&jam=${encodeURIComponent(jamPulang.substring(0, 5))}`;
+
+            sendSseEvent({
+              type: "presensi",
+              action: "pulang",
+              nama: nama,
+              jam: jamPulang.substring(0, 5),
+              timestamp: Date.now()
+            });
+
+            if (isOvertime) {
+              const excessMins = totalMins - 480;
+              db.run(
+                "INSERT INTO overtime (karyawanId, presensiId, tanggal, durasiMenit, sisaMenit, keterangan, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'Lembur otomatis (kelebihan jam kerja harian)', ?, ?)",
+                [
+                  karyawanId,
+                  existing.id,
+                  tanggal,
+                  excessMins,
+                  excessMins,
+                  updatedAt,
+                  updatedAt,
+                ],
+                (errOt) => {
+                  if (errOt) {
+                    console.error("Gagal mencatat overtime otomatis:", errOt);
+                  }
+                  res.redirect(redirectUrl);
+                },
+              );
+            } else {
+              res.redirect(redirectUrl);
+            }
+          });
         },
       );
     },
@@ -1697,6 +1761,258 @@ app.post("/student-staff/delete", (req, res) => {
       return res.redirect("/student-staff?error=delete_failed");
     }
     res.redirect("/student-staff?success=deleted");
+  });
+});
+
+// --- TASK MANAGEMENT CRUD ---
+
+app.get("/task-management", async (req, res) => {
+  try {
+    const karyawanList = await getKaryawan();
+    db.all(`
+      SELECT t.*, 
+             GROUP_CONCAT(k.nama ORDER BY k.nama ASC SEPARATOR ', ') AS assignees,
+             GROUP_CONCAT(k.id ORDER BY k.nama ASC SEPARATOR ',') AS assigneeIds
+      FROM tasks t
+      LEFT JOIN task_karyawan tk ON t.id = tk.taskId
+      LEFT JOIN karyawan k ON tk.karyawanId = k.id
+      GROUP BY t.id
+      ORDER BY CASE WHEN t.status = 'Todo' THEN 1 WHEN t.status = 'On Progress' THEN 2 WHEN t.status = 'Done' THEN 3 ELSE 4 END ASC, t.id DESC
+    `, (err, tasks) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send("Internal Server Error");
+      }
+
+      const tasksFormatted = tasks.map(task => ({
+        ...task,
+        assigneeIds: task.assigneeIds ? task.assigneeIds.split(',').map(Number) : []
+      }));
+
+      res.render("task-management", {
+        tasks: tasksFormatted,
+        karyawanList,
+        path: "/task-management",
+        success_msg:
+          req.query.success === "added"
+            ? "Task berhasil ditambahkan."
+            : req.query.success === "edited"
+              ? "Task berhasil diperbarui."
+              : req.query.success === "deleted"
+                ? "Task berhasil dihapus."
+                : null,
+        error_msg:
+          req.query.error === "add_failed"
+            ? "Gagal menambahkan Task."
+            : req.query.error === "edit_failed"
+              ? "Gagal memperbarui Task."
+              : req.query.error === "delete_failed"
+                ? "Gagal menghapus Task."
+                : null,
+        notifyAction: req.query.success || null,
+        notifyTaskId: req.query.taskId || null,
+        notifyStatus: req.query.toStatus || null
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.post("/task-management/add", (req, res) => {
+  const { task, tanggal, deadline, status, assignees, foto } = req.body;
+  if (!task || !tanggal || !deadline || !status) {
+    return res.redirect("/task-management?error=add_failed");
+  }
+
+  db.run(
+    "INSERT INTO tasks (task, tanggal, deadline, status, foto) VALUES (?, ?, ?, ?, NULL)",
+    [task, tanggal, deadline, status],
+    function (err) {
+      if (err) {
+        console.error(err);
+        return res.redirect("/task-management?error=add_failed");
+      }
+
+      const taskId = this.lastID;
+
+      db.run("UPDATE tasks SET code = CONCAT('#', LPAD(id, 4, '0')) WHERE id = ?", [taskId], (errCode) => {
+        if (errCode) console.error("Error setting task code:", errCode);
+
+        // Handle optional image
+        let fotoPath = null;
+        if (foto) {
+          try {
+            fotoPath = saveBase64Image(foto, `task_${taskId}`);
+          } catch (e) {
+            console.error("Gagal menyimpan foto task:", e);
+          }
+        }
+
+        const proceed = () => {
+          if (assignees && assignees.length > 0) {
+            const assigneeIds = Array.isArray(assignees) ? assignees : [assignees];
+            let insertCount = 0;
+            const runInsert = () => {
+              if (insertCount >= assigneeIds.length) {
+                db.all("SELECT nama FROM karyawan WHERE id IN (" + assigneeIds.map(() => "?").join(",") + ")", assigneeIds, (errK, kRows) => {
+                  const namesList = kRows ? kRows.map(r => r.nama).join(", ") : "";
+                  const code = "#" + String(taskId).padStart(4, "0");
+                  sendSseEvent({
+                    type: "task",
+                    action: "added",
+                    taskId: taskId,
+                    code: code,
+                    assignees: namesList,
+                    timestamp: Date.now()
+                  });
+                  res.redirect(`/task-management?success=added&taskId=${taskId}`);
+                });
+                return;
+              }
+              db.run(
+                "INSERT INTO task_karyawan (taskId, karyawanId) VALUES (?, ?)",
+                [taskId, assigneeIds[insertCount]],
+                (errTk) => {
+                  if (errTk) {
+                    console.error("Error inserting task_karyawan:", errTk);
+                  }
+                  insertCount++;
+                  runInsert();
+                }
+              );
+            };
+            runInsert();
+          } else {
+            sendSseEvent({
+              type: "task",
+              action: "added",
+              taskId: taskId,
+              code: "#" + String(taskId).padStart(4, "0"),
+              assignees: "",
+              timestamp: Date.now()
+            });
+            res.redirect(`/task-management?success=added&taskId=${taskId}`);
+          }
+        };
+
+        if (fotoPath) {
+          db.run("UPDATE tasks SET foto = ? WHERE id = ?", [fotoPath, taskId], (errF) => {
+            if (errF) console.error("Error updating task foto:", errF);
+            proceed();
+          });
+        } else {
+          proceed();
+        }
+      });
+    }
+  );
+});
+
+app.post("/task-management/edit", (req, res) => {
+  const { id, task, tanggal, deadline, status, assignees, foto } = req.body;
+  if (!id || !task || !tanggal || !deadline || !status) {
+    return res.redirect("/task-management?error=edit_failed");
+  }
+
+  // Handle optional image
+  let fotoPath = null;
+  if (foto) {
+    try {
+      fotoPath = saveBase64Image(foto, `task_${id}`);
+    } catch (e) {
+      console.error("Gagal menyimpan foto task:", e);
+    }
+  }
+
+  db.get("SELECT foto FROM tasks WHERE id = ?", [id], (errG, existingTask) => {
+    const finalFoto = foto ? (fotoPath || null) : (existingTask ? existingTask.foto : null);
+
+    db.run(
+      "UPDATE tasks SET task = ?, tanggal = ?, deadline = ?, status = ?, foto = ? WHERE id = ?",
+      [task, tanggal, deadline, status, finalFoto, id],
+      (err) => {
+        if (err) {
+          console.error(err);
+          return res.redirect("/task-management?error=edit_failed");
+        }
+
+        db.run("DELETE FROM task_karyawan WHERE taskId = ?", [id], (errDel) => {
+          if (errDel) {
+            console.error(errDel);
+            return res.redirect("/task-management?error=edit_failed");
+          }
+
+          if (assignees && assignees.length > 0) {
+            const assigneeIds = Array.isArray(assignees) ? assignees : [assignees];
+            let insertCount = 0;
+            const runInsert = () => {
+              if (insertCount >= assigneeIds.length) {
+                db.get("SELECT code FROM tasks WHERE id = ?", [id], (errT, tRow) => {
+                  const code = tRow ? tRow.code : ("#" + String(id).padStart(4, "0"));
+                  db.all("SELECT nama FROM karyawan WHERE id IN (" + assigneeIds.map(() => "?").join(",") + ")", assigneeIds, (errK, kRows) => {
+                    const namesList = kRows ? kRows.map(r => r.nama).join(", ") : "";
+                    
+                    sendSseEvent({
+                      type: "task",
+                      action: "edited",
+                      status: status,
+                      taskId: id,
+                      code: code,
+                      assignees: namesList,
+                      timestamp: Date.now()
+                    });
+
+                    res.redirect(`/task-management?success=edited&taskId=${id}&toStatus=${status}`);
+                  });
+                });
+                return;
+              }
+              db.run(
+                "INSERT INTO task_karyawan (taskId, karyawanId) VALUES (?, ?)",
+                [id, assigneeIds[insertCount]],
+                (errTk) => {
+                  if (errTk) {
+                    console.error("Error inserting task_karyawan:", errTk);
+                  }
+                  insertCount++;
+                  runInsert();
+                }
+              );
+            };
+            runInsert();
+          } else {
+            db.get("SELECT code FROM tasks WHERE id = ?", [id], (errT, tRow) => {
+              const code = tRow ? tRow.code : ("#" + String(id).padStart(4, "0"));
+              sendSseEvent({
+                type: "task",
+                action: "edited",
+                status: status,
+                taskId: id,
+                code: code,
+                assignees: "",
+                timestamp: Date.now()
+              });
+              res.redirect(`/task-management?success=edited&taskId=${id}&toStatus=${status}`);
+            });
+          }
+        });
+      }
+    );
+  });
+});
+
+app.post("/task-management/delete", (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.redirect("/task-management?error=delete_failed");
+
+  db.run("DELETE FROM tasks WHERE id = ?", [id], (err) => {
+    if (err) {
+      console.error(err);
+      return res.redirect("/task-management?error=delete_failed");
+    }
+    res.redirect("/task-management?success=deleted");
   });
 });
 
