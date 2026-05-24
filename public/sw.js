@@ -33,6 +33,12 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
 
+  // 0. BYPASS SERVER-SENT EVENTS (SSE)
+  // Penting agar notifikasi suara real-time tidak tertahan oleh Service Worker
+  if (request.headers.get('accept') && request.headers.get('accept').includes('text/event-stream')) {
+    return; // Biarkan browser menangani SSE secara native
+  }
+
   // 1. STATIC ASSETS (Cache First)
   if (STATIC_ASSETS.includes(url.pathname)) {
     event.respondWith(
