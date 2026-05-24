@@ -146,6 +146,23 @@ class MySQLWrapper {
         });
       });
 
+      // Migration: Add Indexes for query optimization
+      const addIndexIfNotExist = (tableName, indexName, colName) => {
+        return new Promise((resolve) => {
+          this.pool.query(`CREATE INDEX ${indexName} ON ${tableName} (${colName})`, (err) => {
+            // Ignore error if index already exists
+            resolve();
+          });
+        });
+      };
+
+      await addIndexIfNotExist('presensi', 'idx_presensi_tanggal', 'tanggal');
+      await addIndexIfNotExist('presensi', 'idx_presensi_karyawan', 'karyawanId');
+      await addIndexIfNotExist('tasks', 'idx_tasks_status', 'status');
+      await addIndexIfNotExist('tasks', 'idx_tasks_workspace', 'workspace');
+      await addIndexIfNotExist('overtime', 'idx_overtime_tanggal', 'tanggal');
+      await addIndexIfNotExist('overtime', 'idx_overtime_karyawan', 'karyawanId');
+
       this.initialized = true;
       console.log('Connected to MySQL database and tables verified.');
       this._next();
@@ -257,43 +274,39 @@ class MySQLWrapper {
   }
 
   _exec(fn, sql, params, callback) {
-    const task = () => {
-      this.running = true;
+    const execute = () => {
       this.pool.query(sql, params, (err, results) => {
-        try {
-          if (fn === 'run') {
-            if (callback) {
-              const ctx = {
-                lastID: results ? results.insertId : null,
-                changes: results ? results.affectedRows : 0
-              };
-              callback.call(ctx, err);
-            }
-          } else if (fn === 'get') {
-            if (callback) {
-              callback(err, results && results.length > 0 ? results[0] : undefined);
-            }
-          } else if (fn === 'all') {
-            if (callback) {
-              callback(err, results);
-            }
+        if (fn === 'run') {
+          if (callback) {
+            const ctx = {
+              lastID: results ? results.insertId : null,
+              changes: results ? results.affectedRows : 0
+            };
+            callback.call(ctx, err);
           }
-        } finally {
-          this.running = false;
-          this._next();
+        } else if (fn === 'get') {
+          if (callback) {
+            callback(err, results && results.length > 0 ? results[0] : undefined);
+          }
+        } else if (fn === 'all') {
+          if (callback) {
+            callback(err, results);
+          }
         }
       });
     };
 
-    this.queue.push(task);
-    if (this.initialized && !this.running) {
-      this._next();
+    if (!this.initialized) {
+      this.queue.push(execute);
+    } else {
+      execute(); // Execute concurrently using the MySQL connection pool
     }
   }
 
   _next() {
     if (!this.initialized) return;
-    if (this.queue.length > 0 && !this.running) {
+    // Drain startup queue concurrently
+    while (this.queue.length > 0) {
       const task = this.queue.shift();
       task();
     }
@@ -344,16 +357,13 @@ class MySQLWrapper {
   }
 
   close(callback) {
-    const checkAndClose = () => {
-      if (this.queue.length > 0 || this.running || !this.initialized) {
-        setTimeout(checkAndClose, 50);
-      } else {
-        this.pool.end((err) => {
-          if (callback) callback(err);
-        });
-      }
-    };
-    checkAndClose();
+    if (!this.initialized) {
+      setTimeout(() => this.close(callback), 50);
+      return;
+    }
+    this.pool.end((err) => {
+      if (callback) callback(err);
+    });
   }
 }
 

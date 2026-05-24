@@ -5,6 +5,7 @@ const fs = require("fs");
 const db = require("./db");
 const moment = require("moment");
 const { isHoliday } = require("./holidayHelper");
+const compression = require("compression");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +57,16 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 app.use(bodyParser.json({ limit: "50mb" }));
+
+// Hindari meng-kompres route SSE agar notifikasi suara (real-time) tidak tertahan di buffer
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['accept'] === 'text/event-stream') {
+      return false; // Jangan kompres SSE
+    }
+    return compression.filter(req, res); // Default filter untuk yang lain
+  }
+}));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
