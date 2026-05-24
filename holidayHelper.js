@@ -7,36 +7,47 @@ if (!fs.existsSync(cacheDir)) {
   fs.mkdirSync(cacheDir, { recursive: true });
 }
 
+// In-memory cache to prevent slow disk reads on every route navigation
+const memoryCache = {};
+
 function fetchHolidaysFromAPI(year) {
   return new Promise((resolve, reject) => {
     const url = `https://libur.deno.dev/api?year=${year}`;
-    https.get(url, (res) => {
-      let data = "";
-      res.on("data", (chunk) => {
-        data += chunk;
+    https
+      .get(url, (res) => {
+        let data = "";
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+        res.on("end", () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      })
+      .on("error", (err) => {
+        reject(err);
       });
-      res.on("end", () => {
-        try {
-          const json = JSON.parse(data);
-          resolve(json);
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on("error", (err) => {
-      reject(err);
-    });
   });
 }
 
 async function loadHolidays(year) {
+  if (memoryCache[year]) {
+    return memoryCache[year];
+  }
+
   const cachePath = path.join(cacheDir, `holidays_${year}.json`);
-  
+
   // Check if cache exists
   if (fs.existsSync(cachePath)) {
     try {
       const data = fs.readFileSync(cachePath, "utf8");
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      memoryCache[year] = parsed;
+      return parsed;
     } catch (e) {
       console.error("Failed to read holiday cache:", e);
     }
@@ -47,10 +58,14 @@ async function loadHolidays(year) {
     const holidays = await fetchHolidaysFromAPI(year);
     if (Array.isArray(holidays)) {
       fs.writeFileSync(cachePath, JSON.stringify(holidays, null, 2), "utf8");
+      memoryCache[year] = holidays;
       return holidays;
     }
   } catch (e) {
-    console.warn(`Failed to fetch holidays for year ${year} from API. Using empty list. Error:`, e.message);
+    console.warn(
+      `Failed to fetch holidays for year ${year} from API. Using empty list. Error:`,
+      e.message,
+    );
   }
 
   return [];
@@ -58,7 +73,7 @@ async function loadHolidays(year) {
 
 async function isHoliday(dateStr) {
   if (!dateStr) return false;
-  
+
   // 1. Check weekend (Saturday or Sunday)
   const d = new Date(dateStr);
   const day = d.getDay(); // 0 = Sunday, 6 = Saturday
@@ -70,7 +85,7 @@ async function isHoliday(dateStr) {
   const year = dateStr.substring(0, 4);
   const holidays = await loadHolidays(year);
   if (Array.isArray(holidays)) {
-    const found = holidays.find(h => h.date === dateStr);
+    const found = holidays.find((h) => h.date === dateStr);
     if (found) {
       return { isHoliday: true, name: found.name };
     }
@@ -81,5 +96,5 @@ async function isHoliday(dateStr) {
 
 module.exports = {
   isHoliday,
-  loadHolidays
+  loadHolidays,
 };
