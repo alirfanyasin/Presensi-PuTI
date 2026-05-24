@@ -1,47 +1,80 @@
-const CACHE_NAME = 'puti-pwa-cache-v1';
-const urlsToCache = [
-  '/',
-  '/task-management',
+const CACHE_NAME = 'puti-pwa-cache-v2';
+const STATIC_ASSETS = [
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/main-logo.png',
   '/logo_typography.png'
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-  );
-});
-
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      })
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(STATIC_ASSETS);
+    })
   );
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
         })
       );
     })
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  // 1. STATIC ASSETS (Cache First)
+  if (STATIC_ASSETS.includes(url.pathname)) {
+    event.respondWith(
+      caches.match(request).then(response => response || fetch(request))
+    );
+    return;
+  }
+
+  // 2. CDN & External Resources (Stale-While-Revalidate)
+  // Misalnya: Tailwind CSS, Google Fonts
+  if (url.origin !== location.origin) {
+    event.respondWith(
+      caches.match(request).then(cachedResponse => {
+        const fetchPromise = fetch(request).then(networkResponse => {
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(request, networkResponse.clone());
+          });
+          return networkResponse;
+        });
+        return cachedResponse || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // 3. HTML & Dynamic Content (Network First)
+  // Mencegah user melihat data absensi yang lama/stale
+  if (request.mode === 'navigate' || request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, responseClone));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Default: Network First
+  event.respondWith(
+    fetch(request).catch(() => caches.match(request))
   );
 });
