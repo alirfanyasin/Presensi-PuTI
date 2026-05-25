@@ -78,12 +78,23 @@
                                         </select>
                                     </div>
 
-                                    <!-- Toggle Button -->
-                                    <div class="flex justify-center mt-2.5">
-                                        <button type="button" id="toggleManualBtn" class="text-xs font-semibold text-accent hover:text-accentHover underline transition-colors">
-                                            Pilih Nama Secara Manual
-                                        </button>
-                                    </div>
+                                     <!-- Scan Failed Controls (shown only when scanning fails) -->
+                                     <div id="faceScanFailedControls" class="hidden flex justify-center items-center gap-3 mt-3 animate-fadeInUp">
+                                         <button type="button" id="retryFaceScanBtn" class="px-4 py-2.5 bg-accent text-white text-xs font-semibold rounded-xl hover:bg-accentHover transition-colors flex items-center gap-1.5 shadow btn-press">
+                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/></svg>
+                                             Buka Kamera
+                                         </button>
+                                         <button type="button" id="failedManualBtn" class="px-4 py-2.5 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border flex items-center gap-1.5 btn-press">
+                                             Pilih Nama Secara Manual
+                                         </button>
+                                     </div>
+
+                                     <!-- Toggle Button -->
+                                     <div class="flex justify-center mt-2.5" id="toggleManualContainer">
+                                         <button type="button" id="toggleManualBtn" class="text-xs font-semibold text-accent hover:text-accentHover underline transition-colors">
+                                             Pilih Nama Secara Manual
+                                         </button>
+                                     </div>
                                 </div>
 
                                 <!-- Tanggal Field -->
@@ -243,8 +254,8 @@
 
                                 <!-- Submit Button -->
                                 <div class="flex flex-col sm:flex-row gap-3 pt-2">
-                                    <button type="submit" id="submitBtn"
-                                        class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-all btn-press focus:ring-2 focus:ring-accent focus:ring-offset-2">
+                                    <button type="submit" id="submitBtn" disabled
+                                        class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl hover:bg-accentHover transition-all btn-press focus:ring-2 focus:ring-accent focus:ring-offset-2">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M5 13l4 4L19 7" />
@@ -403,6 +414,10 @@
     // Toggle manual selection
     const manualSelectBlock = document.getElementById('manualSelectBlock');
     const toggleManualBtn = document.getElementById('toggleManualBtn');
+    const toggleManualContainer = document.getElementById('toggleManualContainer');
+    const faceScanFailedControls = document.getElementById('faceScanFailedControls');
+    const retryFaceScanBtn = document.getElementById('retryFaceScanBtn');
+    const failedManualBtn = document.getElementById('failedManualBtn');
     
     // Selfie controls
     const captureSelfieBtn = document.getElementById('captureSelfieBtn');
@@ -429,6 +444,7 @@
     let isModelsLoaded = false;
     let isManualMode = false;
     let recognizedUser = null;
+    let unrecognizedFramesCount = 0;
 
     // Check secure context for camera
     const isSecure = window.isSecureContext || (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -581,7 +597,7 @@
         statusBadge.classList.add('hidden');
         statusInfo.classList.add('hidden');
         stopSelfieCamera();
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Simpan Presensi'; }
     }
 
     async function checkStatus() {
@@ -723,7 +739,7 @@
                 return new faceapi.LabeledFaceDescriptors(String(f.id), [descriptor]);
             });
             
-            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55); // distance threshold (0.55 is safe)
+            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.45); // distance threshold (0.45 is safe/strict)
         } catch (e) {
             console.error('Gagal mengambil data wajah terdaftar:', e);
         }
@@ -856,6 +872,7 @@
                 if (faceMatcher) {
                     const match = faceMatcher.findBestMatch(detection.descriptor);
                     if (match.label !== 'unknown') {
+                        unrecognizedFramesCount = 0;
                         const matchedId = parseInt(match.label, 10);
                         const user = registeredFaces.find(f => f.id === matchedId);
                         if (user) {
@@ -864,13 +881,24 @@
                             verifyUser(user);
                         }
                     } else {
-                        faceScanStatus.innerHTML = '<span class="text-accent">Wajah tidak dikenali. Silakan coba lagi.</span>';
+                        unrecognizedFramesCount++;
+                        faceScanStatus.innerHTML = `<span class="text-accent">Wajah tidak dikenali (${unrecognizedFramesCount}/6). Silakan coba lagi.</span>`;
+                        if (unrecognizedFramesCount >= 6) {
+                            unrecognizedFramesCount = 0;
+                            stopCamera();
+                            document.getElementById('faceScanContainer').classList.add('hidden');
+                            faceScanStatus.classList.add('hidden');
+                            if (toggleManualContainer) toggleManualContainer.classList.add('hidden');
+                            if (faceScanFailedControls) faceScanFailedControls.classList.remove('hidden');
+                            showAlertModal('Wajah Tidak Dikenali', 'Wajah Anda tidak dikenali oleh sistem.\nSilakan coba lagi, pastikan pencahayaan cukup, atau gunakan "Pilih Nama Secara Manual".', 'warning');
+                        }
                     }
                 } else {
                     faceScanStatus.innerHTML = '<span class="text-orange-500">Kamera aktif, namun database wajah kosong.</span>';
                 }
             } else {
                 faceScanStatus.textContent = 'Mencari wajah Anda... Posisikan wajah di tengah kamera';
+                unrecognizedFramesCount = 0;
             }
         }, 300);
     }
@@ -972,12 +1000,18 @@
         recognizedUser = null;
         karyawanIdInput.value = '';
         recognizedUserCard.classList.add('hidden');
+        unrecognizedFramesCount = 0;
         
         document.getElementById('faceScanContainer').classList.remove('border-success');
         document.getElementById('faceScanContainer').classList.add('border-border');
         
-        // Show scanner camera box again
+        // Show scanner camera box and status again
         document.getElementById('faceScanContainer').classList.remove('hidden');
+        faceScanStatus.classList.remove('hidden');
+        
+        // Hide failure controls, show manual toggle container
+        if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
+        if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
         
         resetFormSections();
         
@@ -990,10 +1024,13 @@
     function enableManualMode() {
         isManualMode = true;
         stopCamera();
+        unrecognizedFramesCount = 0;
         
         faceScannerBlock.classList.add('hidden');
         manualSelectBlock.classList.remove('hidden');
         toggleManualBtn.textContent = 'Gunakan Pemindai Wajah';
+        if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
+        if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
         
         // Transfer dropdown select values to our form
         karyawanIdInput.value = karyawanIdManual.value;
@@ -1002,10 +1039,13 @@
 
     function disableManualMode() {
         isManualMode = false;
+        unrecognizedFramesCount = 0;
         
         faceScannerBlock.classList.remove('hidden');
         manualSelectBlock.classList.add('hidden');
         toggleManualBtn.textContent = 'Pilih Nama Secara Manual';
+        if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
+        if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
         
         resetVerification();
         startCamera();
@@ -1018,6 +1058,25 @@
             enableManualMode();
         }
     });
+
+    if (retryFaceScanBtn) {
+        retryFaceScanBtn.addEventListener('click', async function() {
+            if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
+            if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
+            document.getElementById('faceScanContainer').classList.remove('hidden');
+            faceScanStatus.classList.remove('hidden');
+            
+            unrecognizedFramesCount = 0;
+            await startCamera();
+        });
+    }
+
+    if (failedManualBtn) {
+        failedManualBtn.addEventListener('click', function() {
+            if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
+            enableManualMode();
+        });
+    }
 
     karyawanIdManual.addEventListener('change', () => {
         karyawanIdInput.value = karyawanIdManual.value;
