@@ -1,31 +1,35 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presensi_<%= karyawanName %>_<%= monthStr %></title>
+    <title>Presensi_<%= karyawanName %>_<%= monthStr %>
+    </title>
     <!-- Tailwind CSS for floating print button and page preview -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
-        
+
         body {
             font-family: 'Arial', sans-serif;
         }
-        
+
         @page {
             size: A4 portrait;
             margin: 20mm;
         }
-        
+
         @media print {
             body {
                 background: white;
                 color: black;
             }
+
             .no-print {
                 display: none !important;
             }
+
             .page {
                 margin: 0 !important;
                 box-shadow: none !important;
@@ -34,7 +38,7 @@
                 padding: 0 !important;
             }
         }
-        
+
         .page {
             background: white;
             width: 210mm;
@@ -45,12 +49,13 @@
             box-sizing: border-box;
             position: relative;
         }
-        
+
         /* Mobile Preview Mode (fit the page on small mobile screens) */
         @media (max-width: 220mm) {
             body {
                 padding: 0 !important;
             }
+
             .page {
                 width: 100% !important;
                 margin: 0 !important;
@@ -58,13 +63,16 @@
                 min-height: auto !important;
                 box-shadow: none !important;
             }
+
             table {
                 font-size: 11px !important;
             }
+
             th {
                 font-size: 11px !important;
                 padding: 6px 4px !important;
             }
+
             td {
                 font-size: 11px !important;
                 padding: 6px 4px !important;
@@ -76,7 +84,9 @@
             border-collapse: collapse;
         }
 
-        table, th, td {
+        table,
+        th,
+        td {
             border: 1.5px solid black;
         }
 
@@ -93,30 +103,67 @@
         }
     </style>
 </head>
+
 <body class="bg-gray-100 min-h-screen py-4">
 
     <!-- Floating Action Bar for Web View -->
     <div class="no-print fixed top-4 right-4 z-50 flex gap-2">
-        <button onclick="window.print()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm cursor-pointer">
+        <button onclick="window.print()"
+            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
             Cetak / Simpan PDF
         </button>
-        <button onclick="window.close()" class="px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm cursor-pointer">
+        <button onclick="window.close()"
+            class="px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm cursor-pointer">
             Tutup
         </button>
     </div>
 
     <!-- The A4 Sheet -->
+    <%
+      let totalRoundedMinutes = 0;
+
+      function getRoundedDuration(p) {
+        let baseMins = p.mins || 0;
+        if (baseMins > 480) {
+          baseMins = 480;
+        }
+        let totalMinutesForDay = baseMins + (p.menitTambahan || 0);
+        let h = Math.floor(totalMinutesForDay / 60);
+        let m = totalMinutesForDay % 60;
+        if (m > 30) {
+          h += 1;
+        }
+        return h + " Jam";
+      }
+
+      function addRoundedMinutes(p) {
+        let baseMins = p.mins || 0;
+        if (baseMins > 480) {
+          baseMins = 480;
+        }
+        let totalMinutesForDay = baseMins + (p.menitTambahan || 0);
+        let h = Math.floor(totalMinutesForDay / 60);
+        let m = totalMinutesForDay % 60;
+        if (m > 30) {
+          h += 1;
+        }
+        totalRoundedMinutes += (h * 60);
+      }
+    %>
     <div class="page">
         <!-- Title Header -->
         <div class="text-center mb-8">
             <h2 class="text-2xl font-bold mb-1">Presensi Kehadiran Student Staff Unit PUTI</h2>
             <h3 class="text-xl font-bold mb-4">Bulan (<%= formattedRange %>)</h3>
             <div class="inline-block">
-                <span class="text-base font-bold">Nama:</span> 
-                <span class="text-base font-medium ml-1"><%= karyawanName %></span>
+                <span class="text-base font-bold">Nama:</span>
+                <span class="text-base font-medium ml-1">
+                    <%= karyawanName %>
+                </span>
             </div>
         </div>
 
@@ -133,31 +180,45 @@
                 </tr>
             </thead>
             <tbody>
-                <% presensi.forEach((p, i) => { %>
+                <% presensi.forEach((p, i)=> { %>
+                    <% addRoundedMinutes(p); %>
                     <tr>
-                        <td class="text-center"><%= i + 1 %></td>
-                        <td class="text-center"><%= p.formattedDateWithDay %></td>
-                        <td class="text-center"><%= p.pukulStr %></td>
-                        <td class="text-center"><%= p.totalJam %></td>
+                        <td class="text-center">
+                            <%= i + 1 %>
+                        </td>
+                        <td class="text-center">
+                            <%= p.formattedDateWithDay %>
+                        </td>
+                        <td class="text-center">
+                            <%= p.pukulStr %>
+                        </td>
+                        <td class="text-center">
+                            <%= getRoundedDuration(p) %>
+                        </td>
                         <td class="text-left leading-relaxed align-top">
                             <%= p.pekerjaan %>
-                            <% if (p.isSuratTugas && p.foto) { %>
-                                <div class="mt-3 text-center bg-gray-50 p-2 rounded border border-gray-200">
-                                    <span class="block text-xs text-gray-600 font-semibold mb-1.5 uppercase tracking-wider">Bukti Surat Tugas</span>
-                                    <img src="<%= p.foto %>" alt="Surat Tugas" style="max-height: 140px; width: auto; margin: 0 auto; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                                </div>
-                            <% } %>
+                                <% if (p.isSuratTugas && p.foto) { %>
+                                    <div class="mt-3 text-center bg-gray-50 p-2 rounded border border-gray-200">
+                                        <span
+                                            class="block text-xs text-gray-600 font-semibold mb-1.5 uppercase tracking-wider">Bukti
+                                            Surat Tugas</span>
+                                        <img src="<%= p.foto %>" alt="Surat Tugas"
+                                            style="max-height: 140px; width: auto; margin: 0 auto; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                    </div>
+                                    <% } %>
                         </td>
                         <td></td>
                     </tr>
-                <% }) %>
-                <!-- Total Row -->
-                <tr class="font-bold">
-                    <td colspan="3" class="text-center py-3">Total</td>
-                    <td class="text-center py-3"><%= totalDurasiStr %></td>
-                    <td></td>
-                    <td></td>
-                </tr>
+                    <% }) %>
+                        <!-- Total Row -->
+                        <tr class="font-bold">
+                            <td colspan="3" class="text-center py-3">Total</td>
+                            <td class="text-center py-3">
+                                <%= Math.floor(totalRoundedMinutes / 60) %> Jam
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
             </tbody>
         </table>
 
@@ -171,4 +232,5 @@
     </div>
 
 </body>
+
 </html>

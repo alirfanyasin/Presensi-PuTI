@@ -17,8 +17,9 @@
                                 id="presensiForm">
                                 <!-- Nama Field / Face Recognition Scanner -->
                                 <div class="form-group">
-                                    <label class="block text-sm font-semibold text-fg mb-2">Verifikasi Identitas (Face Recognition)</label>
-                                    
+                                    <label class="block text-sm font-semibold text-fg mb-2">Verifikasi Identitas (Face
+                                        Recognition)</label>
+
                                     <!-- Hidden input for selected karyawanId -->
                                     <input type="hidden" id="karyawanId" name="karyawanId" required>
 
@@ -26,75 +27,105 @@
                                     <div id="faceScannerBlock" class="space-y-4">
                                         <!-- Camera Selector -->
                                         <div id="cameraSelectContainer" class="mb-3 hidden animate-fadeInUp">
-                                            <label class="block text-xs font-semibold text-muted mb-1.5 uppercase tracking-wider">Kamera Aktif / Webcam</label>
-                                            <select id="cameraSelect" class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
+                                            <label
+                                                class="block text-xs font-semibold text-muted mb-1.5 uppercase tracking-wider">Kamera
+                                                Aktif / Webcam</label>
+                                            <select id="cameraSelect"
+                                                class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm">
                                             </select>
                                         </div>
-                                        
-                                        <div class="relative overflow-hidden rounded-2xl border border-border bg-inputBg aspect-video max-w-md mx-auto flex flex-col items-center justify-center transition-all duration-300" id="faceScanContainer">
-                                            <video id="faceScanVideo" autoplay muted playsinline class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
-                                            <canvas id="faceScanCanvas" class="absolute inset-0 w-full h-full pointer-events-none" style="transform: scaleX(-1);"></canvas>
-                                            
+
+                                        <div class="relative overflow-hidden rounded-2xl border border-border bg-inputBg aspect-video max-w-md mx-auto flex flex-col items-center justify-center transition-all duration-300"
+                                            id="faceScanContainer">
+                                            <video id="faceScanVideo" autoplay muted playsinline
+                                                class="w-full h-full object-cover"
+                                                style="transform: scaleX(-1);"></video>
+                                            <canvas id="faceScanCanvas"
+                                                class="absolute inset-0 w-full h-full pointer-events-none"
+                                                style="transform: scaleX(-1);"></canvas>
+
                                             <!-- Loader Overlay -->
-                                            <div id="faceScanLoader" class="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-white p-4 text-center z-10">
-                                                <svg class="w-10 h-10 animate-spin text-accent mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/>
+                                            <div id="faceScanLoader"
+                                                class="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-white p-4 text-center z-10">
+                                                <svg class="w-10 h-10 animate-spin text-accent mb-3" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22" />
                                                 </svg>
-                                                <p class="text-sm font-medium" id="faceLoaderText">Memuat modul pemindai wajah...</p>
+                                                <p class="text-sm font-medium" id="faceLoaderText">Memuat modul pemindai
+                                                    wajah...</p>
                                             </div>
-                                            
+
                                             <!-- Photo capture overlay preview for check-out -->
-                                            <img id="faceRegPhotoPreview" class="hidden absolute inset-0 w-full h-full object-cover z-20" alt="Captured Selfie">
+                                            <img id="faceRegPhotoPreview"
+                                                class="hidden absolute inset-0 w-full h-full object-cover z-20"
+                                                alt="Captured Selfie">
                                         </div>
 
                                         <!-- Recognized User Card (Hidden by default) -->
-                                        <div id="recognizedUserCard" class="hidden flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-2xl animate-fadeInUp">
+                                        <div id="recognizedUserCard"
+                                            class="hidden flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-2xl animate-fadeInUp">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-12 h-12 bg-accent text-white rounded-full flex items-center justify-center font-bold text-lg" id="recognizedAvatar">
+                                                <div class="w-12 h-12 bg-accent text-white rounded-full flex items-center justify-center font-bold text-lg"
+                                                    id="recognizedAvatar">
                                                     U
                                                 </div>
                                                 <div>
-                                                    <p class="text-xs text-green-600 font-semibold uppercase tracking-wider">Identitas Terverifikasi</p>
-                                                    <h4 class="font-bold text-fg text-base" id="recognizedName">Nama User</h4>
+                                                    <p
+                                                        class="text-xs text-green-600 font-semibold uppercase tracking-wider">
+                                                        Identitas Terverifikasi</p>
+                                                    <h4 class="font-bold text-fg text-base" id="recognizedName">Nama
+                                                        User</h4>
                                                 </div>
                                             </div>
-                                            <span class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-lg">Cocok</span>
+                                            <span
+                                                class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-lg">Cocok</span>
                                         </div>
 
-                                        <div id="faceScanStatus" class="text-center text-xs font-semibold text-muted py-1 bg-inputBg/50 rounded-lg">
+                                        <div id="faceScanStatus"
+                                            class="text-center text-xs font-semibold text-muted py-1 bg-inputBg/50 rounded-lg">
                                             Memulai...
                                         </div>
                                     </div>
 
                                     <!-- Manual Select Dropdown Block (Hidden by default) -->
                                     <div id="manualSelectBlock" class="hidden animate-fadeInUp">
-                                        <select id="karyawanIdManual" class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors">
+                                        <select id="karyawanIdManual"
+                                            class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors">
                                             <option value="" disabled selected>Pilih nama Anda secara manual</option>
                                             <% karyawanList.forEach(k=> { %>
                                                 <option value="<%= k.id %>">
                                                     <%= k.nama %>
                                                 </option>
-                                            <% }) %>
+                                                <% }) %>
                                         </select>
                                     </div>
 
-                                     <!-- Scan Failed Controls (shown only when scanning fails) -->
-                                     <div id="faceScanFailedControls" class="hidden flex justify-center items-center gap-3 mt-3 animate-fadeInUp">
-                                         <button type="button" id="retryFaceScanBtn" class="px-4 py-2.5 bg-accent text-white text-xs font-semibold rounded-xl hover:bg-accentHover transition-colors flex items-center gap-1.5 shadow btn-press">
-                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/></svg>
-                                             Buka Kamera
-                                         </button>
-                                         <button type="button" id="failedManualBtn" class="px-4 py-2.5 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border flex items-center gap-1.5 btn-press">
-                                             Pilih Nama Secara Manual
-                                         </button>
-                                     </div>
+                                    <!-- Scan Failed Controls (shown only when scanning fails) -->
+                                    <div id="faceScanFailedControls"
+                                        class="hidden flex justify-center items-center gap-3 mt-3 animate-fadeInUp">
+                                        <button type="button" id="retryFaceScanBtn"
+                                            class="px-4 py-2.5 bg-accent text-white text-xs font-semibold rounded-xl hover:bg-accentHover transition-colors flex items-center gap-1.5 shadow btn-press">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22" />
+                                            </svg>
+                                            Buka Kamera
+                                        </button>
+                                        <button type="button" id="failedManualBtn"
+                                            class="px-4 py-2.5 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border flex items-center gap-1.5 btn-press">
+                                            Pilih Nama Secara Manual
+                                        </button>
+                                    </div>
 
-                                     <!-- Toggle Button -->
-                                     <div class="flex justify-center mt-2.5" id="toggleManualContainer">
-                                         <button type="button" id="toggleManualBtn" class="text-xs font-semibold text-accent hover:text-accentHover underline transition-colors">
-                                             Pilih Nama Secara Manual
-                                         </button>
-                                     </div>
+                                    <!-- Toggle Button -->
+                                    <div class="flex justify-center mt-2.5" id="toggleManualContainer">
+                                        <button type="button" id="toggleManualBtn"
+                                            class="text-xs font-semibold text-accent hover:text-accentHover underline transition-colors">
+                                            Pilih Nama Secara Manual
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <!-- Tanggal Field -->
@@ -113,9 +144,12 @@
 
                                 <!-- Surat Tugas (muncul saat libur) -->
                                 <div id="suratTugasSection" class="hidden form-group">
-                                    <label class="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl cursor-pointer hover:bg-yellow-100 transition-colors">
-                                        <input type="checkbox" id="suratTugasCheck" name="suratTugas" value="true" class="w-5 h-5 text-accent rounded border-gray-300 focus:ring-accent">
-                                        <span class="text-sm font-semibold text-yellow-800">Sedang Surat Tugas (Izinkan Absen di Hari Libur)</span>
+                                    <label
+                                        class="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl cursor-pointer hover:bg-yellow-100 transition-colors">
+                                        <input type="checkbox" id="suratTugasCheck" name="suratTugas" value="true"
+                                            class="w-5 h-5 text-accent rounded border-gray-300 focus:ring-accent">
+                                        <span class="text-sm font-semibold text-yellow-800">Sedang Surat Tugas (Izinkan
+                                            Absen di Hari Libur)</span>
                                     </label>
                                 </div>
 
@@ -184,7 +218,8 @@
 
                                 <!-- Foto Bukti Kehadiran (hanya Pulang) -->
                                 <div id="fotoSection" class="hidden">
-                                    <div class="form-group border border-border/60 bg-accentLighter/10 rounded-2xl p-4 sm:p-5">
+                                    <div
+                                        class="form-group border border-border/60 bg-accentLighter/10 rounded-2xl p-4 sm:p-5">
                                         <label class="block text-sm font-semibold text-fg mb-2 flex items-center gap-2">
                                             <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
@@ -195,15 +230,25 @@
                                             </svg>
                                             Foto Bukti Kehadiran <span class="text-accent text-xs">(wajib)</span>
                                         </label>
-                                        <p class="text-xs text-muted mb-3" id="fotoSectionDesc">Ambil foto selfie menggunakan kamera di bawah ini sebagai bukti kehadiran pulang Anda.</p>
-                                        
+                                        <p class="text-xs text-muted mb-3" id="fotoSectionDesc">Ambil foto selfie
+                                            menggunakan kamera di bawah ini sebagai bukti kehadiran pulang Anda.</p>
+
                                         <!-- Selfie Live Video Container -->
-                                        <div id="selfieVideoContainer" class="relative overflow-hidden rounded-xl border border-border bg-inputBg aspect-video max-w-sm mx-auto flex items-center justify-center mb-4 hidden">
-                                            <video id="selfieVideo" autoplay muted playsinline class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
-                                            <canvas id="selfieCanvas" class="absolute inset-0 w-full h-full pointer-events-none" style="transform: scaleX(-1);"></canvas>
-                                            <div id="selfieLoader" class="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-white p-4 text-center z-10 hidden">
-                                                <svg class="w-8 h-8 animate-spin text-accent mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/>
+                                        <div id="selfieVideoContainer"
+                                            class="relative overflow-hidden rounded-xl border border-border bg-inputBg aspect-video max-w-sm mx-auto flex items-center justify-center mb-4 hidden">
+                                            <video id="selfieVideo" autoplay muted playsinline
+                                                class="w-full h-full object-cover"
+                                                style="transform: scaleX(-1);"></video>
+                                            <canvas id="selfieCanvas"
+                                                class="absolute inset-0 w-full h-full pointer-events-none"
+                                                style="transform: scaleX(-1);"></canvas>
+                                            <div id="selfieLoader"
+                                                class="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-white p-4 text-center z-10 hidden">
+                                                <svg class="w-8 h-8 animate-spin text-accent mb-2" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22" />
                                                 </svg>
                                                 <p class="text-xs font-medium">Menyalakan kamera...</p>
                                             </div>
@@ -211,24 +256,44 @@
 
                                         <!-- Photo Preview Overlay (when captured) -->
                                         <div class="relative max-w-sm mx-auto mb-4">
-                                            <img id="selfiePhotoPreview" class="hidden w-full aspect-video object-cover rounded-xl border border-border" alt="Foto Bukti Selfie">
+                                            <img id="selfiePhotoPreview"
+                                                class="hidden w-full aspect-video object-cover rounded-xl border border-border"
+                                                alt="Foto Bukti Selfie">
                                         </div>
 
                                         <!-- Selfie Camera Controls -->
                                         <div id="selfieControls" class="flex flex-col items-center gap-3">
                                             <button type="button" id="captureSelfieBtn"
                                                 class="px-5 py-2.5 bg-accent text-white text-xs font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press flex items-center gap-1.5 shadow">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
                                                 Ambil Foto Bukti
                                             </button>
-                                            
-                                            <button type="button" id="cancelSelfieBtn" class="hidden px-5 py-2.5 bg-inputBg text-red-500 hover:bg-red-50 border border-red-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+
+                                            <button type="button" id="cancelSelfieBtn"
+                                                class="hidden px-5 py-2.5 bg-inputBg text-red-500 hover:bg-red-50 border border-red-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
                                                 Batal
                                             </button>
-                                            
-                                            <button type="button" id="retakeSelfieBtn" class="hidden px-5 py-2.5 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border flex items-center gap-1.5">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22"/></svg>
+
+                                            <button type="button" id="retakeSelfieBtn"
+                                                class="hidden px-5 py-2.5 bg-inputBg text-muted text-xs font-semibold rounded-xl hover:bg-border transition-colors border border-border flex items-center gap-1.5">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.22" />
+                                                </svg>
                                                 Foto Ulang
                                             </button>
                                         </div>
@@ -236,19 +301,32 @@
                                         <!-- Surat Tugas Upload Block (only for Surat Tugas) -->
                                         <div id="suratTugasUploadContainer" class="hidden mt-2">
                                             <div class="flex items-center justify-center w-full">
-                                                <label for="suratTugasUploadInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
+                                                <label for="suratTugasUploadInput"
+                                                    class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
                                                     <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                                        <svg class="w-8 h-8 mb-3 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                                        <p class="mb-2 text-sm text-muted"><span class="font-semibold">Klik untuk upload foto Surat Tugas</span></p>
+                                                        <svg class="w-8 h-8 mb-3 text-muted" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12">
+                                                            </path>
+                                                        </svg>
+                                                        <p class="mb-2 text-sm text-muted"><span
+                                                                class="font-semibold">Klik untuk upload foto Surat
+                                                                Tugas</span></p>
                                                     </div>
-                                                    <input id="suratTugasUploadInput" type="file" accept="image/*" class="hidden" />
+                                                    <input id="suratTugasUploadInput" type="file" accept="image/*"
+                                                        class="hidden" />
                                                 </label>
                                             </div>
-                                            <img id="suratTugasPreview" class="hidden w-full h-full object-cover rounded-xl mt-4 aspect-video border border-border" alt="Preview Surat Tugas">
+                                            <img id="suratTugasPreview"
+                                                class="hidden w-full h-full object-cover rounded-xl mt-4 aspect-video border border-border"
+                                                alt="Preview Surat Tugas">
                                         </div>
 
                                         <input type="hidden" name="foto" id="fotoInput">
-                                        <input type="file" accept="image/*" capture="user" id="cameraFallbackInput" class="hidden">
+                                        <input type="file" accept="image/*" capture="user" id="cameraFallbackInput"
+                                            class="hidden">
                                     </div>
                                 </div>
 
@@ -377,991 +455,995 @@
                     </div>
                     <script>setTimeout(() => document.getElementById('toastError').classList.remove('show'), 5000);</script>
                     <% } %>
-<!-- face-api.js Library from CDN -->
-<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+                        <!-- face-api.js Library from CDN -->
+                        <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
-<script>
-    // --- AUTO STATUS DETECTION & GENERAL FORM LOGIC ---
-    const presensiForm = document.getElementById('presensiForm');
-    const karyawanIdInput = document.getElementById('karyawanId'); // hidden input
-    const karyawanIdManual = document.getElementById('karyawanIdManual'); // manual dropdown
-    const tanggalInput = document.getElementById('tanggal');
-    const hariContainer = document.getElementById('hariContainer');
-    const displayHari = document.getElementById('displayHari');
-    const waktuMasukInfo = document.getElementById('waktuMasukInfo');
-    const waktuPulangInfo = document.getElementById('waktuPulangInfo');
-    const pekerjaanSection = document.getElementById('pekerjaanSection');
-    const fotoSection = document.getElementById('fotoSection');
-    const pekerjaanTextarea = document.getElementById('pekerjaan');
-    const charCount = document.getElementById('charCount');
-    const statusInfo = document.getElementById('statusInfo');
-    const statusLoading = document.getElementById('statusLoading');
-    const statusBadge = document.getElementById('statusBadge');
-    const submitBtn = document.getElementById('submitBtn');
-    
-    // Face Recognition UI elements
-    const faceScannerBlock = document.getElementById('faceScannerBlock');
-    const faceScanVideo = document.getElementById('faceScanVideo');
-    const faceScanCanvas = document.getElementById('faceScanCanvas');
-    const faceScanLoader = document.getElementById('faceScanLoader');
-    const faceLoaderText = document.getElementById('faceLoaderText');
-    const faceScanStatus = document.getElementById('faceScanStatus');
-    const recognizedUserCard = document.getElementById('recognizedUserCard');
-    const recognizedAvatar = document.getElementById('recognizedAvatar');
-    const recognizedName = document.getElementById('recognizedName');
-    const faceRegPhotoPreview = document.getElementById('faceRegPhotoPreview');
-    
-    // Toggle manual selection
-    const manualSelectBlock = document.getElementById('manualSelectBlock');
-    const toggleManualBtn = document.getElementById('toggleManualBtn');
-    const toggleManualContainer = document.getElementById('toggleManualContainer');
-    const faceScanFailedControls = document.getElementById('faceScanFailedControls');
-    const retryFaceScanBtn = document.getElementById('retryFaceScanBtn');
-    const failedManualBtn = document.getElementById('failedManualBtn');
-    
-    // Selfie controls
-    const captureSelfieBtn = document.getElementById('captureSelfieBtn');
-    const cancelSelfieBtn = document.getElementById('cancelSelfieBtn');
-    const retakeSelfieBtn = document.getElementById('retakeSelfieBtn');
-    const fotoInput = document.getElementById('fotoInput');
-    const cameraFallbackInput = document.getElementById('cameraFallbackInput');
-    const selfieVideo = document.getElementById('selfieVideo');
-    const selfieCanvas = document.getElementById('selfieCanvas');
-    const selfieVideoContainer = document.getElementById('selfieVideoContainer');
-    const selfieLoader = document.getElementById('selfieLoader');
-    const selfiePhotoPreview = document.getElementById('selfiePhotoPreview');
-    let selfieStream = null;
-    
-    const hariNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    let currentStatus = 'none'; // 'none' | 'sudah_masuk' | 'sudah_pulang' | 'holiday'
-    let isHolidayOrWeekend = false;
-    
-    // Camera and Face recognition variables
-    let cameraStream = null;
-    let faceMatcher = null;
-    let registeredFaces = [];
-    let scanInterval = null;
-    let isModelsLoaded = false;
-    let isManualMode = false;
-    let recognizedUser = null;
-    let unrecognizedFramesCount = 0;
+                        <script>
+                            // --- AUTO STATUS DETECTION & GENERAL FORM LOGIC ---
+                            const presensiForm = document.getElementById('presensiForm');
+                            const karyawanIdInput = document.getElementById('karyawanId'); // hidden input
+                            const karyawanIdManual = document.getElementById('karyawanIdManual'); // manual dropdown
+                            const tanggalInput = document.getElementById('tanggal');
+                            const hariContainer = document.getElementById('hariContainer');
+                            const displayHari = document.getElementById('displayHari');
+                            const waktuMasukInfo = document.getElementById('waktuMasukInfo');
+                            const waktuPulangInfo = document.getElementById('waktuPulangInfo');
+                            const pekerjaanSection = document.getElementById('pekerjaanSection');
+                            const fotoSection = document.getElementById('fotoSection');
+                            const pekerjaanTextarea = document.getElementById('pekerjaan');
+                            const charCount = document.getElementById('charCount');
+                            const statusInfo = document.getElementById('statusInfo');
+                            const statusLoading = document.getElementById('statusLoading');
+                            const statusBadge = document.getElementById('statusBadge');
+                            const submitBtn = document.getElementById('submitBtn');
 
-    // Check secure context for camera
-    const isSecure = window.isSecureContext || (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const canUseWebcam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && isSecure;
+                            // Face Recognition UI elements
+                            const faceScannerBlock = document.getElementById('faceScannerBlock');
+                            const faceScanVideo = document.getElementById('faceScanVideo');
+                            const faceScanCanvas = document.getElementById('faceScanCanvas');
+                            const faceScanLoader = document.getElementById('faceScanLoader');
+                            const faceLoaderText = document.getElementById('faceLoaderText');
+                            const faceScanStatus = document.getElementById('faceScanStatus');
+                            const recognizedUserCard = document.getElementById('recognizedUserCard');
+                            const recognizedAvatar = document.getElementById('recognizedAvatar');
+                            const recognizedName = document.getElementById('recognizedName');
+                            const faceRegPhotoPreview = document.getElementById('faceRegPhotoPreview');
 
-    // Live clock
-    function updateClock() {
-        const now = new Date();
-        const pad = n => String(n).padStart(2, '0');
-        const t = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-        const el1 = document.getElementById('clockDisplay');
-        const el2 = document.getElementById('clockDisplayPulang');
-        if (el1) el1.textContent = t;
-        if (el2) el2.textContent = t;
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
+                            // Toggle manual selection
+                            const manualSelectBlock = document.getElementById('manualSelectBlock');
+                            const toggleManualBtn = document.getElementById('toggleManualBtn');
+                            const toggleManualContainer = document.getElementById('toggleManualContainer');
+                            const faceScanFailedControls = document.getElementById('faceScanFailedControls');
+                            const retryFaceScanBtn = document.getElementById('retryFaceScanBtn');
+                            const failedManualBtn = document.getElementById('failedManualBtn');
 
-    if (pekerjaanTextarea) {
-        pekerjaanTextarea.addEventListener('input', function () {
-            const length = this.value.length;
-            if (charCount) charCount.textContent = length;
-            if (charCount) charCount.classList.toggle('text-red-500', length > 500);
-        });
-    }
+                            // Selfie controls
+                            const captureSelfieBtn = document.getElementById('captureSelfieBtn');
+                            const cancelSelfieBtn = document.getElementById('cancelSelfieBtn');
+                            const retakeSelfieBtn = document.getElementById('retakeSelfieBtn');
+                            const fotoInput = document.getElementById('fotoInput');
+                            const cameraFallbackInput = document.getElementById('cameraFallbackInput');
+                            const selfieVideo = document.getElementById('selfieVideo');
+                            const selfieCanvas = document.getElementById('selfieCanvas');
+                            const selfieVideoContainer = document.getElementById('selfieVideoContainer');
+                            const selfieLoader = document.getElementById('selfieLoader');
+                            const selfiePhotoPreview = document.getElementById('selfiePhotoPreview');
+                            let selfieStream = null;
 
-    function calculateHari() {
-        if (tanggalInput.value) {
-            const d = new Date(tanggalInput.value);
-            if (!isNaN(d.getTime())) {
-                displayHari.value = hariNames[d.getDay()];
-                hariContainer.classList.remove('hidden');
-            } else { hariContainer.classList.add('hidden'); }
-        } else { hariContainer.classList.add('hidden'); }
-    }
+                            const hariNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+                            let currentStatus = 'none'; // 'none' | 'sudah_masuk' | 'sudah_pulang' | 'holiday'
+                            let isHolidayOrWeekend = false;
 
-    function showHolidayMode(holidayName) {
-        currentStatus = 'holiday';
-        waktuMasukInfo.classList.add('hidden');
-        waktuPulangInfo.classList.add('hidden');
-        pekerjaanSection.classList.add('hidden');
-        fotoSection.classList.add('hidden');
-        const displayMsg = holidayName ? `Hari ini Libur Nasional: <strong>${holidayName}</strong>` : `Hari ini Libur Akhir Pekan (Sabtu/Minggu)`;
-        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl">
+                            // Camera and Face recognition variables
+                            let cameraStream = null;
+                            let faceMatcher = null;
+                            let registeredFaces = [];
+                            let scanInterval = null;
+                            let isModelsLoaded = false;
+                            let isManualMode = false;
+                            let recognizedUser = null;
+                            let unrecognizedFramesCount = 0;
+
+                            // Check secure context for camera
+                            const isSecure = window.isSecureContext || (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+                            const canUseWebcam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && isSecure;
+
+                            // Live clock
+                            function updateClock() {
+                                const now = new Date();
+                                const pad = n => String(n).padStart(2, '0');
+                                const t = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                                const el1 = document.getElementById('clockDisplay');
+                                const el2 = document.getElementById('clockDisplayPulang');
+                                if (el1) el1.textContent = t;
+                                if (el2) el2.textContent = t;
+                            }
+                            setInterval(updateClock, 1000);
+                            updateClock();
+
+                            if (pekerjaanTextarea) {
+                                pekerjaanTextarea.addEventListener('input', function () {
+                                    const length = this.value.length;
+                                    if (charCount) charCount.textContent = length;
+                                    if (charCount) charCount.classList.toggle('text-red-500', length > 500);
+                                });
+                            }
+
+                            function calculateHari() {
+                                if (tanggalInput.value) {
+                                    const d = new Date(tanggalInput.value);
+                                    if (!isNaN(d.getTime())) {
+                                        displayHari.value = hariNames[d.getDay()];
+                                        hariContainer.classList.remove('hidden');
+                                    } else { hariContainer.classList.add('hidden'); }
+                                } else { hariContainer.classList.add('hidden'); }
+                            }
+
+                            function showHolidayMode(holidayName) {
+                                currentStatus = 'holiday';
+                                waktuMasukInfo.classList.add('hidden');
+                                waktuPulangInfo.classList.add('hidden');
+                                pekerjaanSection.classList.add('hidden');
+                                fotoSection.classList.add('hidden');
+                                const displayMsg = holidayName ? `Hari ini Libur Nasional: <strong>${holidayName}</strong>` : `Hari ini Libur Akhir Pekan (Sabtu/Minggu)`;
+                                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-xl">
             <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block animate-pulse"></span>
             <span class="text-sm font-semibold text-red-700">${displayMsg} — Presensi tidak diizinkan</span>
         </div>`;
-        statusBadge.classList.remove('hidden');
-        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Presensi Ditutup'; }
-    }
+                                statusBadge.classList.remove('hidden');
+                                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Presensi Ditutup'; }
+                            }
 
-    function showMasukMode() {
-        currentStatus = 'none';
-        presensiForm.action = '/presensi-masuk';
-        waktuMasukInfo.classList.remove('hidden');
-        waktuPulangInfo.classList.add('hidden');
-        pekerjaanSection.classList.add('hidden');
-        fotoSection.classList.add('hidden');
-        stopSelfieCamera();
-        
-        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl">
+                            function showMasukMode() {
+                                currentStatus = 'none';
+                                presensiForm.action = '/presensi-masuk';
+                                waktuMasukInfo.classList.remove('hidden');
+                                waktuPulangInfo.classList.add('hidden');
+                                pekerjaanSection.classList.add('hidden');
+                                fotoSection.classList.add('hidden');
+                                stopSelfieCamera();
+
+                                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl">
             <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
             <span class="text-sm font-semibold text-green-700">Belum Presensi Masuk hari ini — silakan lanjutkan</span>
         </div>`;
-        statusBadge.classList.remove('hidden');
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Simpan Presensi Masuk'; }
-        
-        // Hide photo preview and reset input if any
-        faceRegPhotoPreview.classList.add('hidden');
-        faceRegPhotoPreview.src = '';
-        fotoInput.value = '';
-    }
+                                statusBadge.classList.remove('hidden');
+                                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Simpan Presensi Masuk'; }
 
-    function showPulangMode(jamMasuk) {
-        currentStatus = 'sudah_masuk';
-        presensiForm.action = '/presensi-pulang';
-        waktuMasukInfo.classList.add('hidden');
-        waktuPulangInfo.classList.remove('hidden');
-        pekerjaanSection.classList.remove('hidden');
+                                // Hide photo preview and reset input if any
+                                faceRegPhotoPreview.classList.add('hidden');
+                                faceRegPhotoPreview.src = '';
+                                fotoInput.value = '';
+                            }
 
-        if (isHolidayOrWeekend) {
-            fotoSection.classList.add('hidden');
-            stopSelfieCamera();
-        } else {
-            fotoSection.classList.remove('hidden');
-            const isSuratTugas = document.getElementById('suratTugasCheck') && document.getElementById('suratTugasCheck').checked;
-            if (isSuratTugas) {
-                document.getElementById('selfieControls').classList.add('hidden');
-                document.getElementById('suratTugasUploadContainer').classList.remove('hidden');
-                const pText = document.getElementById('fotoSectionDesc');
-                if(pText) pText.textContent = 'Unggah foto sebagai bukti kehadiran pulang Surat Tugas Anda.';
-                stopSelfieCamera();
-            } else {
-                document.getElementById('selfieControls').classList.remove('hidden');
-                document.getElementById('suratTugasUploadContainer').classList.add('hidden');
-                
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                const pText = document.getElementById('fotoSectionDesc');
-                if (isMobile) {
-                    if (pText) pText.textContent = 'Klik tombol di bawah untuk mengambil foto selfie menggunakan kamera HP Anda.';
-                } else {
-                    if (pText) pText.textContent = 'Ambil foto selfie menggunakan kamera di bawah ini sebagai bukti kehadiran pulang Anda.';
-                }
+                            function showPulangMode(jamMasuk) {
+                                currentStatus = 'sudah_masuk';
+                                presensiForm.action = '/presensi-pulang';
+                                waktuMasukInfo.classList.add('hidden');
+                                waktuPulangInfo.classList.remove('hidden');
+                                pekerjaanSection.classList.remove('hidden');
 
-                // Hide video and preview initially, reset input
-                selfieVideoContainer.classList.add('hidden');
-                selfiePhotoPreview.classList.add('hidden');
-                selfiePhotoPreview.src = '';
-                fotoInput.value = '';
+                                const isSuratTugas = document.getElementById('suratTugasCheck') && document.getElementById('suratTugasCheck').checked;
+                                if (isSuratTugas) {
+                                    fotoSection.classList.remove('hidden');
+                                    document.getElementById('selfieControls').classList.add('hidden');
+                                    document.getElementById('suratTugasUploadContainer').classList.remove('hidden');
+                                    const pText = document.getElementById('fotoSectionDesc');
+                                    if (pText) pText.textContent = 'Unggah foto sebagai bukti kehadiran pulang Surat Tugas Anda.';
+                                    stopSelfieCamera();
+                                } else if (isHolidayOrWeekend) {
+                                    fotoSection.classList.add('hidden');
+                                    stopSelfieCamera();
+                                } else {
+                                    fotoSection.classList.remove('hidden');
+                                    document.getElementById('selfieControls').classList.remove('hidden');
+                                    document.getElementById('suratTugasUploadContainer').classList.add('hidden');
 
-                // Reset buttons
-                captureSelfieBtn.classList.remove('hidden');
-                captureSelfieBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2-2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Ambil Foto Bukti`;
-                if (cancelSelfieBtn) cancelSelfieBtn.classList.add('hidden');
-                retakeSelfieBtn.classList.add('hidden');
+                                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                                    const pText = document.getElementById('fotoSectionDesc');
+                                    if (isMobile) {
+                                        if (pText) pText.textContent = 'Klik tombol di bawah untuk mengambil foto selfie menggunakan kamera HP Anda.';
+                                    } else {
+                                        if (pText) pText.textContent = 'Ambil foto selfie menggunakan kamera di bawah ini sebagai bukti kehadiran pulang Anda.';
+                                    }
 
-                stopSelfieCamera();
-            }
-        }
+                                    // Hide video and preview initially, reset input
+                                    selfieVideoContainer.classList.add('hidden');
+                                    selfiePhotoPreview.classList.add('hidden');
+                                    selfiePhotoPreview.src = '';
+                                    fotoInput.value = '';
 
-        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
+                                    // Reset buttons
+                                    captureSelfieBtn.classList.remove('hidden');
+                                    captureSelfieBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2-2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Ambil Foto Bukti`;
+                                    if (cancelSelfieBtn) cancelSelfieBtn.classList.add('hidden');
+                                    retakeSelfieBtn.classList.add('hidden');
+
+                                    stopSelfieCamera();
+                                }
+
+                                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl">
             <span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span>
             <span class="text-sm font-semibold text-orange-700">Sudah Masuk pukul <strong>${jamMasuk}</strong> — silakan Presensi Pulang</span>
         </div>`;
-        statusBadge.classList.remove('hidden');
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Simpan Presensi Pulang'; }
-    }
+                                statusBadge.classList.remove('hidden');
+                                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Simpan Presensi Pulang'; }
+                            }
 
-    function showSudahPulangMode(jamMasuk, jamPulang) {
-        currentStatus = 'sudah_pulang';
-        waktuMasukInfo.classList.add('hidden');
-        waktuPulangInfo.classList.add('hidden');
-        pekerjaanSection.classList.add('hidden');
-        fotoSection.classList.add('hidden');
-        stopSelfieCamera();
-        
-        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                            function showSudahPulangMode(jamMasuk, jamPulang) {
+                                currentStatus = 'sudah_pulang';
+                                waktuMasukInfo.classList.add('hidden');
+                                waktuPulangInfo.classList.add('hidden');
+                                pekerjaanSection.classList.add('hidden');
+                                fotoSection.classList.add('hidden');
+                                stopSelfieCamera();
+
+                                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl">
             <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
             <span class="text-sm font-semibold text-blue-700">Presensi hari ini selesai — Masuk ${jamMasuk} · Pulang ${jamPulang}</span>
         </div>`;
-        statusBadge.classList.remove('hidden');
-        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Presensi Hari Ini Selesai'; }
-    }
+                                statusBadge.classList.remove('hidden');
+                                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Presensi Hari Ini Selesai'; }
+                            }
 
-    function resetFormSections() {
-        waktuMasukInfo.classList.add('hidden');
-        waktuPulangInfo.classList.add('hidden');
-        pekerjaanSection.classList.add('hidden');
-        fotoSection.classList.add('hidden');
-        statusBadge.classList.add('hidden');
-        statusInfo.classList.add('hidden');
-        stopSelfieCamera();
-        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Simpan Presensi'; }
-    }
+                            function resetFormSections() {
+                                waktuMasukInfo.classList.add('hidden');
+                                waktuPulangInfo.classList.add('hidden');
+                                pekerjaanSection.classList.add('hidden');
+                                fotoSection.classList.add('hidden');
+                                statusBadge.classList.add('hidden');
+                                statusInfo.classList.add('hidden');
+                                stopSelfieCamera();
+                                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Simpan Presensi'; }
+                            }
 
-    async function checkStatus() {
-        const karyawanId = karyawanIdInput.value;
-        const tanggal = tanggalInput.value;
-        if (!tanggal) { resetFormSections(); return; }
+                            async function checkStatus() {
+                                const karyawanId = karyawanIdInput.value;
+                                const tanggal = tanggalInput.value;
+                                if (!tanggal) { resetFormSections(); return; }
 
-        const suratTugasCheck = document.getElementById('suratTugasCheck');
-        const isSuratTugas = suratTugasCheck && suratTugasCheck.checked;
+                                const suratTugasCheck = document.getElementById('suratTugasCheck');
+                                const isSuratTugas = suratTugasCheck && suratTugasCheck.checked;
 
-        let isHolidayDay = false;
-        let currentHolidayName = '';
+                                let isHolidayDay = false;
+                                let currentHolidayName = '';
 
-        // Check holiday first
-        try {
-            const holidayRes = await fetch(`/api/check-presensi?tanggal=${tanggal}`);
-            const holidayData = await holidayRes.json();
-            if (holidayData.status === 'holiday') {
-                isHolidayDay = true;
-                currentHolidayName = holidayData.holidayName;
-                const stSection = document.getElementById('suratTugasSection');
-                if (stSection) stSection.classList.remove('hidden');
-                
-                if (!isSuratTugas) {
-                    statusInfo.classList.remove('hidden');
-                    statusLoading.classList.add('hidden');
-                    showHolidayMode(holidayData.holidayName);
-                    return;
-                }
-            } else {
-                const stSection = document.getElementById('suratTugasSection');
-                if (stSection) stSection.classList.add('hidden');
-            }
-        } catch (e) {
-            console.error("Gagal memeriksa hari libur:", e);
-        }
+                                // Check holiday first
+                                try {
+                                    const holidayRes = await fetch(`/api/check-presensi?tanggal=${tanggal}`);
+                                    const holidayData = await holidayRes.json();
+                                    if (holidayData.status === 'holiday') {
+                                        isHolidayDay = true;
+                                        currentHolidayName = holidayData.holidayName;
+                                        const stSection = document.getElementById('suratTugasSection');
+                                        if (stSection) stSection.classList.remove('hidden');
 
-        isHolidayOrWeekend = isHolidayDay;
+                                        if (!isSuratTugas) {
+                                            statusInfo.classList.remove('hidden');
+                                            statusLoading.classList.add('hidden');
+                                            showHolidayMode(holidayData.holidayName);
+                                            return;
+                                        }
+                                    } else {
+                                        const stSection = document.getElementById('suratTugasSection');
+                                        if (stSection) stSection.classList.add('hidden');
+                                    }
+                                } catch (e) {
+                                    console.error("Gagal memeriksa hari libur:", e);
+                                }
 
-        if (!karyawanId) { 
-            resetFormSections(); 
-            if (isHolidayDay && isSuratTugas) {
-                statusInfo.classList.remove('hidden');
-                statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 border border-yellow-200 rounded-xl">
+                                isHolidayOrWeekend = isHolidayDay;
+
+                                if (!karyawanId) {
+                                    resetFormSections();
+                                    if (isHolidayDay && isSuratTugas) {
+                                        statusInfo.classList.remove('hidden');
+                                        statusBadge.innerHTML = `<div class="flex items-center gap-2 px-4 py-2.5 bg-yellow-50 border border-yellow-200 rounded-xl">
                     <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block animate-pulse"></span>
                     <span class="text-sm font-semibold text-yellow-700">Mode Surat Tugas Aktif — Silakan verifikasi identitas Anda</span>
                 </div>`;
-                statusBadge.classList.remove('hidden');
-                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
-            }
-            return; 
-        }
+                                        statusBadge.classList.remove('hidden');
+                                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan Presensi'; }
+                                    }
+                                    return;
+                                }
 
-        statusInfo.classList.remove('hidden');
-        statusLoading.classList.remove('hidden');
-        statusBadge.classList.add('hidden');
+                                statusInfo.classList.remove('hidden');
+                                statusLoading.classList.remove('hidden');
+                                statusBadge.classList.add('hidden');
 
-        try {
-            const res = await fetch(`/api/check-presensi?karyawanId=${karyawanId}&tanggal=${tanggal}&suratTugas=${isSuratTugas}`);
-            const data = await res.json();
-            statusLoading.classList.add('hidden');
-            if (data.status === 'holiday') {
-                showHolidayMode(data.holidayName);
-            } else if (data.status === 'none') {
-                showMasukMode();
-            } else if (data.status === 'sudah_masuk') {
-                showPulangMode(data.jamMasuk);
-            } else if (data.status === 'sudah_pulang') {
-                showSudahPulangMode(data.jamMasuk, data.jamPulang);
-            }
-        } catch (e) {
-            statusLoading.classList.add('hidden');
-            showMasukMode();
-        }
-    }
+                                try {
+                                    const res = await fetch(`/api/check-presensi?karyawanId=${karyawanId}&tanggal=${tanggal}&suratTugas=${isSuratTugas}`);
+                                    const data = await res.json();
+                                    statusLoading.classList.add('hidden');
+                                    if (data.status === 'holiday') {
+                                        showHolidayMode(data.holidayName);
+                                    } else if (data.status === 'none') {
+                                        showMasukMode();
+                                    } else if (data.status === 'sudah_masuk') {
+                                        showPulangMode(data.jamMasuk);
+                                    } else if (data.status === 'sudah_pulang') {
+                                        showSudahPulangMode(data.jamMasuk, data.jamPulang);
+                                    }
+                                } catch (e) {
+                                    statusLoading.classList.add('hidden');
+                                    showMasukMode();
+                                }
+                            }
 
-    tanggalInput.addEventListener('change', () => { calculateHari(); checkStatus(); });
-    
-    const stCheck = document.getElementById('suratTugasCheck');
-    if (stCheck) stCheck.addEventListener('change', checkStatus);
+                            tanggalInput.addEventListener('change', () => { calculateHari(); checkStatus(); });
 
-    calculateHari();
-    checkStatus();
+                            const stCheck = document.getElementById('suratTugasCheck');
+                            if (stCheck) stCheck.addEventListener('change', checkStatus);
 
-    // Submit validation
-    if (presensiForm) {
-        presensiForm.addEventListener('submit', function (e) {
-            if (currentStatus === 'sudah_pulang') {
-                e.preventDefault();
-                showAlertModal(
-                    'Presensi Sudah Selesai',
-                    'Anda sudah melakukan Presensi Masuk dan Presensi Pulang hari ini.\nSilakan kembali lagi besok!',
-                    'info'
-                );
-                return;
-            }
-            const isPulang = presensiForm.action.includes('/presensi-pulang');
-            if (isPulang) {
-                const pekVal = pekerjaanTextarea ? pekerjaanTextarea.value.trim() : '';
-                const fotoVal = fotoInput ? fotoInput.value : '';
-                if (!pekVal) {
-                    e.preventDefault();
-                    showAlertModal('Deskripsi Pekerjaan Kosong', 'Mohon isi deskripsi pekerjaan sebelum menyimpan Presensi Pulang.', 'warning');
-                    return;
-                }
-                if (!isHolidayOrWeekend && !fotoVal) {
-                    e.preventDefault();
-                    showAlertModal('Foto Belum Diambil', 'Mohon ambil foto selfie sebagai bukti kehadiran sebelum menyimpan Presensi Pulang.', 'warning');
-                    return;
-                }
-            }
-            stopCamera();
-        });
-    }
+                            calculateHari();
+                            checkStatus();
 
-    // --- FACE RECOGNITION SCANNING CODE ---
-    async function loadFaceModels() {
-        if (isModelsLoaded) return;
-        faceLoaderText.textContent = 'Memuat modul kecerdasan buatan (AI)...';
-        await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-        await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-        await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
-        isModelsLoaded = true;
-    }
+                            // Submit validation
+                            if (presensiForm) {
+                                presensiForm.addEventListener('submit', function (e) {
+                                    if (currentStatus === 'sudah_pulang') {
+                                        e.preventDefault();
+                                        showAlertModal(
+                                            'Presensi Sudah Selesai',
+                                            'Anda sudah melakukan Presensi Masuk dan Presensi Pulang hari ini.\nSilakan kembali lagi besok!',
+                                            'info'
+                                        );
+                                        return;
+                                    }
+                                    const isPulang = presensiForm.action.includes('/presensi-pulang');
+                                    if (isPulang) {
+                                        const pekVal = pekerjaanTextarea ? pekerjaanTextarea.value.trim() : '';
+                                        const fotoVal = fotoInput ? fotoInput.value : '';
+                                        const isSuratTugas = document.getElementById('suratTugasCheck') && document.getElementById('suratTugasCheck').checked;
+                                        if (!pekVal) {
+                                            e.preventDefault();
+                                            showAlertModal('Deskripsi Pekerjaan Kosong', 'Mohon isi deskripsi pekerjaan sebelum menyimpan Presensi Pulang.', 'warning');
+                                            return;
+                                        }
+                                        if ((isSuratTugas || !isHolidayOrWeekend) && !fotoVal) {
+                                            e.preventDefault();
+                                            if (isSuratTugas) {
+                                                showAlertModal('Foto Bukti Belum Diunggah', 'Mohon unggah foto sebagai bukti kehadiran pulang Surat Tugas Anda.', 'warning');
+                                            } else {
+                                                showAlertModal('Foto Belum Diambil', 'Mohon ambil foto selfie sebagai bukti kehadiran sebelum menyimpan Presensi Pulang.', 'warning');
+                                            }
+                                            return;
+                                        }
+                                    }
+                                    stopCamera();
+                                });
+                            }
 
-    async function loadRegisteredFaces() {
-        try {
-            const res = await fetch('/api/karyawan/faces');
-            registeredFaces = await res.json();
-            
-            if (registeredFaces.length === 0) {
-                console.warn('Belum ada data wajah yang didaftarkan.');
-                return;
-            }
-            
-            // Map JSON descriptors to LabeledFaceDescriptors
-            const labeledDescriptors = registeredFaces.map(f => {
-                const descriptor = new Float32Array(f.descriptor);
-                return new faceapi.LabeledFaceDescriptors(String(f.id), [descriptor]);
-            });
-            
-            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.45); // distance threshold (0.45 is safe/strict)
-        } catch (e) {
-            console.error('Gagal mengambil data wajah terdaftar:', e);
-        }
-    }
+                            // --- FACE RECOGNITION SCANNING CODE ---
+                            async function loadFaceModels() {
+                                if (isModelsLoaded) return;
+                                faceLoaderText.textContent = 'Memuat modul kecerdasan buatan (AI)...';
+                                await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+                                await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+                                await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+                                isModelsLoaded = true;
+                            }
 
-    async function startCamera(deviceId = null) {
-        if (!canUseWebcam) {
-            // Non-secure context or no camera available -> Fallback to manual selection immediately
-            enableManualMode();
-            return;
-        }
+                            async function loadRegisteredFaces() {
+                                try {
+                                    const res = await fetch('/api/karyawan/faces');
+                                    registeredFaces = await res.json();
 
-        try {
-            stopScanning();
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-            faceScanVideo.srcObject = null;
+                                    if (registeredFaces.length === 0) {
+                                        console.warn('Belum ada data wajah yang didaftarkan.');
+                                        return;
+                                    }
 
-            const videoConstraints = deviceId 
-                ? { deviceId: { exact: deviceId }, width: 640, height: 480 }
-                : { facingMode: 'user', width: 640, height: 480 };
+                                    // Map JSON descriptors to LabeledFaceDescriptors
+                                    const labeledDescriptors = registeredFaces.map(f => {
+                                        const descriptor = new Float32Array(f.descriptor);
+                                        return new faceapi.LabeledFaceDescriptors(String(f.id), [descriptor]);
+                                    });
 
-            cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: videoConstraints,
-                audio: false
-            });
-            faceScanVideo.srcObject = cameraStream;
-            
-            faceScanVideo.onloadedmetadata = async () => {
-                faceScanLoader.classList.add('hidden');
-                if (!isManualMode) {
-                    startScanning();
-                }
-                await updateCameraList();
-            };
-        } catch (error) {
-            console.error('Camera access error:', error);
-            let errMsg = 'Gagal mengakses kamera. ';
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                errMsg += 'Browser memblokir akses karena website diakses secara tidak aman (HTTP). Gunakan localhost atau HTTPS.';
-            } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                errMsg += 'Izin kamera ditolak/diblokir oleh browser. Silakan klik ikon gembok di sebelah URL bar browser untuk mengizinkan kamera.';
-            } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-                errMsg += 'Tidak ada perangkat kamera yang terdeteksi. Hubungkan webcam terlebih dahulu.';
-            } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-                errMsg += 'Kamera sedang digunakan oleh aplikasi lain (seperti Zoom, OBS, atau tab browser lain).';
-            } else {
-                errMsg += `Error: ${error.name || error.message || error}`;
-            }
-            showAlertModal('Kamera Tidak Dapat Diakses', errMsg + '\n\nSistem dialihkan ke Mode Pemilihan Manual.', 'error');
-            enableManualMode();
-        }
-    }
+                                    faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.45); // distance threshold (0.45 is safe/strict)
+                                } catch (e) {
+                                    console.error('Gagal mengambil data wajah terdaftar:', e);
+                                }
+                            }
 
-    async function updateCameraList() {
-        try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            
-            const cameraSelectContainer = document.getElementById('cameraSelectContainer');
-            const cameraSelect = document.getElementById('cameraSelect');
+                            async function startCamera(deviceId = null) {
+                                if (!canUseWebcam) {
+                                    // Non-secure context or no camera available -> Fallback to manual selection immediately
+                                    enableManualMode();
+                                    return;
+                                }
 
-            if (videoDevices.length > 1) {
-                cameraSelectContainer.classList.remove('hidden');
-                cameraSelect.innerHTML = '';
-                
-                const activeTrack = cameraStream ? cameraStream.getVideoTracks()[0] : null;
-                const activeSettings = activeTrack ? activeTrack.getSettings() : null;
-                const activeDeviceId = activeSettings ? activeSettings.deviceId : null;
+                                try {
+                                    stopScanning();
+                                    if (cameraStream) {
+                                        cameraStream.getTracks().forEach(track => track.stop());
+                                        cameraStream = null;
+                                    }
+                                    faceScanVideo.srcObject = null;
 
-                videoDevices.forEach((device, index) => {
-                    const opt = document.createElement('option');
-                    opt.value = device.deviceId;
-                    opt.textContent = device.label || `Kamera ${index + 1}`;
-                    if (device.deviceId === activeDeviceId) {
-                        opt.selected = true;
-                    }
-                    cameraSelect.appendChild(opt);
-                });
+                                    const videoConstraints = deviceId
+                                        ? { deviceId: { exact: deviceId }, width: 640, height: 480 }
+                                        : { facingMode: 'user', width: 640, height: 480 };
 
-                cameraSelect.onchange = async () => {
-                    const selectedId = cameraSelect.value;
-                    await startCamera(selectedId);
-                };
-            } else {
-                if (cameraSelectContainer) cameraSelectContainer.classList.add('hidden');
-            }
-        } catch (e) {
-            console.warn('Gagal membaca daftar kamera:', e);
-        }
-    }
+                                    cameraStream = await navigator.mediaDevices.getUserMedia({
+                                        video: videoConstraints,
+                                        audio: false
+                                    });
+                                    faceScanVideo.srcObject = cameraStream;
 
-    function stopCamera() {
-        stopScanning();
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            cameraStream = null;
-        }
-        faceScanVideo.srcObject = null;
-        
-        const cameraSelectContainer = document.getElementById('cameraSelectContainer');
-        if (cameraSelectContainer) cameraSelectContainer.classList.add('hidden');
-    }
+                                    faceScanVideo.onloadedmetadata = async () => {
+                                        faceScanLoader.classList.add('hidden');
+                                        if (!isManualMode) {
+                                            startScanning();
+                                        }
+                                        await updateCameraList();
+                                    };
+                                } catch (error) {
+                                    console.error('Camera access error:', error);
+                                    let errMsg = 'Gagal mengakses kamera. ';
+                                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                                        errMsg += 'Browser memblokir akses karena website diakses secara tidak aman (HTTP). Gunakan localhost atau HTTPS.';
+                                    } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                                        errMsg += 'Izin kamera ditolak/diblokir oleh browser. Silakan klik ikon gembok di sebelah URL bar browser untuk mengizinkan kamera.';
+                                    } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                                        errMsg += 'Tidak ada perangkat kamera yang terdeteksi. Hubungkan webcam terlebih dahulu.';
+                                    } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                                        errMsg += 'Kamera sedang digunakan oleh aplikasi lain (seperti Zoom, OBS, atau tab browser lain).';
+                                    } else {
+                                        errMsg += `Error: ${error.name || error.message || error}`;
+                                    }
+                                    showAlertModal('Kamera Tidak Dapat Diakses', errMsg + '\n\nSistem dialihkan ke Mode Pemilihan Manual.', 'error');
+                                    enableManualMode();
+                                }
+                            }
 
-    function startScanning() {
-        if (scanInterval) clearInterval(scanInterval);
-        
-        faceScanStatus.textContent = 'Mencari wajah Anda...';
-        
-        scanInterval = setInterval(async () => {
-            if (!cameraStream || isManualMode || recognizedUser) return;
-            
-            const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
-            const detection = await faceapi.detectSingleFace(faceScanVideo, options)
-                                         .withFaceLandmarks()
-                                         .withFaceDescriptor();
-            
-            const ctx = faceScanCanvas.getContext('2d');
-            const displaySize = { width: faceScanVideo.videoWidth, height: faceScanVideo.videoHeight };
-            faceapi.matchDimensions(faceScanCanvas, displaySize);
-            ctx.clearRect(0, 0, faceScanCanvas.width, faceScanCanvas.height);
-            
-            if (detection) {
-                // Draw detection bounding box
-                const resized = faceapi.resizeResults(detection, displaySize);
-                faceapi.draw.drawDetections(faceScanCanvas, resized);
-                
-                if (faceMatcher) {
-                    const match = faceMatcher.findBestMatch(detection.descriptor);
-                    if (match.label !== 'unknown') {
-                        unrecognizedFramesCount = 0;
-                        const matchedId = parseInt(match.label, 10);
-                        const user = registeredFaces.find(f => f.id === matchedId);
-                        if (user) {
-                            // Match confirmed!
-                            recognizedUser = user;
-                            verifyUser(user);
-                        }
-                    } else {
-                        unrecognizedFramesCount++;
-                        faceScanStatus.innerHTML = `<span class="text-accent">Wajah tidak dikenali (${unrecognizedFramesCount}/6). Silakan coba lagi.</span>`;
-                        if (unrecognizedFramesCount >= 6) {
-                            unrecognizedFramesCount = 0;
-                            stopCamera();
-                            document.getElementById('faceScanContainer').classList.add('hidden');
-                            faceScanStatus.classList.add('hidden');
-                            if (toggleManualContainer) toggleManualContainer.classList.add('hidden');
-                            if (faceScanFailedControls) faceScanFailedControls.classList.remove('hidden');
-                            showAlertModal('Wajah Tidak Dikenali', 'Wajah Anda tidak dikenali oleh sistem.\nSilakan coba lagi, pastikan pencahayaan cukup, atau gunakan "Pilih Nama Secara Manual".', 'warning');
-                        }
-                    }
-                } else {
-                    faceScanStatus.innerHTML = '<span class="text-orange-500">Kamera aktif, namun database wajah kosong.</span>';
-                }
-            } else {
-                faceScanStatus.textContent = 'Mencari wajah Anda... Posisikan wajah di tengah kamera';
-                unrecognizedFramesCount = 0;
-            }
-        }, 300);
-    }
+                            async function updateCameraList() {
+                                try {
+                                    const devices = await navigator.mediaDevices.enumerateDevices();
+                                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
-    function stopScanning() {
-        if (scanInterval) {
-            clearInterval(scanInterval);
-            scanInterval = null;
-        }
-    }
+                                    const cameraSelectContainer = document.getElementById('cameraSelectContainer');
+                                    const cameraSelect = document.getElementById('cameraSelect');
 
-    async function verifyUser(user) {
-        stopScanning();
-        
-        // Update form values
-        karyawanIdInput.value = user.id;
-        
-        // Update Recognized Card UI
-        recognizedName.textContent = user.nama;
-        recognizedAvatar.textContent = user.nama.split(/\s+/).slice(0, 2).map(n => n[0]).join('').toUpperCase();
-        
-        recognizedUserCard.classList.remove('hidden');
-        faceScanStatus.innerHTML = `<span class="text-green-600 font-semibold">Halo, ${user.nama}! Pemindaian sukses.</span>`;
-        
-        // Change border color to green
-        document.getElementById('faceScanContainer').classList.remove('border-border');
-        document.getElementById('faceScanContainer').classList.add('border-success');
-        
-        // Hide the scanner camera box
-        document.getElementById('faceScanContainer').classList.add('hidden');
-        
-        // Close the scanner camera immediately
-        stopCamera();
+                                    if (videoDevices.length > 1) {
+                                        cameraSelectContainer.classList.remove('hidden');
+                                        cameraSelect.innerHTML = '';
 
-        // Trigger status validation for this karyawan
-        await checkStatus();
-    }
+                                        const activeTrack = cameraStream ? cameraStream.getVideoTracks()[0] : null;
+                                        const activeSettings = activeTrack ? activeTrack.getSettings() : null;
+                                        const activeDeviceId = activeSettings ? activeSettings.deviceId : null;
 
-    async function startSelfieCamera() {
-        if (!canUseWebcam || isHolidayOrWeekend) return;
-        
-        const selfieVideoContainer = document.getElementById('selfieVideoContainer');
-        const selfieLoader = document.getElementById('selfieLoader');
-        const selfiePhotoPreview = document.getElementById('selfiePhotoPreview');
+                                        videoDevices.forEach((device, index) => {
+                                            const opt = document.createElement('option');
+                                            opt.value = device.deviceId;
+                                            opt.textContent = device.label || `Kamera ${index + 1}`;
+                                            if (device.deviceId === activeDeviceId) {
+                                                opt.selected = true;
+                                            }
+                                            cameraSelect.appendChild(opt);
+                                        });
 
-        selfiePhotoPreview.classList.add('hidden');
-        selfiePhotoPreview.src = '';
-        
-        selfieVideoContainer.classList.remove('hidden');
-        selfieLoader.classList.remove('hidden');
+                                        cameraSelect.onchange = async () => {
+                                            const selectedId = cameraSelect.value;
+                                            await startCamera(selectedId);
+                                        };
+                                    } else {
+                                        if (cameraSelectContainer) cameraSelectContainer.classList.add('hidden');
+                                    }
+                                } catch (e) {
+                                    console.warn('Gagal membaca daftar kamera:', e);
+                                }
+                            }
 
-        try {
-            if (selfieStream) {
-                selfieStream.getTracks().forEach(track => track.stop());
-                selfieStream = null;
-            }
-            
-            const cameraSelect = document.getElementById('cameraSelect');
-            const selectedDeviceId = cameraSelect ? cameraSelect.value : null;
-            
-            const videoConstraints = selectedDeviceId 
-                ? { deviceId: { exact: selectedDeviceId }, width: 640, height: 480 }
-                : { facingMode: 'user', width: 640, height: 480 };
+                            function stopCamera() {
+                                stopScanning();
+                                if (cameraStream) {
+                                    cameraStream.getTracks().forEach(track => track.stop());
+                                    cameraStream = null;
+                                }
+                                faceScanVideo.srcObject = null;
 
-            selfieStream = await navigator.mediaDevices.getUserMedia({
-                video: videoConstraints,
-                audio: false
-            });
-            
-            selfieVideo.srcObject = selfieStream;
-            selfieVideo.onloadedmetadata = () => {
-                selfieLoader.classList.add('hidden');
-            };
+                                const cameraSelectContainer = document.getElementById('cameraSelectContainer');
+                                if (cameraSelectContainer) cameraSelectContainer.classList.add('hidden');
+                            }
 
-            if (captureSelfieBtn) {
-                captureSelfieBtn.classList.remove('hidden');
-                captureSelfieBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Tangkap Foto`;
-            }
-            if (cancelSelfieBtn) cancelSelfieBtn.classList.remove('hidden');
-            if (retakeSelfieBtn) retakeSelfieBtn.classList.add('hidden');
-        } catch (err) {
-            console.error('Selfie camera error:', err);
-            selfieLoader.classList.add('hidden');
-            selfieVideoContainer.classList.add('hidden');
-            if (cameraFallbackInput) cameraFallbackInput.click();
-        }
-    }
+                            function startScanning() {
+                                if (scanInterval) clearInterval(scanInterval);
 
-    function stopSelfieCamera() {
-        if (selfieStream) {
-            selfieStream.getTracks().forEach(track => track.stop());
-            selfieStream = null;
-        }
-        if (selfieVideo) selfieVideo.srcObject = null;
-        if (selfieVideoContainer) selfieVideoContainer.classList.add('hidden');
-    }
+                                faceScanStatus.textContent = 'Mencari wajah Anda...';
 
-    function resetVerification() {
-        recognizedUser = null;
-        karyawanIdInput.value = '';
-        recognizedUserCard.classList.add('hidden');
-        unrecognizedFramesCount = 0;
-        
-        document.getElementById('faceScanContainer').classList.remove('border-success');
-        document.getElementById('faceScanContainer').classList.add('border-border');
-        
-        // Show scanner camera box and status again
-        document.getElementById('faceScanContainer').classList.remove('hidden');
-        faceScanStatus.classList.remove('hidden');
-        
-        // Hide failure controls, show manual toggle container
-        if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
-        if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
-        
-        resetFormSections();
-        
-        if (!isManualMode) {
-            startScanning();
-        }
-    }
+                                scanInterval = setInterval(async () => {
+                                    if (!cameraStream || isManualMode || recognizedUser) return;
 
-    // --- MANUAL TOGGLE MECHANICS ---
-    function enableManualMode() {
-        isManualMode = true;
-        stopCamera();
-        unrecognizedFramesCount = 0;
-        
-        faceScannerBlock.classList.add('hidden');
-        manualSelectBlock.classList.remove('hidden');
-        toggleManualBtn.textContent = 'Gunakan Pemindai Wajah';
-        if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
-        if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
-        
-        // Transfer dropdown select values to our form
-        karyawanIdInput.value = karyawanIdManual.value;
-        checkStatus();
-    }
+                                    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
+                                    const detection = await faceapi.detectSingleFace(faceScanVideo, options)
+                                        .withFaceLandmarks()
+                                        .withFaceDescriptor();
 
-    function disableManualMode() {
-        isManualMode = false;
-        unrecognizedFramesCount = 0;
-        
-        faceScannerBlock.classList.remove('hidden');
-        manualSelectBlock.classList.add('hidden');
-        toggleManualBtn.textContent = 'Pilih Nama Secara Manual';
-        if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
-        if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
-        
-        resetVerification();
-        startCamera();
-    }
+                                    const ctx = faceScanCanvas.getContext('2d');
+                                    const displaySize = { width: faceScanVideo.videoWidth, height: faceScanVideo.videoHeight };
+                                    faceapi.matchDimensions(faceScanCanvas, displaySize);
+                                    ctx.clearRect(0, 0, faceScanCanvas.width, faceScanCanvas.height);
 
-    toggleManualBtn.addEventListener('click', () => {
-        if (isManualMode) {
-            disableManualMode();
-        } else {
-            enableManualMode();
-        }
-    });
+                                    if (detection) {
+                                        // Draw detection bounding box
+                                        const resized = faceapi.resizeResults(detection, displaySize);
+                                        faceapi.draw.drawDetections(faceScanCanvas, resized);
 
-    if (retryFaceScanBtn) {
-        retryFaceScanBtn.addEventListener('click', async function() {
-            if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
-            if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
-            document.getElementById('faceScanContainer').classList.remove('hidden');
-            faceScanStatus.classList.remove('hidden');
-            
-            unrecognizedFramesCount = 0;
-            await startCamera();
-        });
-    }
+                                        if (faceMatcher) {
+                                            const match = faceMatcher.findBestMatch(detection.descriptor);
+                                            if (match.label !== 'unknown') {
+                                                unrecognizedFramesCount = 0;
+                                                const matchedId = parseInt(match.label, 10);
+                                                const user = registeredFaces.find(f => f.id === matchedId);
+                                                if (user) {
+                                                    // Match confirmed!
+                                                    recognizedUser = user;
+                                                    verifyUser(user);
+                                                }
+                                            } else {
+                                                unrecognizedFramesCount++;
+                                                faceScanStatus.innerHTML = `<span class="text-accent">Wajah tidak dikenali (${unrecognizedFramesCount}/6). Silakan coba lagi.</span>`;
+                                                if (unrecognizedFramesCount >= 6) {
+                                                    unrecognizedFramesCount = 0;
+                                                    stopCamera();
+                                                    document.getElementById('faceScanContainer').classList.add('hidden');
+                                                    faceScanStatus.classList.add('hidden');
+                                                    if (toggleManualContainer) toggleManualContainer.classList.add('hidden');
+                                                    if (faceScanFailedControls) faceScanFailedControls.classList.remove('hidden');
+                                                    showAlertModal('Wajah Tidak Dikenali', 'Wajah Anda tidak dikenali oleh sistem.\nSilakan coba lagi, pastikan pencahayaan cukup, atau gunakan "Pilih Nama Secara Manual".', 'warning');
+                                                }
+                                            }
+                                        } else {
+                                            faceScanStatus.innerHTML = '<span class="text-orange-500">Kamera aktif, namun database wajah kosong.</span>';
+                                        }
+                                    } else {
+                                        faceScanStatus.textContent = 'Mencari wajah Anda... Posisikan wajah di tengah kamera';
+                                        unrecognizedFramesCount = 0;
+                                    }
+                                }, 300);
+                            }
 
-    if (failedManualBtn) {
-        failedManualBtn.addEventListener('click', function() {
-            if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
-            enableManualMode();
-        });
-    }
+                            function stopScanning() {
+                                if (scanInterval) {
+                                    clearInterval(scanInterval);
+                                    scanInterval = null;
+                                }
+                            }
 
-    karyawanIdManual.addEventListener('change', () => {
-        karyawanIdInput.value = karyawanIdManual.value;
-        checkStatus();
-    });
+                            async function verifyUser(user) {
+                                stopScanning();
 
-    // --- PHOTO CAPTURE & SELFIE LOGIC (decoupled stream) ---
-    if (captureSelfieBtn) {
-        captureSelfieBtn.addEventListener('click', async function() {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            if (isMobile) {
-                // On mobile, click triggers native device camera app directly
-                if (cameraFallbackInput) cameraFallbackInput.click();
-                return;
-            }
+                                // Update form values
+                                karyawanIdInput.value = user.id;
 
-            // Desktop camera trigger logic
-            if (!selfieStream) {
-                await startSelfieCamera();
-                return;
-            }
-            
-            // Capture from selfieVideo
-            const snapCanvas = document.createElement('canvas');
-            snapCanvas.width = selfieVideo.videoWidth || 640;
-            snapCanvas.height = selfieVideo.videoHeight || 480;
-            
-            const ctx = snapCanvas.getContext('2d');
-            // Mirror image to match the video view
-            ctx.translate(snapCanvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(selfieVideo, 0, 0, snapCanvas.width, snapCanvas.height);
-            
-            // Compress image to fit payload limits
-            let quality = 0.6;
-            let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
-            while (dataUrl.length * 0.75 > 150 * 1024 && quality > 0.1) {
-                quality -= 0.1;
-                dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
-            }
-            
-            // Set input hidden value
-            fotoInput.value = dataUrl;
-            
-            // Show preview overlay inside selfie container
-            selfiePhotoPreview.src = dataUrl;
-            selfiePhotoPreview.classList.remove('hidden');
-            
-            // Turn off camera stream
-            stopSelfieCamera();
-            
-            // Toggle controls
-            captureSelfieBtn.classList.add('hidden');
-            retakeSelfieBtn.classList.remove('hidden');
-            if (cancelSelfieBtn) cancelSelfieBtn.classList.add('hidden');
-        });
-    }
+                                // Update Recognized Card UI
+                                recognizedName.textContent = user.nama;
+                                recognizedAvatar.textContent = user.nama.split(/\s+/).slice(0, 2).map(n => n[0]).join('').toUpperCase();
 
-    if (cancelSelfieBtn) {
-        cancelSelfieBtn.addEventListener('click', function() {
-            stopSelfieCamera();
-            selfieVideoContainer.classList.add('hidden');
-            
-            // Reset main button
-            captureSelfieBtn.classList.remove('hidden');
-            captureSelfieBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2-2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Ambil Foto Bukti`;
-            cancelSelfieBtn.classList.add('hidden');
-            retakeSelfieBtn.classList.add('hidden');
-            
-            fotoInput.value = '';
-            selfiePhotoPreview.classList.add('hidden');
-            selfiePhotoPreview.src = '';
-        });
-    }
+                                recognizedUserCard.classList.remove('hidden');
+                                faceScanStatus.innerHTML = `<span class="text-green-600 font-semibold">Halo, ${user.nama}! Pemindaian sukses.</span>`;
 
-    if (retakeSelfieBtn) {
-        retakeSelfieBtn.addEventListener('click', async function() {
-            fotoInput.value = '';
-            selfiePhotoPreview.classList.add('hidden');
-            selfiePhotoPreview.src = '';
-            if (cameraFallbackInput) cameraFallbackInput.value = '';
-            
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            if (isMobile) {
-                if (cameraFallbackInput) cameraFallbackInput.click();
-                return;
-            }
-            
-            // Restart bottom selfie camera for desktop
-            await startSelfieCamera();
-        });
-    }
+                                // Change border color to green
+                                document.getElementById('faceScanContainer').classList.remove('border-border');
+                                document.getElementById('faceScanContainer').classList.add('border-success');
 
-    // Native file input fallback logic for mobile native camera
-    if (cameraFallbackInput) {
-        cameraFallbackInput.addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
+                                // Hide the scanner camera box
+                                document.getElementById('faceScanContainer').classList.add('hidden');
 
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const img = new Image();
-                img.onload = function () {
-                    const snapCanvas = document.createElement('canvas');
-                    const maxW = 640;
-                    const maxH = 480;
-                    let w = img.width;
-                    let h = img.height;
+                                // Close the scanner camera immediately
+                                stopCamera();
 
-                    if (w > maxW || h > maxH) {
-                        const ratio = Math.min(maxW / w, maxH / h);
-                        w = Math.round(w * ratio);
-                        h = Math.round(h * ratio);
-                    }
+                                // Trigger status validation for this karyawan
+                                await checkStatus();
+                            }
 
-                    snapCanvas.width = w;
-                    snapCanvas.height = h;
-                    const ctx = snapCanvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
+                            async function startSelfieCamera() {
+                                if (!canUseWebcam || isHolidayOrWeekend) return;
 
-                    let quality = 0.6;
-                    let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
-                    while (dataUrl.length * 0.75 > 150 * 1024 && quality > 0.1) {
-                        quality -= 0.1;
-                        dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
-                    }
-                    fotoInput.value = dataUrl;
+                                const selfieVideoContainer = document.getElementById('selfieVideoContainer');
+                                const selfieLoader = document.getElementById('selfieLoader');
+                                const selfiePhotoPreview = document.getElementById('selfiePhotoPreview');
 
-                    selfiePhotoPreview.src = dataUrl;
-                    selfiePhotoPreview.classList.remove('hidden');
+                                selfiePhotoPreview.classList.add('hidden');
+                                selfiePhotoPreview.src = '';
 
-                    captureSelfieBtn.classList.add('hidden');
-                    retakeSelfieBtn.classList.remove('hidden');
-                    if (cancelSelfieBtn) cancelSelfieBtn.classList.add('hidden');
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
+                                selfieVideoContainer.classList.remove('hidden');
+                                selfieLoader.classList.remove('hidden');
 
-    // Surat Tugas image upload logic
-    const suratTugasUploadInput = document.getElementById('suratTugasUploadInput');
-    const suratTugasPreview = document.getElementById('suratTugasPreview');
-    
-    if (suratTugasUploadInput) {
-        suratTugasUploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+                                try {
+                                    if (selfieStream) {
+                                        selfieStream.getTracks().forEach(track => track.stop());
+                                        selfieStream = null;
+                                    }
 
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const snapCanvas = document.createElement('canvas');
-                    const maxW = 640;
-                    const maxH = 480;
-                    let w = img.width;
-                    let h = img.height;
+                                    const cameraSelect = document.getElementById('cameraSelect');
+                                    const selectedDeviceId = cameraSelect ? cameraSelect.value : null;
 
-                    if (w > maxW || h > maxH) {
-                        const ratio = Math.min(maxW / w, maxH / h);
-                        w = Math.round(w * ratio);
-                        h = Math.round(h * ratio);
-                    }
+                                    const videoConstraints = selectedDeviceId
+                                        ? { deviceId: { exact: selectedDeviceId }, width: 640, height: 480 }
+                                        : { facingMode: 'user', width: 640, height: 480 };
 
-                    snapCanvas.width = w;
-                    snapCanvas.height = h;
-                    const ctx = snapCanvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
+                                    selfieStream = await navigator.mediaDevices.getUserMedia({
+                                        video: videoConstraints,
+                                        audio: false
+                                    });
 
-                    let quality = 0.6;
-                    let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
-                    while (dataUrl.length * 0.75 > 150000 && quality > 0.1) {
-                        quality -= 0.1;
-                        dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
-                    }
-                    
-                    suratTugasPreview.src = dataUrl;
-                    suratTugasPreview.classList.remove('hidden');
-                    fotoInput.value = dataUrl;
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
+                                    selfieVideo.srcObject = selfieStream;
+                                    selfieVideo.onloadedmetadata = () => {
+                                        selfieLoader.classList.add('hidden');
+                                    };
 
-    // --- INITIALIZATION ---
-    async function initPresensi() {
-        if (!canUseWebcam) {
-            enableManualMode();
-            return;
-        }
+                                    if (captureSelfieBtn) {
+                                        captureSelfieBtn.classList.remove('hidden');
+                                        captureSelfieBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Tangkap Foto`;
+                                    }
+                                    if (cancelSelfieBtn) cancelSelfieBtn.classList.remove('hidden');
+                                    if (retakeSelfieBtn) retakeSelfieBtn.classList.add('hidden');
+                                } catch (err) {
+                                    console.error('Selfie camera error:', err);
+                                    selfieLoader.classList.add('hidden');
+                                    selfieVideoContainer.classList.add('hidden');
+                                    if (cameraFallbackInput) cameraFallbackInput.click();
+                                }
+                            }
 
-        try {
-            await loadFaceModels();
-            await loadRegisteredFaces();
-            await startCamera();
-        } catch (e) {
-            console.error('Gagal memuat inisialisasi Face Recognition:', e);
-            showAlertModal('Gagal Menginisialisasi AI', 'Gagal memuat modul Face Recognition: ' + e.message + '\n\nSistem dialihkan ke Mode Pemilihan Manual.', 'error');
-            enableManualMode();
-        }
-    }
+                            function stopSelfieCamera() {
+                                if (selfieStream) {
+                                    selfieStream.getTracks().forEach(track => track.stop());
+                                    selfieStream = null;
+                                }
+                                if (selfieVideo) selfieVideo.srcObject = null;
+                                if (selfieVideoContainer) selfieVideoContainer.classList.add('hidden');
+                            }
 
-    // Run when DOM elements are fully loaded
-    window.addEventListener('DOMContentLoaded', initPresensi);
-</script>
+                            function resetVerification() {
+                                recognizedUser = null;
+                                karyawanIdInput.value = '';
+                                recognizedUserCard.classList.add('hidden');
+                                unrecognizedFramesCount = 0;
 
-<!-- Custom Alert Modal -->
-<div id="alertModal"
-    class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
-    <div id="alertModalContent"
-        class="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl transform scale-95 transition-transform duration-200">
-        <div class="flex flex-col items-center text-center gap-4">
-            <!-- Icon -->
-            <div id="alertModalIcon"
-                class="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0">
-            </div>
-            <!-- Text -->
-            <div>
-                <h3 id="alertModalTitle" class="font-display text-lg font-bold text-fg mb-1">
-                </h3>
-                <p id="alertModalMessage"
-                    class="text-sm text-muted whitespace-pre-line leading-relaxed"></p>
-            </div>
-            <!-- Button -->
-            <button type="button" onclick="closeAlertModal()" id="alertModalBtn"
-                class="w-full px-6 py-2.5 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press text-sm">
-                Mengerti
-            </button>
-        </div>
-    </div>
-</div>
+                                document.getElementById('faceScanContainer').classList.remove('border-success');
+                                document.getElementById('faceScanContainer').classList.add('border-border');
 
-<script>
-    const alertModal = document.getElementById('alertModal');
-    const alertModalContent = document.getElementById('alertModalContent');
+                                // Show scanner camera box and status again
+                                document.getElementById('faceScanContainer').classList.remove('hidden');
+                                faceScanStatus.classList.remove('hidden');
 
-    function showAlertModal(title, message, type = 'info') {
-        const iconEl = document.getElementById('alertModalIcon');
-        const titleEl = document.getElementById('alertModalTitle');
-        const msgEl = document.getElementById('alertModalMessage');
-        const btnEl = document.getElementById('alertModalBtn');
+                                // Hide failure controls, show manual toggle container
+                                if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
+                                if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
 
-        titleEl.textContent = title;
-        msgEl.textContent = message;
+                                resetFormSections();
 
-        const configs = {
-            info: {
-                bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
-                icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-            },
-            warning: {
-                bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
-                icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`
-            },
-            error: {
-                bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
-                icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-            }
-        };
-        const cfg = configs[type] || configs.info;
-        iconEl.className = `w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${cfg.bg} ${cfg.iconColor}`;
-        iconEl.innerHTML = cfg.icon;
-        btnEl.className = `w-full px-6 py-2.5 text-white font-semibold rounded-xl transition-colors btn-press text-sm ${cfg.btnClass}`;
+                                if (!isManualMode) {
+                                    startScanning();
+                                }
+                            }
 
-        alertModal.classList.remove('hidden');
-        setTimeout(() => {
-            alertModal.classList.remove('opacity-0');
-            alertModalContent.classList.remove('scale-95');
-        }, 10);
-    }
+                            // --- MANUAL TOGGLE MECHANICS ---
+                            function enableManualMode() {
+                                isManualMode = true;
+                                stopCamera();
+                                unrecognizedFramesCount = 0;
 
-    function closeAlertModal() {
-        alertModal.classList.add('opacity-0');
-        alertModalContent.classList.add('scale-95');
-        setTimeout(() => alertModal.classList.add('hidden'), 200);
-    }
+                                faceScannerBlock.classList.add('hidden');
+                                manualSelectBlock.classList.remove('hidden');
+                                toggleManualBtn.textContent = 'Gunakan Pemindai Wajah';
+                                if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
+                                if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
 
-    alertModal.addEventListener('click', function (e) {
-        if (e.target === alertModal) closeAlertModal();
-    });
-</script>
-<%- include('partials/footer') %>
+                                // Transfer dropdown select values to our form
+                                karyawanIdInput.value = karyawanIdManual.value;
+                                checkStatus();
+                            }
+
+                            function disableManualMode() {
+                                isManualMode = false;
+                                unrecognizedFramesCount = 0;
+
+                                faceScannerBlock.classList.remove('hidden');
+                                manualSelectBlock.classList.add('hidden');
+                                toggleManualBtn.textContent = 'Pilih Nama Secara Manual';
+                                if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
+                                if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
+
+                                resetVerification();
+                                startCamera();
+                            }
+
+                            toggleManualBtn.addEventListener('click', () => {
+                                if (isManualMode) {
+                                    disableManualMode();
+                                } else {
+                                    enableManualMode();
+                                }
+                            });
+
+                            if (retryFaceScanBtn) {
+                                retryFaceScanBtn.addEventListener('click', async function () {
+                                    if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
+                                    if (toggleManualContainer) toggleManualContainer.classList.remove('hidden');
+                                    document.getElementById('faceScanContainer').classList.remove('hidden');
+                                    faceScanStatus.classList.remove('hidden');
+
+                                    unrecognizedFramesCount = 0;
+                                    await startCamera();
+                                });
+                            }
+
+                            if (failedManualBtn) {
+                                failedManualBtn.addEventListener('click', function () {
+                                    if (faceScanFailedControls) faceScanFailedControls.classList.add('hidden');
+                                    enableManualMode();
+                                });
+                            }
+
+                            karyawanIdManual.addEventListener('change', () => {
+                                karyawanIdInput.value = karyawanIdManual.value;
+                                checkStatus();
+                            });
+
+                            // --- PHOTO CAPTURE & SELFIE LOGIC (decoupled stream) ---
+                            if (captureSelfieBtn) {
+                                captureSelfieBtn.addEventListener('click', async function () {
+                                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                                    if (isMobile) {
+                                        // On mobile, click triggers native device camera app directly
+                                        if (cameraFallbackInput) cameraFallbackInput.click();
+                                        return;
+                                    }
+
+                                    // Desktop camera trigger logic
+                                    if (!selfieStream) {
+                                        await startSelfieCamera();
+                                        return;
+                                    }
+
+                                    // Capture from selfieVideo
+                                    const snapCanvas = document.createElement('canvas');
+                                    snapCanvas.width = selfieVideo.videoWidth || 640;
+                                    snapCanvas.height = selfieVideo.videoHeight || 480;
+
+                                    const ctx = snapCanvas.getContext('2d');
+                                    // Mirror image to match the video view
+                                    ctx.translate(snapCanvas.width, 0);
+                                    ctx.scale(-1, 1);
+                                    ctx.drawImage(selfieVideo, 0, 0, snapCanvas.width, snapCanvas.height);
+
+                                    // Compress image to fit payload limits
+                                    let quality = 0.6;
+                                    let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                                    while (dataUrl.length * 0.75 > 150 * 1024 && quality > 0.1) {
+                                        quality -= 0.1;
+                                        dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                                    }
+
+                                    // Set input hidden value
+                                    fotoInput.value = dataUrl;
+
+                                    // Show preview overlay inside selfie container
+                                    selfiePhotoPreview.src = dataUrl;
+                                    selfiePhotoPreview.classList.remove('hidden');
+
+                                    // Turn off camera stream
+                                    stopSelfieCamera();
+
+                                    // Toggle controls
+                                    captureSelfieBtn.classList.add('hidden');
+                                    retakeSelfieBtn.classList.remove('hidden');
+                                    if (cancelSelfieBtn) cancelSelfieBtn.classList.add('hidden');
+                                });
+                            }
+
+                            if (cancelSelfieBtn) {
+                                cancelSelfieBtn.addEventListener('click', function () {
+                                    stopSelfieCamera();
+                                    selfieVideoContainer.classList.add('hidden');
+
+                                    // Reset main button
+                                    captureSelfieBtn.classList.remove('hidden');
+                                    captureSelfieBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2-2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Ambil Foto Bukti`;
+                                    cancelSelfieBtn.classList.add('hidden');
+                                    retakeSelfieBtn.classList.add('hidden');
+
+                                    fotoInput.value = '';
+                                    selfiePhotoPreview.classList.add('hidden');
+                                    selfiePhotoPreview.src = '';
+                                });
+                            }
+
+                            if (retakeSelfieBtn) {
+                                retakeSelfieBtn.addEventListener('click', async function () {
+                                    fotoInput.value = '';
+                                    selfiePhotoPreview.classList.add('hidden');
+                                    selfiePhotoPreview.src = '';
+                                    if (cameraFallbackInput) cameraFallbackInput.value = '';
+
+                                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                                    if (isMobile) {
+                                        if (cameraFallbackInput) cameraFallbackInput.click();
+                                        return;
+                                    }
+
+                                    // Restart bottom selfie camera for desktop
+                                    await startSelfieCamera();
+                                });
+                            }
+
+                            // Native file input fallback logic for mobile native camera
+                            if (cameraFallbackInput) {
+                                cameraFallbackInput.addEventListener('change', function (e) {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+
+                                    const reader = new FileReader();
+                                    reader.onload = function (event) {
+                                        const img = new Image();
+                                        img.onload = function () {
+                                            const snapCanvas = document.createElement('canvas');
+                                            const maxW = 640;
+                                            const maxH = 480;
+                                            let w = img.width;
+                                            let h = img.height;
+
+                                            if (w > maxW || h > maxH) {
+                                                const ratio = Math.min(maxW / w, maxH / h);
+                                                w = Math.round(w * ratio);
+                                                h = Math.round(h * ratio);
+                                            }
+
+                                            snapCanvas.width = w;
+                                            snapCanvas.height = h;
+                                            const ctx = snapCanvas.getContext('2d');
+                                            ctx.drawImage(img, 0, 0, w, h);
+
+                                            let quality = 0.6;
+                                            let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                                            while (dataUrl.length * 0.75 > 150 * 1024 && quality > 0.1) {
+                                                quality -= 0.1;
+                                                dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                                            }
+                                            fotoInput.value = dataUrl;
+
+                                            selfiePhotoPreview.src = dataUrl;
+                                            selfiePhotoPreview.classList.remove('hidden');
+
+                                            captureSelfieBtn.classList.add('hidden');
+                                            retakeSelfieBtn.classList.remove('hidden');
+                                            if (cancelSelfieBtn) cancelSelfieBtn.classList.add('hidden');
+                                        };
+                                        img.src = event.target.result;
+                                    };
+                                    reader.readAsDataURL(file);
+                                });
+                            }
+
+                            // Surat Tugas image upload logic
+                            const suratTugasUploadInput = document.getElementById('suratTugasUploadInput');
+                            const suratTugasPreview = document.getElementById('suratTugasPreview');
+
+                            if (suratTugasUploadInput) {
+                                suratTugasUploadInput.addEventListener('change', function (e) {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+
+                                    const reader = new FileReader();
+                                    reader.onload = function (event) {
+                                        const img = new Image();
+                                        img.onload = function () {
+                                            const snapCanvas = document.createElement('canvas');
+                                            const maxW = 640;
+                                            const maxH = 480;
+                                            let w = img.width;
+                                            let h = img.height;
+
+                                            if (w > maxW || h > maxH) {
+                                                const ratio = Math.min(maxW / w, maxH / h);
+                                                w = Math.round(w * ratio);
+                                                h = Math.round(h * ratio);
+                                            }
+
+                                            snapCanvas.width = w;
+                                            snapCanvas.height = h;
+                                            const ctx = snapCanvas.getContext('2d');
+                                            ctx.drawImage(img, 0, 0, w, h);
+
+                                            let quality = 0.6;
+                                            let dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                                            while (dataUrl.length * 0.75 > 150000 && quality > 0.1) {
+                                                quality -= 0.1;
+                                                dataUrl = snapCanvas.toDataURL('image/jpeg', quality);
+                                            }
+
+                                            suratTugasPreview.src = dataUrl;
+                                            suratTugasPreview.classList.remove('hidden');
+                                            fotoInput.value = dataUrl;
+                                        };
+                                        img.src = event.target.result;
+                                    };
+                                    reader.readAsDataURL(file);
+                                });
+                            }
+
+                            // --- INITIALIZATION ---
+                            async function initPresensi() {
+                                if (!canUseWebcam) {
+                                    enableManualMode();
+                                    return;
+                                }
+
+                                try {
+                                    await loadFaceModels();
+                                    await loadRegisteredFaces();
+                                    await startCamera();
+                                } catch (e) {
+                                    console.error('Gagal memuat inisialisasi Face Recognition:', e);
+                                    showAlertModal('Gagal Menginisialisasi AI', 'Gagal memuat modul Face Recognition: ' + e.message + '\n\nSistem dialihkan ke Mode Pemilihan Manual.', 'error');
+                                    enableManualMode();
+                                }
+                            }
+
+                            // Run when DOM elements are fully loaded
+                            window.addEventListener('DOMContentLoaded', initPresensi);
+                        </script>
+
+                        <!-- Custom Alert Modal -->
+                        <div id="alertModal"
+                            class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+                            <div id="alertModalContent"
+                                class="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl transform scale-95 transition-transform duration-200">
+                                <div class="flex flex-col items-center text-center gap-4">
+                                    <!-- Icon -->
+                                    <div id="alertModalIcon"
+                                        class="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0">
+                                    </div>
+                                    <!-- Text -->
+                                    <div>
+                                        <h3 id="alertModalTitle" class="font-display text-lg font-bold text-fg mb-1">
+                                        </h3>
+                                        <p id="alertModalMessage"
+                                            class="text-sm text-muted whitespace-pre-line leading-relaxed"></p>
+                                    </div>
+                                    <!-- Button -->
+                                    <button type="button" onclick="closeAlertModal()" id="alertModalBtn"
+                                        class="w-full px-6 py-2.5 bg-accent text-white font-semibold rounded-xl hover:bg-accentHover transition-colors btn-press text-sm">
+                                        Mengerti
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <script>
+                            const alertModal = document.getElementById('alertModal');
+                            const alertModalContent = document.getElementById('alertModalContent');
+
+                            function showAlertModal(title, message, type = 'info') {
+                                const iconEl = document.getElementById('alertModalIcon');
+                                const titleEl = document.getElementById('alertModalTitle');
+                                const msgEl = document.getElementById('alertModalMessage');
+                                const btnEl = document.getElementById('alertModalBtn');
+
+                                titleEl.textContent = title;
+                                msgEl.textContent = message;
+
+                                const configs = {
+                                    info: {
+                                        bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                                        icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+                                    },
+                                    warning: {
+                                        bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                                        icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`
+                                    },
+                                    error: {
+                                        bg: 'bg-red-100', iconColor: 'text-red-600', btnClass: 'bg-accent hover:bg-accentHover',
+                                        icon: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+                                    }
+                                };
+                                const cfg = configs[type] || configs.info;
+                                iconEl.className = `w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${cfg.bg} ${cfg.iconColor}`;
+                                iconEl.innerHTML = cfg.icon;
+                                btnEl.className = `w-full px-6 py-2.5 text-white font-semibold rounded-xl transition-colors btn-press text-sm ${cfg.btnClass}`;
+
+                                alertModal.classList.remove('hidden');
+                                setTimeout(() => {
+                                    alertModal.classList.remove('opacity-0');
+                                    alertModalContent.classList.remove('scale-95');
+                                }, 10);
+                            }
+
+                            function closeAlertModal() {
+                                alertModal.classList.add('opacity-0');
+                                alertModalContent.classList.add('scale-95');
+                                setTimeout(() => alertModal.classList.add('hidden'), 200);
+                            }
+
+                            alertModal.addEventListener('click', function (e) {
+                                if (e.target === alertModal) closeAlertModal();
+                            });
+                        </script>
+                        <%- include('partials/footer') %>

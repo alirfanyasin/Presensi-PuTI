@@ -323,7 +323,8 @@
                     <div class="px-6 py-5 border-b border-border bg-accentLighter/10 flex items-center justify-between">
                         <div>
                             <h3 class="font-display text-lg font-bold text-fg">Riwayat Alokasi & Pengalihan Lembur</h3>
-                            <p class="text-xs text-muted">Jejak audit alokasi jam lembur student staff ke presensi hari lain
+                            <p class="text-xs text-muted">Jejak audit alokasi jam lembur student staff ke presensi hari
+                                lain
                             </p>
                         </div>
                     </div>
@@ -435,48 +436,66 @@
                     </div>
 
                     <div class="flex items-center gap-2 py-1">
-                        <input type="checkbox" id="alokasikanHariCuti" name="alokasikanHariCuti" value="true" class="w-4 h-4 text-accent border-border rounded focus:ring-accent focus:ring-offset-0 cursor-pointer" onchange="toggleAlokasiCuti(this)">
-                        <label for="alokasikanHariCuti" class="text-sm font-semibold text-fg cursor-pointer select-none">Alokasikan ke WFH / Tidak Masuk</label>
+                        <input type="checkbox" id="alokasikanHariCuti" name="alokasikanHariCuti" value="true"
+                            class="w-4 h-4 text-accent border-border rounded focus:ring-accent focus:ring-offset-0 cursor-pointer"
+                            onchange="toggleAlokasiCuti(this)">
+                        <label for="alokasikanHariCuti"
+                            class="text-sm font-semibold text-fg cursor-pointer select-none">Alokasikan ke WFH / Tidak
+                            Masuk</label>
                     </div>
 
                     <div id="targetPresenceContainer">
-                        <label for="transPresensiId" class="block text-sm font-semibold text-fg mb-1">Presensi Hari Target (Kurang dari 8 Jam)</label>
+                        <label for="transPresensiId" class="block text-sm font-semibold text-fg mb-1">Presensi Hari
+                            Target (Kurang dari 8 Jam)</label>
                         <select id="transPresensiId" name="presensiId" required
                             class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm"
                             onchange="onTargetDateChange(this)">
                             <option value="" disabled selected>-- Pilih Hari Target --</option>
                         </select>
-                        <p id="noTargetMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Student Staff ini tidak memiliki hari kerja di bawah 8 jam yang perlu ditransfer.</p>
+                        <p id="noTargetMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Student Staff ini
+                            tidak memiliki hari kerja di bawah 8 jam yang perlu ditransfer.</p>
                     </div>
 
                     <div id="absentTargetContainer" class="hidden">
-                        <label for="transAbsentDateId" class="block text-sm font-semibold text-fg mb-1">Pilih Hari WFH / Tidak Masuk Kerja</label>
+                        <label for="transAbsentDateId" class="block text-sm font-semibold text-fg mb-1">Pilih Hari WFH /
+                            Tidak Masuk Kerja</label>
                         <select id="transAbsentDateId" name="absentDateId"
                             class="w-full px-4 py-2.5 bg-inputBg border border-border rounded-xl text-fg appearance-none cursor-pointer focus:border-accent transition-colors text-sm"
                             onchange="onAbsentDateChange(this)">
                             <option value="" disabled selected>-- Pilih Tanggal WFH / Tidak Masuk --</option>
                         </select>
-                        <p id="noAbsentMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Student Staff ini tidak memiliki hari WFH / tidak masuk di periode yang sama.</p>
+                        <p id="noAbsentMessage" class="hidden text-xs text-accent mt-1.5 font-medium">Student Staff ini
+                            tidak memiliki hari WFH / tidak masuk di periode yang sama.</p>
                     </div>
 
                     <div id="pekerjaanAbsentContainer" class="hidden">
-                        <label for="transPekerjaanAbsent" class="block text-sm font-semibold text-fg mb-1">Deskripsi Pekerjaan <span class="text-accent text-xs">(wajib)</span></label>
-                        <textarea id="transPekerjaanAbsent" name="pekerjaan" rows="3" placeholder="Tuliskan deskripsi pekerjaan alokasi..."
+                        <label for="transPekerjaanAbsent" class="block text-sm font-semibold text-fg mb-1">Deskripsi
+                            Pekerjaan <span class="text-accent text-xs">(wajib)</span></label>
+                        <textarea id="transPekerjaanAbsent" name="pekerjaan" rows="3"
+                            placeholder="Tuliskan deskripsi pekerjaan alokasi..."
                             class="w-full px-4 py-3 bg-inputBg border border-border rounded-xl text-fg placeholder-muted resize-none focus:border-accent transition-colors text-sm"></textarea>
                     </div>
 
                     <div id="fotoAbsentContainer" class="hidden">
-                        <label class="block text-sm font-semibold text-fg mb-1">Bukti Foto <span class="text-accent text-xs">(wajib)</span></label>
+                        <label class="block text-sm font-semibold text-fg mb-1">Bukti Foto <span
+                                class="text-accent text-xs">(wajib)</span></label>
                         <div class="flex items-center justify-center w-full">
-                            <label for="absentPhotoUploadInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
+                            <label for="absentPhotoUploadInput"
+                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-inputBg border-border hover:bg-border transition-colors">
                                 <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center">
-                                    <svg class="w-8 h-8 mb-2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    <svg class="w-8 h-8 mb-2 text-muted" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                    </svg>
                                     <p class="text-xs text-muted font-semibold">Klik untuk unggah foto bukti alokasi</p>
                                 </div>
                                 <input id="absentPhotoUploadInput" type="file" accept="image/*" class="hidden" />
                             </label>
                         </div>
-                        <img id="absentPhotoPreview" class="hidden w-full rounded-xl mt-3 aspect-video border border-border object-cover" alt="Preview Bukti Foto">
+                        <img id="absentPhotoPreview"
+                            class="hidden w-full rounded-xl mt-3 aspect-video border border-border object-cover"
+                            alt="Preview Bukti Foto">
                         <input type="hidden" name="foto" id="absentFotoInput">
                         <canvas id="absentCanvas" class="hidden"></canvas>
                     </div>
@@ -666,38 +685,38 @@
                                 const pekerjaanAbsentContainer = document.getElementById('pekerjaanAbsentContainer');
                                 const fotoAbsentContainer = document.getElementById('fotoAbsentContainer');
                                 const transferCalculationContainer = document.getElementById('transferCalculationContainer');
-                                
+
                                 const selectTarget = document.getElementById('transPresensiId');
                                 const selectAbsent = document.getElementById('transAbsentDateId');
                                 const textareaPekerjaan = document.getElementById('transPekerjaanAbsent');
-                                
+
                                 // Reset calculations display
                                 transferCalculationContainer.classList.add('hidden');
-                                
+
                                 if (isChecked) {
                                     // Hide normal target container, remove required
                                     targetPresenceContainer.classList.add('hidden');
                                     selectTarget.required = false;
                                     selectTarget.value = '';
-                                    
+
                                     // Show absent target container, make required
                                     absentTargetContainer.classList.remove('hidden');
                                     selectAbsent.required = true;
                                     selectAbsent.value = '';
-                                    
+
                                     // Show pekerjaan & foto containers, make pekerjaan required
                                     pekerjaanAbsentContainer.classList.remove('hidden');
                                     textareaPekerjaan.required = true;
                                     textareaPekerjaan.value = '';
-                                    
+
                                     fotoAbsentContainer.classList.remove('hidden');
-                                    
+
                                     // Reset upload elements
                                     document.getElementById('absentPhotoUploadInput').value = '';
                                     document.getElementById('absentPhotoPreview').src = '';
                                     document.getElementById('absentPhotoPreview').classList.add('hidden');
                                     document.getElementById('absentFotoInput').value = '';
-                                    
+
                                     // Disable transfer input until date is selected
                                     const inputTransfer = document.getElementById('transDurasiMenitTransfer');
                                     inputTransfer.value = '';
@@ -709,23 +728,23 @@
                                     targetPresenceContainer.classList.remove('hidden');
                                     selectTarget.required = true;
                                     selectTarget.value = '';
-                                    
+
                                     // Hide absent target container, remove required
                                     absentTargetContainer.classList.add('hidden');
                                     selectAbsent.required = false;
                                     selectAbsent.value = '';
-                                    
+
                                     // Hide pekerjaan & foto, remove required
                                     pekerjaanAbsentContainer.classList.add('hidden');
                                     textareaPekerjaan.required = false;
                                     textareaPekerjaan.value = '';
-                                    
+
                                     fotoAbsentContainer.classList.add('hidden');
                                     document.getElementById('absentPhotoUploadInput').value = '';
                                     document.getElementById('absentFotoInput').value = '';
                                     document.getElementById('absentPhotoPreview').src = '';
                                     document.getElementById('absentPhotoPreview').classList.add('hidden');
-                                    
+
                                     // Disable transfer input until date is selected
                                     const inputTransfer = document.getElementById('transDurasiMenitTransfer');
                                     inputTransfer.value = '';
@@ -733,7 +752,7 @@
                                     inputTransfer.placeholder = 'Pilih hari target terlebih dahulu';
                                     document.getElementById('transDurasiJamText').textContent = '';
                                 }
-                                
+
                                 checkSubmitStatus();
                             }
 
@@ -761,7 +780,7 @@
                                 // Auto fill with the max possible transfer
                                 inputTransfer.value = maxPossibleTransfer;
                                 onTransferMinutesInput(inputTransfer);
-                                
+
                                 checkSubmitStatus();
                             }
 
@@ -809,7 +828,7 @@
 
                                 const recordPeriod = getPeriodMonthStr(record.tanggal);
                                 const filteredTargets = underHoursList.filter(p => p.karyawanId === record.karyawanId && getPeriodMonthStr(p.tanggal) === recordPeriod);
-                                
+
                                 let filteredAbsents = [];
                                 if (recordPeriod === currentPeriod) {
                                     filteredAbsents = absentDatesList.filter(p => p.karyawanId === record.karyawanId && getPeriodMonthStr(p.tanggal) === recordPeriod && p.tanggal <= todayStr);
@@ -864,7 +883,7 @@
                                 // Reset checkbox
                                 const checkboxCuti = document.getElementById('alokasikanHariCuti');
                                 checkboxCuti.checked = false;
-                                
+
                                 // Call toggle function to initialize form layout
                                 toggleAlokasiCuti(checkboxCuti);
 
@@ -914,7 +933,7 @@
                                 // Auto fill with the exact deficiency or the remaining balance
                                 inputTransfer.value = maxPossibleTransfer;
                                 onTransferMinutesInput(inputTransfer);
-                                
+
                                 checkSubmitStatus();
                             }
 
@@ -934,7 +953,7 @@
                                 // Verify bounds
                                 const isAbsent = document.getElementById('alokasikanHariCuti').checked;
                                 const maxVal = isAbsent ? Math.min(activeSisaMenit, 240) : Math.min(activeSisaMenit, activeMaxNeededMins);
-                                
+
                                 if (val > maxVal) {
                                     inputElement.setCustomValidity(`Nilai tidak boleh melebihi batas maksimal yaitu ${maxVal} menit.`);
                                     inputElement.reportValidity();
@@ -1034,7 +1053,7 @@
                                                 hiddenFoto.value = dataUrl;
                                                 previewImg.src = dataUrl;
                                                 previewImg.classList.remove('hidden');
-                                                
+
                                                 checkSubmitStatus();
                                             };
                                             img.src = event.target.result;
