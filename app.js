@@ -2409,40 +2409,42 @@ if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
   server = app;
 }
 
-server.listen(PORT, "0.0.0.0", () => {
-  const protocol = isHttps ? "https" : "http";
-  console.log(`==================================================`);
-  console.log(`Server running locally: ${protocol}://localhost:${PORT}`);
+if (!process.env.VERCEL) {
+  server.listen(PORT, "0.0.0.0", () => {
+    const protocol = isHttps ? "https" : "http";
+    console.log(`==================================================`);
+    console.log(`Server running locally: ${protocol}://localhost:${PORT}`);
 
-  // Deteksi IP Address lokal di jaringan
-  const os = require("os");
-  const networkInterfaces = os.networkInterfaces();
-  let hasNetworkAddress = false;
+    // Deteksi IP Address lokal di jaringan
+    const os = require("os");
+    const networkInterfaces = os.networkInterfaces();
+    let hasNetworkAddress = false;
 
-  Object.keys(networkInterfaces).forEach((interfaceName) => {
-    networkInterfaces[interfaceName].forEach((iface) => {
-      // Ambil IPv4 yang bukan loopback/internal (127.0.0.1)
-      if ((iface.family === "IPv4" || iface.family === 4) && !iface.internal) {
-        console.log(
-          `Access on your local network: ${protocol}://${iface.address}:${PORT}`,
-        );
-        hasNetworkAddress = true;
-      }
+    Object.keys(networkInterfaces).forEach((interfaceName) => {
+      networkInterfaces[interfaceName].forEach((iface) => {
+        // Ambil IPv4 yang bukan loopback/internal (127.0.0.1)
+        if ((iface.family === "IPv4" || iface.family === 4) && !iface.internal) {
+          console.log(
+            `Access on your local network: ${protocol}://${iface.address}:${PORT}`,
+          );
+          hasNetworkAddress = true;
+        }
+      });
     });
-  });
 
-  if (!hasNetworkAddress) {
-    console.log(
-      "No active network adapter found (WiFi/Ethernet). Connect to a network to access from other devices.",
-    );
-  }
-  if (isHttps) {
-    console.log("SSL Mode: Active (HTTPS)");
-  } else {
-    console.log("SSL Mode: Inactive (HTTP). To use HTTPS locally, place 'key.pem' and 'cert.pem' in project root.");
-  }
-  console.log(`==================================================`);
-});
+    if (!hasNetworkAddress) {
+      console.log(
+        "No active network adapter found (WiFi/Ethernet). Connect to a network to access from other devices.",
+      );
+    }
+    if (isHttps) {
+      console.log("SSL Mode: Active (HTTPS)");
+    } else {
+      console.log("SSL Mode: Inactive (HTTP). To use HTTPS locally, place 'key.pem' and 'cert.pem' in project root.");
+    }
+    console.log(`==================================================`);
+  });
+}
 
 // Import runBackup from backup.js for automatic scheduling
 const { runBackup } = require("./backup");
@@ -2477,8 +2479,10 @@ const checkWeeklyBackup = async () => {
   }
 };
 
-// Jalankan pengecekan pertama kali 5 detik setelah server menyala
-setTimeout(checkWeeklyBackup, 5000);
+if (!process.env.VERCEL) {
+  // Jalankan pengecekan pertama kali 5 detik setelah server menyala
+  setTimeout(checkWeeklyBackup, 5000);
 
-// Lakukan pengecekan berkala setiap 1 jam sekali (3.600.000 ms)
-setInterval(checkWeeklyBackup, 3600000);
+  // Lakukan pengecekan berkala setiap 1 jam sekali (3.600.000 ms)
+  setInterval(checkWeeklyBackup, 3600000);
+}

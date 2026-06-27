@@ -6,6 +6,7 @@ class MySQLWrapper {
     this.queue = [];
     this.running = false;
     this.initialized = false;
+    this.failed = false;
     this.pool = null;
 
     this.init();
@@ -169,7 +170,13 @@ class MySQLWrapper {
       this._next();
     } catch (err) {
       console.error('Failed to initialize MySQL database:', err.message);
-      process.exit(1);
+      this.failed = true;
+      this.initialized = false;
+      // Drain startup queue with fallback mock executions immediately so HTTP requests don't hang
+      while (this.queue.length > 0) {
+        const task = this.queue.shift();
+        task();
+      }
     }
   }
 
@@ -276,6 +283,20 @@ class MySQLWrapper {
 
   _exec(fn, sql, params, callback) {
     const execute = () => {
+      if (!this.pool || this.failed) {
+        const err = new Error("Database not connected (Vercel Standalone Mode)");
+        if (fn === 'run') {
+          if (callback) {
+            const ctx = { lastID: null, changes: 0 };
+            callback.call(ctx, err);
+          }
+        } else if (fn === 'get') {
+          if (callback) callback(err, undefined);
+        } else if (fn === 'all') {
+          if (callback) callback(err, []);
+        }
+        return;
+      }
       this.pool.query(sql, params, (err, results) => {
         if (fn === 'run') {
           if (callback) {
@@ -297,7 +318,9 @@ class MySQLWrapper {
       });
     };
 
-    if (!this.initialized) {
+    if (this.failed) {
+      execute();
+    } else if (!this.initialized) {
       this.queue.push(execute);
     } else {
       execute(); // Execute concurrently using the MySQL connection pool
