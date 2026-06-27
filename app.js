@@ -59,14 +59,16 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 app.use(bodyParser.json({ limit: "50mb" }));
 
 // Hindari meng-kompres route SSE agar notifikasi suara (real-time) tidak tertahan di buffer
-app.use(compression({
-  filter: (req, res) => {
-    if (req.headers['accept'] === 'text/event-stream') {
-      return false; // Jangan kompres SSE
-    }
-    return compression.filter(req, res); // Default filter untuk yang lain
-  }
-}));
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.headers["accept"] === "text/event-stream") {
+        return false; // Jangan kompres SSE
+      }
+      return compression.filter(req, res); // Default filter untuk yang lain
+    },
+  }),
+);
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -1836,39 +1838,50 @@ app.post("/api/karyawan/:id/register-face", (req, res) => {
     return res.status(400).json({ error: "Missing ID or descriptor" });
   }
   const descriptorStr = JSON.stringify(descriptor);
-  db.run("UPDATE karyawan SET face_descriptor = ? WHERE id = ?", [descriptorStr, id], (err) => {
-    if (err) {
-      console.error("Gagal mendaftarkan wajah:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json({ success: true, message: "Wajah berhasil didaftarkan!" });
-  });
+  db.run(
+    "UPDATE karyawan SET face_descriptor = ? WHERE id = ?",
+    [descriptorStr, id],
+    (err) => {
+      if (err) {
+        console.error("Gagal mendaftarkan wajah:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.json({ success: true, message: "Wajah berhasil didaftarkan!" });
+    },
+  );
 });
 
 app.get("/api/karyawan/faces", (req, res) => {
-  db.all("SELECT id, nama, face_descriptor FROM karyawan WHERE face_descriptor IS NOT NULL AND (type IS NULL OR type != 'Staf')", (err, rows) => {
-    if (err) {
-      console.error("Gagal memuat data wajah:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    const facesList = rows.map(r => ({
-      id: r.id,
-      nama: r.nama,
-      descriptor: JSON.parse(r.face_descriptor)
-    }));
-    res.json(facesList);
-  });
+  db.all(
+    "SELECT id, nama, face_descriptor FROM karyawan WHERE face_descriptor IS NOT NULL AND (type IS NULL OR type != 'Staf')",
+    (err, rows) => {
+      if (err) {
+        console.error("Gagal memuat data wajah:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      const facesList = rows.map((r) => ({
+        id: r.id,
+        nama: r.nama,
+        descriptor: JSON.parse(r.face_descriptor),
+      }));
+      res.json(facesList);
+    },
+  );
 });
 
 app.post("/api/karyawan/:id/delete-face", (req, res) => {
   const { id } = req.params;
-  db.run("UPDATE karyawan SET face_descriptor = NULL WHERE id = ?", [id], (err) => {
-    if (err) {
-      console.error("Gagal menghapus data wajah:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.json({ success: true, message: "Data wajah berhasil dihapus." });
-  });
+  db.run(
+    "UPDATE karyawan SET face_descriptor = NULL WHERE id = ?",
+    [id],
+    (err) => {
+      if (err) {
+        console.error("Gagal menghapus data wajah:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.json({ success: true, message: "Data wajah berhasil dihapus." });
+    },
+  );
 });
 
 // --- TASK MANAGEMENT CRUD ---
@@ -2423,7 +2436,10 @@ if (!process.env.VERCEL) {
     Object.keys(networkInterfaces).forEach((interfaceName) => {
       networkInterfaces[interfaceName].forEach((iface) => {
         // Ambil IPv4 yang bukan loopback/internal (127.0.0.1)
-        if ((iface.family === "IPv4" || iface.family === 4) && !iface.internal) {
+        if (
+          (iface.family === "IPv4" || iface.family === 4) &&
+          !iface.internal
+        ) {
           console.log(
             `Access on your local network: ${protocol}://${iface.address}:${PORT}`,
           );
@@ -2440,7 +2456,9 @@ if (!process.env.VERCEL) {
     if (isHttps) {
       console.log("SSL Mode: Active (HTTPS)");
     } else {
-      console.log("SSL Mode: Inactive (HTTP). To use HTTPS locally, place 'key.pem' and 'cert.pem' in project root.");
+      console.log(
+        "SSL Mode: Inactive (HTTP). To use HTTPS locally, place 'key.pem' and 'cert.pem' in project root.",
+      );
     }
     console.log(`==================================================`);
   });
