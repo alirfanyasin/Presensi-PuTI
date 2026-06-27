@@ -2,9 +2,14 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 
-const cacheDir = path.join(__dirname, "cache");
-if (!fs.existsSync(cacheDir)) {
-  fs.mkdirSync(cacheDir, { recursive: true });
+const os = require("os");
+const cacheDir = path.join(os.tmpdir(), "presensi_puti_cache");
+try {
+  if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn("Gagal membuat folder cache:", err.message);
 }
 
 // In-memory cache to prevent slow disk reads on every route navigation
@@ -56,11 +61,13 @@ async function loadHolidays(year) {
   // Fetch from API
   try {
     const holidays = await fetchHolidaysFromAPI(year);
-    if (Array.isArray(holidays)) {
-      fs.writeFileSync(cachePath, JSON.stringify(holidays, null, 2), "utf8");
+      try {
+        fs.writeFileSync(cachePath, JSON.stringify(holidays, null, 2), "utf8");
+      } catch (errWrite) {
+        console.warn("Gagal menulis cache hari libur:", errWrite.message);
+      }
       memoryCache[year] = holidays;
       return holidays;
-    }
   } catch (e) {
     console.warn(
       `Failed to fetch holidays for year ${year} from API. Using empty list. Error:`,
