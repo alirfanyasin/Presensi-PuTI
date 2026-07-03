@@ -1,7 +1,7 @@
 {
-  "name": "HITAM",
-  "short_name": "HITAM",
-  "description": "Handcrafted Integrated Time Attendance Machine",
+  "name": "SIMASS (Sistem Informasi Monitoring Absensi Student Staff)",
+  "short_name": "SIMASS",
+  "description": "Sistem Informasi Monitoring Absensi Student Staff",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
