@@ -270,8 +270,7 @@
                                                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                                     <div class="flex items-center justify-center gap-2">
                                                         <% if (r.sisaMenit> 0) { %>
-                                                            <button data-record='<%= JSON.stringify(r) %>'
-                                                                onclick="openTransferModal(this)"
+                                                            <button onclick="openTransferModal(<%= r.id %>)"
                                                                 class="px-3 py-1.5 bg-accent text-white font-semibold rounded-lg hover:bg-accentHover transition-colors btn-press text-xs flex items-center gap-1">
                                                                 <svg class="w-3.5 h-3.5" fill="none"
                                                                     stroke="currentColor" viewBox="0 0 24 24">
@@ -287,8 +286,7 @@
                                                                     Terpakai Habis
                                                                 </button>
                                                                 <% } %>
-                                                                    <button data-record='<%= JSON.stringify(r) %>'
-                                                                        onclick="openEditModal(this)"
+                                                                    <button onclick="openEditModal(<%= r.id %>)"
                                                                         class="p-1.5 text-muted hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                                         title="Edit Saldo Manual">
                                                                         <svg class="w-4 h-4" fill="none"
@@ -646,13 +644,14 @@
                     <% } %>
 
                         <script>
+                            // Load overtimeRecordsList from backend EJS context
+                            const overtimeRecordsList = <%- JSON.stringify(overtimeRecords) %>;
+
                             // Load underHoursPresences from backend EJS context
-                            const rawUnderHours = `<%- JSON.stringify(underHoursPresences) %>`;
-                            const underHoursList = JSON.parse(rawUnderHours);
+                            const underHoursList = <%- JSON.stringify(underHoursPresences) %>;
 
                             // Load absentDatesList from backend EJS context
-                            const rawAbsentDates = `<%- JSON.stringify(absentDatesList) %>`;
-                            const absentDatesList = JSON.parse(rawAbsentDates);
+                            const absentDatesList = <%- JSON.stringify(absentDatesList) %>;
 
                             // Modals DOM
                             const transferModal = document.getElementById('transferModal');
@@ -803,8 +802,8 @@
                             }
 
                             // Modal 1: Transfer
-                            function openTransferModal(element) {
-                                const record = JSON.parse(element.getAttribute('data-record'));
+                            function openTransferModal(id) {
+                                const record = overtimeRecordsList.find(r => r.id === id);
 
                                 activeSisaMenit = record.sisaMenit;
                                 document.getElementById('transOvertimeId').value = record.id;
@@ -1112,8 +1111,8 @@
                             });
 
                             // Modal 2: Manual Edit Balance
-                            function openEditModal(element) {
-                                const record = JSON.parse(element.getAttribute('data-record'));
+                            function openEditModal(id) {
+                                const record = overtimeRecordsList.find(r => r.id === id);
 
                                 document.getElementById('editOtId').value = record.id;
                                 document.getElementById('editOtKaryawanInfo').value = `${record.nama} / ${new Date(record.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}`;

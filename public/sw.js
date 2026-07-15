@@ -67,26 +67,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3. HTML & Dynamic Content (Network First)
-  // Mencegah user melihat data absensi yang lama/stale
+  // 3. HTML & Dynamic Content (Network Only / Bypass Cache)
+  // Mencegah user melihat data absensi yang lama/stale, serta menghindari konflik IP lokal/SSL
   if (
     request.mode === "navigate" ||
-    request.headers.get("accept").includes("text/html")
+    (request.headers.get("accept") && request.headers.get("accept").includes("text/html"))
   ) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(request, responseClone));
-          return response;
-        })
-        .catch(() => caches.match(request)),
-    );
+    event.respondWith(fetch(request));
     return;
   }
 
-  // Default: Network First
+  // Default: Network Only / Fallback
   event.respondWith(fetch(request).catch(() => caches.match(request)));
 });

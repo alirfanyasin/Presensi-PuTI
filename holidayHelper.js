@@ -9,6 +9,7 @@ if (!fs.existsSync(cacheDir)) {
 
 // In-memory cache to prevent slow disk reads on every route navigation
 const memoryCache = {};
+const memoryCacheDate = {};
 
 function fetchHolidaysFromAPI(year) {
   return new Promise((resolve, reject) => {
@@ -35,21 +36,36 @@ function fetchHolidaysFromAPI(year) {
 }
 
 async function loadHolidays(year) {
-  if (memoryCache[year]) {
+  const todayDate = new Date().toDateString();
+
+  if (memoryCache[year] && memoryCacheDate[year] === todayDate) {
     return memoryCache[year];
   }
 
   const cachePath = path.join(cacheDir, `holidays_${year}.json`);
 
-  // Check if cache exists
+  // Check if cache exists and was modified today
   if (fs.existsSync(cachePath)) {
     try {
-      const data = fs.readFileSync(cachePath, "utf8");
-      const parsed = JSON.parse(data);
-      memoryCache[year] = parsed;
-      return parsed;
+      const stats = fs.statSync(cachePath);
+      const fileDate = new Date(stats.mtime).toDateString();
+
+      if (fileDate !== todayDate) {
+        console.log(`Holiday cache for year ${year} is outdated. Deleting and re-fetching...`);
+        try {
+          fs.unlinkSync(cachePath);
+        } catch (unlinkErr) {
+          console.warn("Failed to delete outdated holiday cache file:", unlinkErr.message);
+        }
+      } else {
+        const data = fs.readFileSync(cachePath, "utf8");
+        const parsed = JSON.parse(data);
+        memoryCache[year] = parsed;
+        memoryCacheDate[year] = todayDate;
+        return parsed;
+      }
     } catch (e) {
-      console.error("Failed to read holiday cache:", e);
+      console.error("Failed to read or validate holiday cache:", e);
     }
   }
 
@@ -59,6 +75,7 @@ async function loadHolidays(year) {
     if (Array.isArray(holidays)) {
       fs.writeFileSync(cachePath, JSON.stringify(holidays, null, 2), "utf8");
       memoryCache[year] = holidays;
+      memoryCacheDate[year] = todayDate;
       return holidays;
     }
   } catch (e) {

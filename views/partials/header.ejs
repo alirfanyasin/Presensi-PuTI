@@ -157,6 +157,40 @@
     </style>
     <!-- Register Service Worker -->
     <script>
+        // Daily cache clearing mechanism
+        const lastClearDate = localStorage.getItem('last_cache_clear_date');
+        const todayDate = new Date().toDateString();
+
+        if (lastClearDate !== todayDate) {
+            console.log('New day detected. Clearing browser cache and Service Workers...');
+            
+            // Clear Cache Storage
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    return Promise.all(names.map(name => caches.delete(name)));
+                }).then(() => {
+                    console.log('Cache Storage cleared successfully.');
+                }).catch(err => {
+                    console.error('Failed to clear Cache Storage:', err);
+                });
+            }
+
+            // Unregister Service Workers
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for (let registration of registrations) {
+                        registration.unregister();
+                    }
+                }).then(() => {
+                    console.log('Service Workers unregistered.');
+                }).catch(err => {
+                    console.error('Failed to unregister Service Workers:', err);
+                });
+            }
+
+            localStorage.setItem('last_cache_clear_date', todayDate);
+        }
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').then(reg => {
